@@ -1,0 +1,912 @@
+'use client'
+
+import { useState, useEffect } from 'react'
+import Link from 'next/link'
+import { FileText, Plus, Edit, Trash2, Eye, Save, GripVertical, Palette, ChevronRight, ChevronDown, Copy } from 'lucide-react'
+
+interface FormField {
+  id: string
+  label: string
+  type: string
+  required: boolean
+  options?: string[]
+  placeholder?: string
+  order: number
+  stepNumber?: number
+  cssClass?: string
+  fieldId?: string
+  validation?: {
+    minLength?: number
+    maxLength?: number
+    pattern?: string
+    message?: string
+  }
+}
+
+interface FormStep {
+  id: string
+  title: string
+  description?: string
+  fields: FormField[]
+}
+
+interface ApplicationForm {
+  id: string
+  name: string
+  description: string
+  fields: FormField[]
+  steps?: FormStep[]
+  isDefault: boolean
+  isMultiStep: boolean
+  customCSS?: string
+  createdAt: string
+}
+
+export default function FormBuilderPage() {
+  const [forms, setForms] = useState<ApplicationForm[]>([])
+  const [loading, setLoading] = useState(true)
+  const [showFormBuilder, setShowFormBuilder] = useState(false)
+  const [editingForm, setEditingForm] = useState<ApplicationForm | null>(null)
+  const [formData, setFormData] = useState({
+    name: '',
+    description: '',
+    isDefault: false,
+    isMultiStep: false,
+    customCSS: ''
+  })
+  const [fields, setFields] = useState<FormField[]>([])
+  const [steps, setSteps] = useState<FormStep[]>([{ id: 'step-1', title: 'Step 1', fields: [] }])
+  const [currentStep, setCurrentStep] = useState(0)
+  const [showPreview, setShowPreview] = useState(false)
+  const [draggedItem, setDraggedItem] = useState<FormField | null>(null)
+  const [dragOverIndex, setDragOverIndex] = useState<number | null>(null)
+  const [showCSSEditor, setShowCSSEditor] = useState(false)
+  const [expandedStep, setExpandedStep] = useState<string | null>('step-1')
+
+  const fieldTypes = [
+    { value: 'text', label: 'Text Input', icon: '📝' },
+    { value: 'textarea', label: 'Text Area', icon: '📄' },
+    { value: 'email', label: 'Email', icon: '📧' },
+    { value: 'phone', label: 'Phone', icon: '📞' },
+    { value: 'select', label: 'Dropdown', icon: '🔽' },
+    { value: 'radio', label: 'Radio Buttons', icon: '⚪' },
+    { value: 'checkbox', label: 'Checkboxes', icon: '☑️' },
+    { value: 'tags', label: 'Multi-Select Tags', icon: '🏷️' },
+    { value: 'file', label: 'File Upload', icon: '📎' },
+    { value: 'date', label: 'Date', icon: '📅' },
+    { value: 'number', label: 'Number', icon: '🔢' },
+    { value: 'url', label: 'URL', icon: '🔗' },
+    { value: 'password', label: 'Password', icon: '🔒' }
+  ]
+
+  useEffect(() => {
+    fetchForms()
+  }, [])
+
+  const fetchForms = async () => {
+    try {
+      const response = await fetch('/api/admin/forms')
+      if (response.ok) {
+        const data = await response.json()
+        setForms(data)
+      }
+    } catch (error) {
+      console.error('Failed to fetch forms:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const addField = (fieldType: string = 'text') => {
+    const newField: FormField = {
+      id: `field_${Date.now()}`,
+      label: `New ${fieldTypes.find(t => t.value === fieldType)?.label || 'Field'}`,
+      type: fieldType,
+      required: false,
+      order: fields.length,
+      placeholder: ''
+    }
+    setFields([...fields, newField])
+  }
+
+  const updateField = (index: number, field: Partial<FormField>) => {
+    const updatedFields = [...fields]
+    updatedFields[index] = { ...updatedFields[index], ...field }
+    setFields(updatedFields)
+  }
+
+  const removeField = (index: number) => {
+    setFields(fields.filter((_, i) => i !== index))
+  }
+
+  const moveField = (index: number, direction: 'up' | 'down') => {
+    if (
+      (direction === 'up' && index === 0) ||
+      (direction === 'down' && index === fields.length - 1)
+    ) {
+      return
+    }
+
+    const newFields = [...fields]
+    const targetIndex = direction === 'up' ? index - 1 : index + 1
+    ;[newFields[index], newFields[targetIndex]] = [newFields[targetIndex], newFields[index]]
+    
+    // Update order
+    newFields.forEach((field, i) => {
+      field.order = i
+    })
+    
+    setFields(newFields)
+  }
+
+  const handleSaveForm = async () => {
+    try {
+      const url = editingForm ? `/api/admin/forms/${editingForm.id}` : '/api/admin/forms'
+      const method = editingForm ? 'PUT' : 'POST'
+      
+      const response = await fetch(url, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ...formData,
+          fields: fields.map((field, index) => ({ ...field, order: index }))
+        })
+      })
+
+      if (response.ok) {
+        fetchForms()
+        resetFormBuilder()
+      }
+    } catch (error) {
+      console.error('Failed to save form:', error)
+    }
+  }
+
+  const resetFormBuilder = () => {
+    setShowFormBuilder(false)
+    setEditingForm(null)
+    setFormData({ 
+      name: '', 
+      description: '', 
+      isDefault: false,
+      isMultiStep: false,
+      customCSS: ''
+    })
+    setFields([])
+    setShowPreview(false)
+    setShowCSSEditor(false)
+  }
+
+  const handleEditForm = (form: ApplicationForm) => {
+    setEditingForm(form)
+    setFormData({
+      name: form.name,
+      description: form.description,
+      isDefault: form.isDefault,
+      isMultiStep: form.isMultiStep || false,
+      customCSS: form.customCSS || ''
+    })
+    setFields(form.fields)
+    setShowFormBuilder(true)
+  }
+
+  // Drag and drop handlers
+  const handleDragStart = (field: FormField) => {
+    setDraggedItem(field)
+  }
+
+  const handleDragOver = (e: React.DragEvent, index?: number) => {
+    e.preventDefault()
+    e.stopPropagation()
+    if (typeof index === 'number') {
+      setDragOverIndex(index)
+    }
+  }
+
+  const handleDrop = (e: React.DragEvent, targetIndex: number) => {
+    e.preventDefault()
+    e.stopPropagation()
+    setDragOverIndex(null)
+    
+    if (!draggedItem) return
+
+    const draggedIndex = fields.findIndex(f => f.id === draggedItem.id)
+    if (draggedIndex === -1) return
+
+    const newFields = [...fields]
+    newFields.splice(draggedIndex, 1)
+    newFields.splice(targetIndex, 0, draggedItem)
+    
+    // Update order
+    newFields.forEach((field, index) => {
+      field.order = index
+    })
+    
+    setFields(newFields)
+    setDraggedItem(null)
+  }
+
+  const duplicateField = (field: FormField) => {
+    const newField = {
+      ...field,
+      id: Math.random().toString(36).substr(2, 9),
+      label: `${field.label} (Copy)`
+    }
+    setFields(prev => [...prev, newField])
+  }
+
+  const addStep = () => {
+    const newStep: FormStep = {
+      id: `step-${Date.now()}`,
+      title: `Step ${steps.length + 1}`,
+      fields: []
+    }
+    setSteps(prev => [...prev, newStep])
+    setExpandedStep(newStep.id)
+  }
+
+  const removeStep = (stepId: string) => {
+    if (steps.length <= 1) return
+    setSteps(prev => prev.filter(step => step.id !== stepId))
+  }
+
+  const handleDeleteForm = async (formId: string) => {
+    if (confirm('Are you sure you want to delete this form?')) {
+      try {
+        const response = await fetch(`/api/admin/forms/${formId}`, {
+          method: 'DELETE'
+        })
+        if (response.ok) {
+          fetchForms()
+        }
+      } catch (error) {
+        console.error('Failed to delete form:', error)
+      }
+    }
+  }
+
+  if (loading) {
+    return <div className="flex justify-center items-center min-h-screen">Loading...</div>
+  }
+
+  return (
+    <div className="min-h-screen bg-gray-50">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="bg-white rounded-lg shadow">
+          <div className="px-6 py-4 border-b border-gray-200">
+            <div className="flex justify-between items-center">
+              <div>
+                <h1 className="text-2xl font-bold text-gray-900 flex items-center">
+                  <FileText className="h-6 w-6 mr-2 text-indigo-600" />
+                  Form Builder
+                </h1>
+                <p className="text-gray-600 mt-1">Create and manage application forms for job postings</p>
+              </div>
+              <button
+                onClick={() => setShowFormBuilder(true)}
+                className="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700 flex items-center"
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                Create Form
+              </button>
+            </div>
+          </div>
+
+          {showFormBuilder && (
+            <div className="px-6 py-4 border-b border-gray-200 bg-gray-50">
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="text-lg font-bold text-gray-900">
+                  {editingForm ? 'Edit Form' : 'Create New Form'}
+                </h3>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => setShowCSSEditor(!showCSSEditor)}
+                    className="bg-purple-600 text-white px-3 py-1 rounded text-sm flex items-center hover:bg-purple-700"
+                  >
+                    <Palette className="h-4 w-4 mr-1" />
+                    Custom CSS
+                  </button>
+                  <button
+                    onClick={() => setShowPreview(!showPreview)}
+                    className="bg-gray-600 text-white px-3 py-1 rounded text-sm flex items-center hover:bg-gray-700"
+                  >
+                    <Eye className="h-4 w-4 mr-1" />
+                    {showPreview ? 'Hide Preview' : 'Preview'}
+                  </button>
+                  <button
+                    onClick={handleSaveForm}
+                    className="bg-green-600 text-white px-3 py-1 rounded text-sm flex items-center hover:bg-green-700"
+                  >
+                    <Save className="h-4 w-4 mr-1" />
+                    Save Form
+                  </button>
+                  <button
+                    onClick={resetFormBuilder}
+                    className="bg-gray-600 text-white px-3 py-1 rounded text-sm hover:bg-gray-700"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+
+              {/* CSS Editor */}
+              {showCSSEditor && (
+                <div className="mb-6 border border-gray-300 rounded-lg p-4 bg-white">
+                  <h4 className="text-md font-bold text-gray-900 mb-2">Custom CSS</h4>
+                  <textarea
+                    value={formData.customCSS}
+                    onChange={(e) => setFormData(prev => ({ ...prev, customCSS: e.target.value }))}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 font-mono text-sm"
+                    rows={8}
+                    placeholder=".form-container { background: #f9f9f9; }&#10;.form-field { margin-bottom: 1rem; }&#10;.form-label { font-weight: bold; color: #333; }"
+                  />
+                  <p className="text-sm text-gray-600 mt-2">
+                    Add custom CSS to style your form. Use classes like .form-container, .form-field, .form-label, etc.
+                  </p>
+                </div>
+              )}
+
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {/* Form Configuration */}
+                <div>
+                  <div className="space-y-4 mb-6">
+                    <div>
+                      <label className="block text-sm font-bold text-gray-900 mb-2">Form Name</label>
+                      <input
+                        type="text"
+                        value={formData.name}
+                        onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 text-gray-900"
+                        placeholder="e.g., Software Developer Application"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-bold text-gray-900 mb-2">Description</label>
+                      <textarea
+                        value={formData.description}
+                        onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 text-gray-900"
+                        rows={2}
+                        placeholder="Brief description of this form"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <div className="flex items-center">
+                        <input
+                          type="checkbox"
+                          id="isDefault"
+                          checked={formData.isDefault}
+                          onChange={(e) => setFormData(prev => ({ ...prev, isDefault: e.target.checked }))}
+                          className="mr-2"
+                        />
+                        <label htmlFor="isDefault" className="text-sm font-bold text-gray-900">Set as default form</label>
+                      </div>
+                      <div className="flex items-center">
+                        <input
+                          type="checkbox"
+                          id="isMultiStep"
+                          checked={formData.isMultiStep}
+                          onChange={(e) => setFormData(prev => ({ ...prev, isMultiStep: e.target.checked }))}
+                          className="mr-2"
+                        />
+                        <label htmlFor="isMultiStep" className="text-sm font-bold text-gray-900">Enable multi-step form</label>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Field Types Palette */}
+                  <div className="border-t pt-4">
+                    <h4 className="font-bold text-gray-900 mb-4">📋 Available Field Types</h4>
+                    <div className="grid grid-cols-2 gap-2 mb-6">
+                      {fieldTypes.map((type) => (
+                        <button
+                          key={type.value}
+                          onClick={() => addField(type.value)}
+                          className="flex items-center p-3 text-left border border-gray-300 rounded-md hover:bg-blue-50 hover:border-blue-300 transition-colors bg-white"
+                        >
+                          <span className="text-lg mr-2">{type.icon}</span>
+                          <span className="text-sm font-semibold text-gray-900">{type.label}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Multi-step Management */}
+                  {formData.isMultiStep && (
+                    <div className="border-t pt-4">
+                      <div className="flex justify-between items-center mb-4">
+                        <h4 className="font-bold text-gray-900">📑 Form Steps</h4>
+                        <button
+                          onClick={addStep}
+                          className="bg-blue-600 text-white px-3 py-1 rounded text-sm flex items-center hover:bg-blue-700"
+                        >
+                          <Plus className="h-4 w-4 mr-1" />
+                          Add Step
+                        </button>
+                      </div>
+                      <div className="space-y-2">
+                        {steps.map((step) => (
+                          <div key={step.id} className="flex items-center justify-between p-2 border border-gray-200 rounded bg-white">
+                            <div className="flex items-center">
+                              <button
+                                onClick={() => setExpandedStep(expandedStep === step.id ? null : step.id)}
+                                className="mr-2"
+                              >
+                                {expandedStep === step.id ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+                              </button>
+                              <span className="font-semibold text-gray-900">{step.title}</span>
+                            </div>
+                            {steps.length > 1 && (
+                              <button
+                                onClick={() => removeStep(step.id)}
+                                className="text-red-600 hover:text-red-800"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </button>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Current Fields with Drag & Drop */}
+                  <div className="border-t pt-4">
+                    <div className="flex justify-between items-center mb-4">
+                      <h4 className="font-bold text-gray-900">🔧 Form Fields</h4>
+                      <span className="text-sm text-gray-700">{fields.length} fields</span>
+                    </div>
+
+                    <div className="space-y-3">
+                      {fields.map((field, index) => (
+                        <div 
+                          key={field.id} 
+                          className={`border rounded-md p-3 bg-white shadow-sm hover:shadow-md transition-all duration-200 ${
+                            draggedItem?.id === field.id ? 'opacity-50 scale-95' : ''
+                          } ${
+                            dragOverIndex === index ? 'border-blue-500 bg-blue-50' : 'hover:border-blue-300'
+                          } cursor-move`}
+                          draggable
+                          onDragStart={(e) => {
+                            handleDragStart(field)
+                            e.dataTransfer.effectAllowed = 'move'
+                          }}
+                          onDragOver={(e) => handleDragOver(e, index)}
+                          onDrop={(e) => handleDrop(e, index)}
+                          onDragEnd={() => {
+                            setDraggedItem(null)
+                            setDragOverIndex(null)
+                          }}
+                          onDragLeave={() => setDragOverIndex(null)}
+                        >
+                          <div className="flex items-center justify-between mb-3">
+                            <div className="flex items-center">
+                              <GripVertical className="h-4 w-4 text-gray-600 mr-2 cursor-move hover:text-blue-600" />
+                              <span className="font-bold text-gray-900">{field.label || 'Untitled Field'}</span>
+                              <span className="ml-2 text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded font-medium">
+                                {fieldTypes.find(t => t.value === field.type)?.label}
+                              </span>
+                            </div>
+                            <div className="flex gap-2">
+                              <button
+                                onClick={() => duplicateField(field)}
+                                className="text-blue-600 hover:text-blue-800"
+                                title="Duplicate field"
+                              >
+                                <Copy className="h-4 w-4" />
+                              </button>
+                              <button
+                                onClick={() => removeField(index)}
+                                className="text-red-600 hover:text-red-800"
+                                title="Delete field"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </button>
+                            </div>
+                          </div>
+                          <div className="grid grid-cols-2 gap-2 mb-3">
+                            <div>
+                              <label className="block text-xs font-bold text-gray-900 mb-1">Field Label</label>
+                              <input
+                                type="text"
+                                value={field.label}
+                                onChange={(e) => updateField(index, { label: e.target.value })}
+                                placeholder="Enter field label"
+                                className="w-full px-2 py-1 border border-gray-300 rounded text-sm text-gray-900 font-semibold bg-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-xs font-bold text-gray-900 mb-1">Field Type</label>
+                              <select
+                                value={field.type}
+                                onChange={(e) => updateField(index, { type: e.target.value })}
+                                className="w-full px-2 py-1 border border-gray-300 rounded text-sm text-gray-900 font-semibold bg-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                              >
+                                {fieldTypes.map(type => (
+                                  <option key={type.value} value={type.value} className="text-gray-900 font-semibold">
+                                    {type.icon} {type.label}
+                                  </option>
+                                ))}
+                              </select>
+                            </div>
+                          </div>
+
+                          <div className="mb-3">
+                            <label className="block text-xs font-bold text-gray-900 mb-1">Placeholder Text</label>
+                            <input
+                              type="text"
+                              value={field.placeholder || ''}
+                              onChange={(e) => updateField(index, { placeholder: e.target.value })}
+                              placeholder="Enter placeholder text"
+                              className="w-full px-2 py-1 border border-gray-300 rounded text-sm text-gray-900 font-medium bg-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                            />
+                          </div>
+
+                          <div className="grid grid-cols-2 gap-2 mb-3">
+                            <div>
+                              <label className="block text-xs font-bold text-gray-900 mb-1">CSS Class</label>
+                              <input
+                                type="text"
+                                value={field.cssClass || ''}
+                                onChange={(e) => updateField(index, { cssClass: e.target.value })}
+                                placeholder="custom-class"
+                                className="w-full px-2 py-1 border border-gray-300 rounded text-sm text-gray-900 font-medium bg-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-xs font-bold text-gray-900 mb-1">Field ID</label>
+                              <input
+                                type="text"
+                                value={field.fieldId || ''}
+                                onChange={(e) => updateField(index, { fieldId: e.target.value })}
+                                placeholder="field-id"
+                                className="w-full px-2 py-1 border border-gray-300 rounded text-sm text-gray-900 font-medium bg-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                              />
+                            </div>
+                          </div>
+                          
+                          {(field.type === 'select' || field.type === 'radio' || field.type === 'checkbox' || field.type === 'tags') && (
+                            <div className="mb-3">
+                              <label className="block text-xs font-bold text-gray-900 mb-1">
+                                {field.type === 'tags' ? 'Available Tags/Skills (one per line)' : 'Options (one per line)'}
+                              </label>
+                              <textarea
+                                value={field.options?.join('\n') || ''}
+                                onChange={(e) => updateField(index, { 
+                                  options: e.target.value.split('\n').filter(opt => opt.trim()) 
+                                })}
+                                placeholder={field.type === 'tags' ? "JavaScript&#10;React&#10;Node.js&#10;Python&#10;AWS" : "Option 1&#10;Option 2&#10;Option 3"}
+                                className="w-full px-2 py-1 border border-gray-300 rounded text-sm text-gray-900 font-medium bg-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                                rows={4}
+                              />
+                            </div>
+                          )}
+
+                          <div className="flex justify-between items-center">
+                            <label className="flex items-center text-sm">
+                              <input
+                                type="checkbox"
+                                checked={field.required}
+                                onChange={(e) => updateField(index, { required: e.target.checked })}
+                                className="mr-2"
+                              />
+                              <span className="font-bold text-gray-900">Required Field</span>
+                            </label>
+                            <div className="flex gap-2">
+                              <button
+                                onClick={() => moveField(index, 'up')}
+                                disabled={index === 0}
+                                className="text-gray-600 hover:text-gray-800 disabled:opacity-30 text-lg"
+                                title="Move up"
+                              >
+                                ↑
+                              </button>
+                              <button
+                                onClick={() => moveField(index, 'down')}
+                                disabled={index === fields.length - 1}
+                                className="text-gray-600 hover:text-gray-800 disabled:opacity-30 text-lg"
+                                title="Move down"
+                              >
+                                ↓
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Enhanced Preview */}
+                {showPreview && (
+                  <div className="bg-white border border-gray-300 rounded-lg p-6 shadow-lg">
+                    <div className="flex items-center justify-between mb-4">
+                      <h4 className="font-bold text-gray-900 text-lg">📋 Form Preview</h4>
+                      <span className="text-sm text-gray-600">Live preview with custom styles</span>
+                    </div>
+
+                    {/* Custom CSS Application */}
+                    {formData.customCSS && (
+                      <style dangerouslySetInnerHTML={{ __html: formData.customCSS }} />
+                    )}
+
+                    <div className="form-container bg-gray-50 p-6 rounded-lg border">
+                      <div className="form-header mb-6">
+                        <h2 className="text-2xl font-bold text-gray-900 mb-2">{formData.name || 'Untitled Form'}</h2>
+                        {formData.description && (
+                          <p className="text-gray-700 font-medium">{formData.description}</p>
+                        )}
+                      </div>
+
+                      {formData.isMultiStep ? (
+                        <div className="multi-step-form">
+                          <div className="step-indicator mb-6">
+                            <div className="flex items-center">
+                              {steps.map((step, index) => (
+                                <div key={step.id} className="flex items-center">
+                                  <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${
+                                    index === currentStep ? 'bg-blue-600 text-white' : 'bg-gray-300 text-gray-700'
+                                  }`}>
+                                    {index + 1}
+                                  </div>
+                                  {index < steps.length - 1 && (
+                                    <div className="w-12 h-1 bg-gray-300 mx-2"></div>
+                                  )}
+                                </div>
+                              ))}
+                            </div>
+                            <div className="mt-2">
+                              <h3 className="font-bold text-gray-900">{steps[currentStep]?.title}</h3>
+                              {steps[currentStep]?.description && (
+                                <p className="text-gray-700">{steps[currentStep].description}</p>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      ) : null}
+
+                      <div className="form-fields space-y-6">
+                        {fields.map((field, index) => (
+                          <div 
+                            key={field.id} 
+                            className={`form-field ${field.cssClass || ''}`}
+                            id={field.fieldId || undefined}
+                          >
+                            <label className="form-label block text-sm font-bold text-gray-900 mb-2">
+                              {field.label || `Field ${index + 1}`}
+                              {field.required && <span className="text-red-600 ml-1">*</span>}
+                            </label>
+                            
+                            {field.type === 'text' && (
+                              <input
+                                type="text"
+                                placeholder={field.placeholder}
+                                className="form-input w-full px-4 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 font-medium"
+                                disabled
+                              />
+                            )}
+                            
+                            {field.type === 'email' && (
+                              <input
+                                type="email"
+                                placeholder={field.placeholder || "Enter your email"}
+                                className="form-input w-full px-4 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 font-medium"
+                                disabled
+                              />
+                            )}
+                            
+                            {field.type === 'phone' && (
+                              <input
+                                type="tel"
+                                placeholder={field.placeholder || "Enter your phone number"}
+                                className="form-input w-full px-4 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 font-medium"
+                                disabled
+                              />
+                            )}
+                            
+                            {field.type === 'textarea' && (
+                              <textarea
+                                placeholder={field.placeholder}
+                                className="form-textarea w-full px-4 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 font-medium"
+                                rows={4}
+                                disabled
+                              />
+                            )}
+                            
+                            {field.type === 'select' && (
+                              <select className="form-select w-full px-4 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 font-medium bg-white" disabled>
+                                <option value="" className="text-gray-500">
+                                  {field.placeholder || "Select an option"}
+                                </option>
+                                {field.options?.map((option, i) => (
+                                  <option key={i} value={option} className="text-gray-900 font-medium">
+                                    {option}
+                                  </option>
+                                ))}
+                              </select>
+                            )}
+                            
+                            {field.type === 'radio' && (
+                              <div className="form-radio-group space-y-3">
+                                {field.options?.map((option, i) => (
+                                  <label key={i} className="flex items-center cursor-pointer">
+                                    <input 
+                                      type="radio" 
+                                      name={field.id} 
+                                      className="mr-3 w-4 h-4 text-blue-600" 
+                                      disabled 
+                                    />
+                                    <span className="text-gray-900 font-medium">{option}</span>
+                                  </label>
+                                ))}
+                              </div>
+                            )}
+                            
+                            {field.type === 'checkbox' && (
+                              <div className="form-checkbox-group space-y-3">
+                                {field.options?.map((option, i) => (
+                                  <label key={i} className="flex items-center cursor-pointer">
+                                    <input 
+                                      type="checkbox" 
+                                      className="mr-3 w-4 h-4 text-blue-600" 
+                                      disabled 
+                                    />
+                                    <span className="text-gray-900 font-medium">{option}</span>
+                                  </label>
+                                ))}
+                              </div>
+                            )}
+                            
+                            {field.type === 'tags' && (
+                              <div className="form-tags-container">
+                                <div className="flex flex-wrap gap-2 p-3 border border-gray-300 rounded-md bg-gray-50">
+                                  {field.options?.slice(0, 3).map((tag, i) => (
+                                    <span 
+                                      key={i}
+                                      className="inline-flex items-center px-3 py-1 text-sm bg-blue-100 text-blue-800 rounded-full font-medium"
+                                    >
+                                      {tag}
+                                      <button className="ml-2 text-blue-600 hover:text-blue-800">
+                                        ×
+                                      </button>
+                                    </span>
+                                  ))}
+                                  <input
+                                    type="text"
+                                    placeholder="Type to add tags..."
+                                    className="border-none outline-none bg-transparent text-gray-900 font-medium flex-1 min-w-24"
+                                    disabled
+                                  />
+                                </div>
+                                <div className="mt-2 flex flex-wrap gap-1">
+                                  <span className="text-xs text-gray-600">Available: </span>
+                                  {field.options?.map((tag, i) => (
+                                    <button 
+                                      key={i}
+                                      className="text-xs px-2 py-1 bg-gray-200 text-gray-700 rounded hover:bg-gray-300 font-medium"
+                                      disabled
+                                    >
+                                      + {tag}
+                                    </button>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+                            
+                            {field.type === 'file' && (
+                              <div className="form-file-upload">
+                                <input
+                                  type="file"
+                                  className="w-full px-4 py-3 border border-gray-300 rounded-md text-gray-900 font-medium"
+                                  disabled
+                                />
+                                <p className="text-sm text-gray-600 mt-1">
+                                  {field.placeholder || "Choose a file to upload"}
+                                </p>
+                              </div>
+                            )}
+                            
+                            {field.type === 'date' && (
+                              <input
+                                type="date"
+                                className="form-input w-full px-4 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 font-medium"
+                                disabled
+                              />
+                            )}
+                            
+                            {field.type === 'number' && (
+                              <input
+                                type="number"
+                                placeholder={field.placeholder}
+                                className="form-input w-full px-4 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 font-medium"
+                                disabled
+                              />
+                            )}
+                          </div>
+                        ))}
+                      </div>
+
+                      {fields.length === 0 && (
+                        <div className="text-center py-12">
+                          <p className="text-gray-500 font-medium">No fields added yet. Add some fields to see the preview.</p>
+                        </div>
+                      )}
+
+                      <div className="form-footer mt-8 pt-6 border-t border-gray-200">
+                        <button className="bg-blue-600 text-white px-6 py-3 rounded-md hover:bg-blue-700 font-semibold" disabled>
+                          Submit Application
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Form Name</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Description</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Fields</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Created</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {forms.map((form) => (
+                  <tr key={form.id}>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm font-medium text-gray-900">{form.name}</div>
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="text-sm text-gray-500">{form.description}</div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span className="text-sm text-gray-900">{form.fields.length} fields</span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      {form.isDefault && (
+                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                          Default
+                        </span>
+                      )}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {new Date(form.createdAt).toLocaleDateString()}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => handleEditForm(form)}
+                          className="text-indigo-600 hover:text-indigo-900"
+                        >
+                          <Edit className="h-4 w-4" />
+                        </button>
+                        <button
+                          onClick={() => handleDeleteForm(form.id)}
+                          className="text-red-600 hover:text-red-900"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          <div className="px-6 py-4 border-t border-gray-200">
+            <Link href="/admin" className="text-indigo-600 hover:text-indigo-500">
+              &larr; Back to Admin Dashboard
+            </Link>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}

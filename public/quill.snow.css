@@ -1,0 +1,33 @@
+/* Quill Snow Theme CSS - Downloaded from https://github.com/quilljs/quill/blob/develop/dist/quill.snow.css */
+/* Only a minimal subset for Quill editor styling. For full features, use the official file. */
+
+.ql-container {
+  box-sizing: border-box;
+  font-family: inherit;
+  font-size: 16px;
+  height: auto;
+  margin: 0px;
+  position: relative;
+}
+.ql-toolbar.ql-snow {
+  border: 1px solid #ccc;
+  box-sizing: border-box;
+  font-family: inherit;
+  padding: 8px;
+}
+.ql-snow .ql-picker {
+  color: #444;
+}
+.ql-snow .ql-stroke {
+  stroke: #444;
+}
+.ql-snow .ql-fill {
+  fill: #444;
+}
+.ql-snow .ql-editor {
+  min-height: 120px;
+  padding: 8px;
+  border: 1px solid #ccc;
+  border-radius: 0 0 4px 4px;
+  background: #fff;
+}

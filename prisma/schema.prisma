@@ -1,0 +1,272 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id       String   @id @default(cuid())
+  email    String   @unique
+  password String
+  name     String
+  isActive Boolean  @default(true)
+  avatar   String?
+  phone    String?
+  joinDate DateTime @default(now())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  createdJobs     Job[]         @relation("JobCreator")
+  assignedJobs    Job[]         @relation("JobAssignee")
+  applications    Application[]
+  emailLogs       EmailLog[]
+  roleId          String?
+  role            Role?         @relation(fields: [roleId], references: [id])
+  createdRoles    Role[]        @relation("RoleCreator")
+
+  @@map("users")
+}
+
+model Role {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  description String?
+  isSystem    Boolean  @default(false) // System roles (ADMIN, HR, MANAGER) cannot be deleted
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  users       User[]
+  permissions RolePermission[]
+  creatorId   String?
+  creator     User?           @relation("RoleCreator", fields: [creatorId], references: [id])
+
+  @@map("roles")
+}
+
+model Permission {
+  id          String   @id @default(cuid())
+  module      String   // e.g., "jobs", "applications", "users", "roles", "dashboard", "settings"
+  action      String   // e.g., "create", "read", "update", "delete", "archive", "export"
+  name        String   // Human readable name
+  description String?  // Description of what this permission allows
+  createdAt   DateTime @default(now())
+
+  // Relations
+  rolePermissions RolePermission[]
+
+  @@unique([module, action])
+  @@map("permissions")
+}
+
+model RolePermission {
+  id           String     @id @default(cuid())
+  roleId       String
+  permissionId String
+  granted      Boolean    @default(true)
+  createdAt    DateTime   @default(now())
+
+  // Relations
+  role       Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permission Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@unique([roleId, permissionId])
+  @@map("role_permissions")
+}
+
+model Job {
+  id           String    @id @default(cuid())
+  title        String
+  description  String
+  position     String?
+  department   String?
+  location     String?
+  salary       String?
+  requirements String?
+  experienceLevel String?
+  status       JobStatus @default(ACTIVE)
+  isExternal   Boolean   @default(false)
+  embedCode    String?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  // Relations
+  creatorId    String
+  creator      User          @relation("JobCreator", fields: [creatorId], references: [id])
+  assigneeId   String?
+  assignee     User?         @relation("JobAssignee", fields: [assigneeId], references: [id])
+  formId       String?
+  form         Form?         @relation(fields: [formId], references: [id])
+  applications Application[]
+
+  @@map("jobs")
+}
+
+model Application {
+  id             String            @id @default(cuid())
+  status         ApplicationStatus @default(PENDING)
+  candidateName  String?
+  candidateEmail String?
+  candidatePhone String?
+  resume         String?
+  coverLetter    String?
+  remarks        String?
+  resumePath     String?
+  formData       String // JSON string of form responses
+  sourceDomain   String? // Domain where the application was submitted from
+  sourceUrl      String? // Full URL where the application was submitted from
+  userAgent      String? // User agent string for analytics
+  // Geolocation data from IP
+  candidateCity      String? // City detected from IP
+  candidateState     String? // State/Region detected from IP
+  candidateCountry   String? // Country detected from IP
+  candidateLatitude  Float?  // Latitude coordinate
+  candidateLongitude Float?  // Longitude coordinate
+  candidateIP        String? // IP address used for geolocation
+  isArchived     Boolean           @default(false) // Archive status for hiding applications
+  archivedAt     DateTime? // Timestamp when application was archived
+  archivedBy     String? // User who archived the application
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+
+  // Relations
+  jobId       String
+  job         Job        @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  applicantId String?
+  applicant   User?      @relation(fields: [applicantId], references: [id])
+  emailLogs   EmailLog[]
+
+  @@map("applications")
+}
+
+model Form {
+  id          String    @id @default(cuid())
+  name        String
+  description String?
+  isDefault   Boolean   @default(false)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  // Relations
+  jobs   Job[]
+  fields FormField[]
+
+  @@map("forms")
+}
+
+model FormField {
+  id          String    @id @default(cuid())
+  fieldName   String
+  fieldType   FieldType
+  label       String
+  placeholder String?
+  options     String? // JSON string for select/radio options
+  cssClass    String? // Custom CSS class
+  fieldId     String? // Custom field ID
+  fieldWidth  String?   @default("100%") // Field width for responsive layout
+  isRequired  Boolean   @default(false)
+  order       Int       @default(0)
+  createdAt   DateTime  @default(now())
+
+  // Relations
+  formId String
+  form   Form   @relation(fields: [formId], references: [id], onDelete: Cascade)
+
+  @@map("form_fields")
+}
+
+model EmailTemplate {
+  id        String        @id @default(cuid())
+  name      String        @unique
+  type      TemplateType
+  subject   String
+  body      String
+  variables String // JSON string of available variables
+  isActive  Boolean       @default(true)
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+
+  // Relations
+  emailLogs EmailLog[]
+
+  @@map("email_templates")
+}
+
+model EmailLog {
+  id        String   @id @default(cuid())
+  to        String
+  subject   String
+  body      String
+  status    String   @default("sent")
+  sentAt    DateTime @default(now())
+
+  // Relations
+  templateId    String?
+  template      EmailTemplate? @relation(fields: [templateId], references: [id])
+  applicationId String?
+  application   Application?   @relation(fields: [applicationId], references: [id])
+  userId        String?
+  user          User?          @relation(fields: [userId], references: [id])
+
+  @@map("email_logs")
+}
+
+model Settings {
+  id        String   @id @default(cuid())
+  key       String   @unique
+  value     String
+  type      String   @default("text") // text, number, boolean, json
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("settings")
+}
+
+// Enums
+enum JobStatus {
+  ACTIVE
+  PAUSED
+  CLOSED
+  DRAFT
+}
+
+enum ApplicationStatus {
+  PENDING
+  UNDER_REVIEW
+  SHORTLISTED
+  SELECTED
+  REJECTED
+}
+
+enum FieldType {
+  TEXT
+  EMAIL
+  PHONE
+  TEXTAREA
+  SELECT
+  RADIO
+  CHECKBOX
+  TAGS
+  SKILLS
+  FILE
+  DATE
+  NUMBER
+  URL
+  PASSWORD
+}
+
+enum TemplateType {
+  APPLICATION_STATUS
+  APPLICATION_RECEIVED
+  ADMIN_NOTIFICATION
+  INTERVIEW_SCHEDULED
+  WELCOME
+}
