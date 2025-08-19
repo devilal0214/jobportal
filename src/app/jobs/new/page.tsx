@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Save, ArrowLeft, LogOut, Briefcase, FileText, Settings, ChevronDown, Plus, FormInput } from 'lucide-react';
-import HTMLEditor from '@/components/HTMLEditor';
+import TiptapEditor from '@/components/TiptapEditor';
 
 export default function NewJobPage() {
 
@@ -37,10 +37,12 @@ interface Form {
   })
   const [availableForms, setAvailableForms] = useState([])
 
-  const jobPositions = [
-    'Intern',
-    'Mid-Level',
-    'Senior'
+  const entryLevels = [
+    'Junior Level',
+    'Mid Level',
+    'Managerial Level',
+    'Senior / Strategic Level',
+    'Leadership / C-Suite'
   ]
   const [error, setError] = useState('')
   const router = useRouter()
@@ -314,7 +316,7 @@ interface Form {
 
             <div>
               <label htmlFor="position" className="block text-sm font-medium text-gray-700 mb-2">
-                Job Position *
+                Entry Level *
               </label>
               <select
                 id="position"
@@ -324,9 +326,9 @@ interface Form {
                 onChange={handleChange}
                 className="w-full border border-gray-300 rounded-md px-3 py-2 text-gray-900 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
               >
-                <option value="">Select a position level</option>
-                {jobPositions.map((position) => (
-                  <option key={position} value={position}>{position}</option>
+                <option value="">Select an entry level</option>
+                {entryLevels.map((level) => (
+                  <option key={level} value={level}>{level}</option>
                 ))}
               </select>
             </div>
@@ -347,16 +349,12 @@ interface Form {
               />
             </div>
 
-        
-
-            
-
             <div>
             <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-2">
                 Job Role *
             </label>
             <div className="mt-1">
-              <HTMLEditor
+              <TiptapEditor
                 value={formData.description || ''}
                 onChange={(value: string) => setFormData(prev => ({ ...prev, description: value || '' }))}
                 placeholder="Enter detailed job description with requirements, responsibilities, and benefits..."

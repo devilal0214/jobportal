@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { Save, ArrowLeft, LogOut, Briefcase, FileText, Settings, ChevronDown, Plus, FormInput } from 'lucide-react'
-import HTMLEditor from '@/components/HTMLEditor'
+import TiptapEditor from '@/components/TiptapEditor'
 
 interface User {
   id: string;
@@ -32,28 +32,12 @@ interface Job {
   formId: string
 }
 
-const JOB_POSITIONS = [
-  'Graphic Designer',
-  'Video Editor', 
-  'Google Ads Specialist',
-  'Content Writer',
-  'Social Media Manager',
-  'Web Developer',
-  'Mobile App Developer',
-  'UI/UX Designer',
-  'Digital Marketing Specialist',
-  'SEO Specialist',
-  'Data Analyst',
-  'Project Manager',
-  'Software Engineer',
-  'DevOps Engineer',
-  'Quality Assurance Tester',
-  'Business Analyst',
-  'Sales Manager',
-  'Customer Success Manager',
-  'HR Specialist',
-  'Accountant',
-  'Other'
+const ENTRY_LEVELS = [
+  'Junior Level',
+  'Mid Level',
+  'Managerial Level',
+  'Senior / Strategic Level',
+  'Leadership / C-Suite'
 ]
 
 export default function EditJobPage({ params }: { params: Promise<{ id: string }> }) {
@@ -135,12 +119,12 @@ export default function EditJobPage({ params }: { params: Promise<{ id: string }
             formId: jobData.formId || ''
           })
           
-          // Check if it's a custom title
-          if (!JOB_POSITIONS.includes(jobData.title)) {
-            setCustomTitle(jobData.title)
-            setShowCustomTitle(true)
-            setFormData(prev => ({ ...prev, title: 'Other' }))
-          }
+          // Check if it's a custom title (this logic can be removed if no longer needed)
+          // if (!ENTRY_LEVELS.includes(jobData.title)) {
+          //   setCustomTitle(jobData.title)
+          //   setShowCustomTitle(true)
+          //   setFormData(prev => ({ ...prev, title: 'Other' }))
+          // }
           return true
         } else {
           setError('Job not found')
@@ -406,7 +390,7 @@ export default function EditJobPage({ params }: { params: Promise<{ id: string }
 
             <div>
               <label htmlFor="position" className="block text-sm font-medium text-gray-700 mb-2">
-                Job Position *
+                Entry Level *
               </label>
               <select
                 id="position"
@@ -416,10 +400,10 @@ export default function EditJobPage({ params }: { params: Promise<{ id: string }
                 onChange={(e) => setFormData(prev => ({ ...prev, position: e.target.value }))}
                 className="w-full border border-gray-300 rounded-md px-3 py-2 text-gray-900 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
               >
-                <option value="">Select a position level</option>
-                <option value="Intern">Intern</option>
-                <option value="Mid-Level">Mid-Level</option>
-                <option value="Senior">Senior</option>
+                <option value="">Select an entry level</option>
+                {ENTRY_LEVELS.map((level) => (
+                  <option key={level} value={level}>{level}</option>
+                ))}
               </select>
             </div>
 
@@ -444,7 +428,7 @@ export default function EditJobPage({ params }: { params: Promise<{ id: string }
                 Job Role *
               </label>
               <div className="mt-1">
-                <HTMLEditor
+                <TiptapEditor
                   value={formData.description || ''}
                   onChange={(value: string) => setFormData(prev => ({ ...prev, description: value || '' }))}
                   placeholder="Enter detailed job description with requirements, responsibilities, and benefits..."
