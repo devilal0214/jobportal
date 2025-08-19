@@ -17,7 +17,8 @@ import {
   UserPlus,
   ChevronDown,
   Plus,
-  FormInput
+  FormInput,
+  Send
 } from 'lucide-react'
 import { User } from '@/types/user'
 
@@ -216,6 +217,34 @@ export default function AdminPage() {
       icon: Mail,
       href: '/admin/email-templates',
       color: 'bg-green-500'
+    },
+    {
+      title: 'Email Testing',
+      description: 'Test email delivery for different statuses and roles',
+      icon: Bell,
+      href: '/admin/email-test',
+      color: 'bg-cyan-500'
+    },
+    {
+      title: 'SMTP Test',
+      description: 'Verify SMTP configuration with a simple test email',
+      icon: Send,
+      href: '/admin/smtp-test',
+      color: 'bg-indigo-500'
+    },
+    {
+      title: 'Send Email',
+      description: 'Send emails to multiple recipients with templates',
+      icon: Mail,
+      href: '/admin/send-email',
+      color: 'bg-pink-500'
+    },
+    {
+      title: 'System Activity',
+      description: 'View recent system activities and logs',
+      icon: Bell,
+      href: '/admin/activity',
+      color: 'bg-teal-500'
     },
     {
       title: 'Form Builder',
@@ -458,8 +487,14 @@ export default function AdminPage() {
 
         {/* Recent Activity */}
         <div className="mt-8 bg-white rounded-lg shadow">
-          <div className="px-6 py-4 border-b border-gray-200">
+          <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
             <h2 className="text-lg font-medium text-gray-900">Recent System Activity</h2>
+            <Link 
+              href="/admin/activity"
+              className="text-sm text-indigo-600 hover:text-indigo-500 font-medium"
+            >
+              View All →
+            </Link>
           </div>
           <div className="divide-y divide-gray-200">
             {activitiesLoading ? (

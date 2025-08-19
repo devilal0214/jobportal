@@ -1,5 +1,22 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { EmailService } from '@/lib/email'
+
+const emailService = new EmailService()
+
+interface ExtendedApplication {
+  candidateName?: string
+  candidateEmail?: string
+  candidatePhone?: string
+  resume?: string
+  resumePath?: string
+  candidateCity?: string
+  candidateState?: string
+  candidateCountry?: string
+  candidateLatitude?: number
+  candidateLongitude?: number
+  candidateIP?: string
+}
 
 export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -30,21 +47,6 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     let candidateEmail = 'unknown@email.com'
     let candidatePhone = ''
 
-    // Type assertion to access fields that we know exist in the database
-    interface ExtendedApplication {
-      candidateName?: string
-      candidateEmail?: string
-      candidatePhone?: string
-      resume?: string
-      resumePath?: string
-      candidateCity?: string
-      candidateState?: string
-      candidateCountry?: string
-      candidateLatitude?: number
-      candidateLongitude?: number
-      candidateIP?: string
-    }
-    
     const extendedApp = application as ExtendedApplication
 
     // Try to extract from stored fields first
@@ -169,16 +171,189 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
       return NextResponse.json({ error: `Invalid status. Must be one of: ${validStatuses.join(', ')}` }, { status: 400 })
     }
 
+    // Get application with job details for email
+    const application = await prisma.application.findUnique({
+      where: { id },
+      include: {
+        job: true
+      }
+    })
+
+    if (!application) {
+      return NextResponse.json({ error: 'Application not found' }, { status: 404 })
+    }
+
     // Update the application status
     const updatedApplication = await prisma.application.update({
       where: { id },
       data: { status }
     })
 
+    // Extract candidate information for email
+    let formData: Record<string, unknown> = {}
+    try {
+      formData = JSON.parse(application.formData)
+    } catch (error) {
+      console.error('Error parsing form data:', error)
+    }
+
+    // Get candidate name and email
+    const extendedApp = application as ExtendedApplication
+    const candidateName = extendedApp.candidateName || 'Candidate'
+    let candidateEmail = extendedApp.candidateEmail || ''
+    
+    // Extract email from form data if not in application
+    if (!candidateEmail) {
+      for (const [, value] of Object.entries(formData)) {
+        if (typeof value === 'string' && value.includes('@')) {
+          candidateEmail = value
+          break
+        }
+      }
+    }
+
+    // Create email content based on status
+    let emailSubject = ''
+    let emailBody = ''
+    
+    switch (status) {
+      case 'SHORTLISTED':
+        emailSubject = `Good news! You've been shortlisted for ${application.job.title}`
+        emailBody = `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+            <h2 style="color: #10b981;">Great News!</h2>
+            <p>Dear ${candidateName},</p>
+            <p>We are pleased to inform you that your application for the position of <strong>${application.job.title}</strong> has been shortlisted for further consideration.</p>
+            
+            <div style="background-color: #f3f4f6; padding: 16px; border-radius: 8px; margin: 16px 0;">
+              <h3 style="margin-top: 0; color: #1f2937;">Application Details:</h3>
+              <ul style="color: #374151;">
+                <li><strong>Position:</strong> ${application.job.title}</li>
+                <li><strong>Application ID:</strong> ${application.id}</li>
+                <li><strong>Status:</strong> Shortlisted</li>
+                <li><strong>Applied Date:</strong> ${application.createdAt.toLocaleDateString()}</li>
+              </ul>
+            </div>
+            
+            <p>Our team will review your application in detail and we will contact you soon with the next steps.</p>
+            <p>Thank you for your continued interest in our company.</p>
+            
+            <p style="margin-top: 24px;">Best regards,<br><strong>HR Team</strong></p>
+          </div>
+        `
+        break
+      case 'SELECTED':
+        emailSubject = `Congratulations! Your application for ${application.job.title} has been accepted`
+        emailBody = `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+            <h2 style="color: #10b981;">Congratulations! 🎉</h2>
+            <p>Dear ${candidateName},</p>
+            <p>We are delighted to inform you that your application for the position of <strong>${application.job.title}</strong> has been accepted.</p>
+            
+            <div style="background-color: #ecfdf5; padding: 16px; border-radius: 8px; margin: 16px 0; border-left: 4px solid #10b981;">
+              <h3 style="margin-top: 0; color: #1f2937;">Application Details:</h3>
+              <ul style="color: #374151;">
+                <li><strong>Position:</strong> ${application.job.title}</li>
+                <li><strong>Application ID:</strong> ${application.id}</li>
+                <li><strong>Status:</strong> Selected</li>
+                <li><strong>Applied Date:</strong> ${application.createdAt.toLocaleDateString()}</li>
+              </ul>
+            </div>
+            
+            <p>We will contact you soon with the next steps including onboarding details.</p>
+            <p>Welcome to the team!</p>
+            
+            <p style="margin-top: 24px;">Best regards,<br><strong>HR Team</strong></p>
+          </div>
+        `
+        break
+      case 'REJECTED':
+        emailSubject = `Update on your application for ${application.job.title}`
+        emailBody = `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+            <h2 style="color: #1f2937;">Application Update</h2>
+            <p>Dear ${candidateName},</p>
+            <p>Thank you for your interest in the position of <strong>${application.job.title}</strong>.</p>
+            <p>After careful consideration, we have decided to move forward with other candidates whose qualifications more closely match our current requirements.</p>
+            
+            <div style="background-color: #f3f4f6; padding: 16px; border-radius: 8px; margin: 16px 0;">
+              <h3 style="margin-top: 0; color: #1f2937;">Application Details:</h3>
+              <ul style="color: #374151;">
+                <li><strong>Position:</strong> ${application.job.title}</li>
+                <li><strong>Application ID:</strong> ${application.id}</li>
+                <li><strong>Applied Date:</strong> ${application.createdAt.toLocaleDateString()}</li>
+              </ul>
+            </div>
+            
+            <p>We encourage you to apply for future opportunities that match your skills and experience.</p>
+            <p>Thank you for considering us as a potential employer.</p>
+            
+            <p style="margin-top: 24px;">Best regards,<br><strong>HR Team</strong></p>
+          </div>
+        `
+        break
+      case 'UNDER_REVIEW':
+        emailSubject = `Your application for ${application.job.title} is under review`
+        emailBody = `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+            <h2 style="color: #3b82f6;">Application Under Review</h2>
+            <p>Dear ${candidateName},</p>
+            <p>We have received your application for the position of <strong>${application.job.title}</strong> and it is currently under review.</p>
+            
+            <div style="background-color: #eff6ff; padding: 16px; border-radius: 8px; margin: 16px 0; border-left: 4px solid #3b82f6;">
+              <h3 style="margin-top: 0; color: #1f2937;">Application Details:</h3>
+              <ul style="color: #374151;">
+                <li><strong>Position:</strong> ${application.job.title}</li>
+                <li><strong>Application ID:</strong> ${application.id}</li>
+                <li><strong>Status:</strong> Under Review</li>
+                <li><strong>Applied Date:</strong> ${application.createdAt.toLocaleDateString()}</li>
+              </ul>
+            </div>
+            
+            <p>We will notify you of any updates regarding your application status.</p>
+            <p>Thank you for your patience.</p>
+            
+            <p style="margin-top: 24px;">Best regards,<br><strong>HR Team</strong></p>
+          </div>
+        `
+        break
+    }
+
+    // Send email notification if we have content and email address
+    let emailSent = false
+    if (candidateEmail && emailSubject && emailBody) {
+      try {
+        console.log(`Sending status update email to: ${candidateEmail} for status: ${status}`)
+        emailSent = await emailService.sendEmail({
+          to: candidateEmail,
+          subject: emailSubject,
+          html: emailBody,
+          applicationId: application.id,
+          userId: undefined
+        })
+        console.log(`Email sending result: ${emailSent ? 'Success' : 'Failed'}`)
+      } catch (emailError) {
+        console.error('Email sending failed:', emailError)
+        if (emailError instanceof Error) {
+          console.error('Error details:', {
+            message: emailError.message,
+            stack: emailError.stack
+          })
+        }
+        // Don't fail the status update if email fails
+        emailSent = false
+      }
+    } else {
+      console.log('No email sent - missing email address or content for status:', status)
+      console.log('Debug info:', { candidateEmail, hasSubject: !!emailSubject, hasBody: !!emailBody })
+    }
+
     return NextResponse.json({ 
       id: updatedApplication.id,
       status: updatedApplication.status,
-      message: 'Status updated successfully'
+      message: 'Status updated successfully',
+      emailSent: emailSent,
+      candidateEmail: candidateEmail ? candidateEmail : 'Not found'
     })
   } catch (error) {
     console.error('Application status update error:', error)

@@ -11,24 +11,84 @@ interface EmailData {
 }
 
 export class EmailService {
-  private transporter: nodemailer.Transporter
+  private transporter: nodemailer.Transporter | null = null
 
-  constructor() {
+  private async getTransporter(): Promise<nodemailer.Transporter> {
+    if (this.transporter) {
+      return this.transporter
+    }
+
+    // Get SMTP settings from database first, then fallback to environment
+    const settings = await prisma.settings.findMany({
+      where: {
+        key: {
+          in: [
+            // Snake case (old format)
+            'smtp_host', 'smtp_port', 'smtp_user', 'smtp_pass', 'from_email', 'smtp_secure', 'from_name',
+            // Camel case (current format)
+            'emailHost', 'emailPort', 'emailUser', 'emailPassword', 'emailFrom', 'emailFromName'
+          ]
+        }
+      }
+    })
+
+    const settingsMap = settings.reduce((acc, setting) => {
+      acc[setting.key] = setting.value
+      return acc
+    }, {} as Record<string, string>)
+
+    // Priority: camelCase (current) > snake_case (legacy) > environment
+    const host = settingsMap.emailHost || settingsMap.smtp_host || process.env.SMTP_HOST
+    const port = settingsMap.emailPort || settingsMap.smtp_port || process.env.SMTP_PORT
+    const user = settingsMap.emailUser || settingsMap.smtp_user || process.env.SMTP_USER
+    const pass = settingsMap.emailPassword || settingsMap.smtp_pass || process.env.SMTP_PASS
+    const secure = (settingsMap.emailSecure || settingsMap.smtp_secure || process.env.SMTP_SECURE) === 'true'
+
+    console.log('EmailService using settings:', {
+      host,
+      port,
+      user: user ? 'SET' : 'NOT SET',
+      pass: pass ? 'SET' : 'NOT SET',
+      secure,
+      source: settingsMap.emailHost ? 'database' : 'environment'
+    })
+
     this.transporter = nodemailer.createTransport({
-      host: process.env.SMTP_HOST,
-      port: parseInt(process.env.SMTP_PORT || '587'),
-      secure: false,
+      host,
+      port: parseInt(port || '587'),
+      secure,
       auth: {
-        user: process.env.SMTP_USER,
-        pass: process.env.SMTP_PASS,
+        user,
+        pass,
       },
     })
+
+    return this.transporter
   }
 
   async sendEmail(data: EmailData): Promise<boolean> {
     try {
-      const info = await this.transporter.sendMail({
-        from: process.env.FROM_EMAIL,
+      const transporter = await this.getTransporter()
+      
+      // Get from email and from name from database settings or fallback to environment
+      const settings = await prisma.settings.findMany({
+        where: {
+          key: { in: ['emailFrom', 'from_email', 'emailFromName', 'from_name'] }
+        }
+      })
+      const settingsMap = settings.reduce((acc, setting) => {
+        acc[setting.key] = setting.value
+        return acc
+      }, {} as Record<string, string>)
+      
+      const fromEmail = settingsMap.emailFrom || settingsMap.from_email || process.env.FROM_EMAIL
+      const fromName = settingsMap.emailFromName || settingsMap.from_name || process.env.FROM_NAME
+      
+      // Format the from field with name if available
+      const from = fromName ? `"${fromName}" <${fromEmail}>` : fromEmail
+
+      const info = await transporter.sendMail({
+        from,
         to: data.to,
         subject: data.subject,
         html: data.html,

@@ -1,11 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { EmailService } from '@/lib/email'
 
 interface ExtendedApplication {
   candidateName?: string
   candidateEmail?: string
   candidatePhone?: string
 }
+
+const emailService = new EmailService()
 
 export async function PUT(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -108,6 +111,25 @@ Best regards,
 HR Team
         `
         break
+      case 'SHORTLISTED':
+        emailSubject = `Good news! You've been shortlisted for ${application.job.title}`
+        emailBody = `
+Dear ${candidateName},
+
+We are pleased to inform you that your application for the position of ${application.job.title} has been shortlisted for further consideration.
+
+Application Details:
+- Position: ${application.job.title}
+- Application ID: ${application.id}
+- Status: Shortlisted
+- Applied Date: ${application.createdAt.toLocaleDateString()}
+
+Our team will review your application in detail and we will contact you soon with the next steps.
+
+Best regards,
+HR Team
+        `
+        break
       case 'UNDER_REVIEW':
         emailSubject = `Your application for ${application.job.title} is under review`
         emailBody = `
@@ -148,30 +170,53 @@ HR Team
         break
     }
 
-    // Log the email (in a real system, you would send the actual email)
+    // Send the email using EmailService
     if (emailToSend && emailSubject && emailBody) {
       try {
-        await prisma.emailLog.create({
-          data: {
-            to: emailToSend,
-            subject: emailSubject,
-            body: emailBody,
-            status: 'sent'
-          }
+        console.log(`Sending status update email to: ${emailToSend} for status: ${status}`)
+        const emailSent = await emailService.sendEmail({
+          to: emailToSend,
+          subject: emailSubject,
+          html: emailBody.replace(/\n/g, '<br>'),
+          applicationId: application.id,
+          userId: undefined // Could be added if we track who made the status change
+        })
+
+        console.log(`Email sending result: ${emailSent ? 'Success' : 'Failed'}`)
+        
+        return NextResponse.json({
+          success: true,
+          application: {
+            id: updatedApplication.id,
+            status: updatedApplication.status
+          },
+          emailSent: emailSent
         })
       } catch (emailError) {
-        console.error('Error logging email:', emailError)
+        console.error('Error sending email:', emailError)
+        // Still return success for status update, but note email failed
+        return NextResponse.json({
+          success: true,
+          application: {
+            id: updatedApplication.id,
+            status: updatedApplication.status
+          },
+          emailSent: false,
+          emailError: 'Failed to send notification email'
+        })
       }
+    } else {
+      console.log('No email sent - missing email address or content')
+      return NextResponse.json({
+        success: true,
+        application: {
+          id: updatedApplication.id,
+          status: updatedApplication.status
+        },
+        emailSent: false,
+        reason: 'No email address found or content missing'
+      })
     }
-
-    return NextResponse.json({
-      success: true,
-      application: {
-        id: updatedApplication.id,
-        status: updatedApplication.status
-      },
-      emailSent: !!emailToSend
-    })
 
   } catch (error) {
     console.error('Status update API error:', error)

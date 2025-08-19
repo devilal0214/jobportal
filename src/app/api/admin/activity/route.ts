@@ -27,19 +27,28 @@ export async function GET(request: NextRequest) {
     }
 
     const user = await prisma.user.findUnique({
-      where: { id: decoded.userId }
+      where: { id: decoded.userId },
+      include: {
+        role: true
+      }
     })
 
-    if (!user || !['ADMIN', 'HR'].includes(user.role)) {
+    if (!user || !['Administrator', 'Human Resources'].includes(user.role?.name || '')) {
       return NextResponse.json({ error: 'Insufficient permissions' }, { status: 403 })
     }
+
+    // Get pagination parameters
+    const url = new URL(request.url)
+    const page = parseInt(url.searchParams.get('page') || '1')
+    const limit = parseInt(url.searchParams.get('limit') || '10')
+    const offset = (page - 1) * limit
 
     // Fetch recent activities from various sources
     const activities: Activity[] = []
 
-    // Recent applications (last 10)
+    // Recent applications
     const recentApplications = await prisma.application.findMany({
-      take: 5,
+      take: Math.min(limit * 2, 20), // Get more to ensure we have enough after filtering
       orderBy: { createdAt: 'desc' },
       include: {
         job: { select: { title: true } }
@@ -100,13 +109,13 @@ export async function GET(request: NextRequest) {
       }
     })
 
-    recentUsers.forEach(user => {
+    recentUsers.forEach(userItem => {
       activities.push({
-        id: `user-${user.id}`,
+        id: `user-${userItem.id}`,
         type: 'user',
         title: 'New User Registered',
-        description: `${user.name} joined as ${user.role}`,
-        timestamp: user.createdAt,
+        description: `${userItem.name} joined as Unknown Role`,
+        timestamp: userItem.createdAt,
         icon: 'UserPlus',
         color: 'purple'
       })
@@ -136,9 +145,22 @@ export async function GET(request: NextRequest) {
     // Sort all activities by timestamp (newest first)
     activities.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
 
-    // Return top 10 activities
+    // Apply pagination
+    const totalActivities = activities.length
+    const paginatedActivities = activities.slice(offset, offset + limit)
+    const totalPages = Math.ceil(totalActivities / limit)
+
+    // Return paginated activities
     return NextResponse.json({
-      activities: activities.slice(0, 10)
+      activities: paginatedActivities,
+      pagination: {
+        currentPage: page,
+        totalPages,
+        totalItems: totalActivities,
+        itemsPerPage: limit,
+        hasNext: page < totalPages,
+        hasPrev: page > 1
+      }
     })
 
   } catch (error) {
