@@ -2,20 +2,11 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { Save, ArrowLeft, LogOut, Briefcase, FileText, Settings, ChevronDown, Plus, FormInput } from 'lucide-react';
+import { Save, ArrowLeft } from 'lucide-react';
 import TiptapEditor from '@/components/TiptapEditor';
+import Header from '@/components/Header';
 
 export default function NewJobPage() {
-
-interface User {
-  id: string;
-  name: string;
-  email: string;
-  role: {
-    id: string;
-    name: string;
-  } | null;
-}
 
 interface Form {
   id: string;
@@ -23,10 +14,8 @@ interface Form {
   isDefault: boolean;
 }
 
-  const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [showJobsDropdown, setShowJobsDropdown] = useState(false);
   const [formData, setFormData] = useState({
     title: '',
     position: '',
@@ -48,45 +37,20 @@ interface Form {
   const router = useRouter()
 
   useEffect(() => {
-    const checkAuth = async () => {
-      const token = localStorage.getItem('token')
-      if (!token) {
-        router.push('/login')
-        return
-      }
-      try {
-        const response = await fetch('/api/auth/me', {
-          headers: {
-            'Authorization': `Bearer ${token}`
-          }
-        })
-        if (response.ok) {
-          const userData = await response.json()
-          if (!['Administrator', 'Human Resources'].includes((userData as User).role?.name || '')) {
-            router.push('/jobs')
-            return
-          }
-          setUser(userData)
-        } else {
-          localStorage.removeItem('token')
-          router.push('/login')
-        }
-      } catch (error) {
-        console.error('Auth check failed:', error)
-        router.push('/login')
-      } finally {
-        setLoading(false)
-      }
-    }
-
     const fetchForms = async () => {
       try {
         const token = localStorage.getItem('token')
+        if (!token) {
+          router.push('/login')
+          return
+        }
+        
         const response = await fetch('/api/admin/forms', {
           headers: {
             'Authorization': `Bearer ${token}`
           }
         })
+        
         if (response.ok) {
           const forms = await response.json()
           setAvailableForms(forms)
@@ -98,45 +62,13 @@ interface Form {
         }
       } catch (error) {
         console.error('Failed to fetch forms:', error)
+      } finally {
+        setLoading(false)
       }
     }
 
-    checkAuth()
     fetchForms()
   }, [router])
-
-  // Close dropdown when clicking outside
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (showJobsDropdown) {
-        const target = event.target as Element
-        if (!target.closest('.relative')) {
-          setShowJobsDropdown(false)
-        }
-      }
-    }
-
-    document.addEventListener('mousedown', handleClickOutside)
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside)
-    }
-  }, [showJobsDropdown])
-
-  const handleLogout = async () => {
-    try {
-      await fetch('/api/auth/logout', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        }
-      })
-    } catch (error) {
-      console.error('Logout error:', error)
-    } finally {
-      localStorage.removeItem('token')
-      router.push('/login')
-    }
-  }
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     setFormData(prev => ({
@@ -188,103 +120,30 @@ interface Form {
     )
   }
 
-  if (!user) {
-    return null
-  }
-
   return (
     <>
+      <Header 
+        title="Create New Job - Job Portal"
+        description="Create a new job posting with detailed requirements and application form."
+        keywords="create job, job posting, employment, hiring"
+      />
+      
       <div className="min-h-screen bg-gray-50">
-        {/* Navigation */}
-        <nav className="bg-white shadow-sm border-b">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <div className="flex items-center">
-              <Link href="/" className="text-xl font-semibold text-gray-900">
-                Job Portal
-              </Link>
-            </div>
-            <div className="flex items-center space-x-8">
-              <div className="relative">
-                <button
-                  onClick={() => setShowJobsDropdown(!showJobsDropdown)}
-                  className="text-gray-700 hover:text-gray-900 flex items-center space-x-1 focus:outline-none"
-                >
-                  <Briefcase className="h-4 w-4" />
-                  <span>Jobs</span>
-                  <ChevronDown className="h-4 w-4" />
-                </button>
-                {showJobsDropdown && (
-                  <div className="absolute top-full left-0 mt-1 w-48 bg-white border border-gray-200 rounded-md shadow-lg z-50">
-                    <div className="py-1">
-                      <Link
-                        href="/jobs"
-                        className="px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center space-x-2"
-                        onClick={() => setShowJobsDropdown(false)}
-                      >
-                        <Briefcase className="h-4 w-4" />
-                        <span>View All Jobs</span>
-                      </Link>
-                      <Link
-                        href="/jobs/new"
-                        className="px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center space-x-2"
-                        onClick={() => setShowJobsDropdown(false)}
-                      >
-                        <Plus className="h-4 w-4" />
-                        <span>Create Job</span>
-                      </Link>
-                      <Link
-                        href="/admin/form-builder"
-                        className="px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center space-x-2"
-                        onClick={() => setShowJobsDropdown(false)}
-                      >
-                        <FormInput className="h-4 w-4" />
-                        <span>Create Form</span>
-                      </Link>
-                    </div>
-                  </div>
-                )}
-              </div>
-              <Link href="/applications" className="text-gray-700 hover:text-gray-900 flex items-center space-x-1">
-                <FileText className="h-4 w-4" />
-                <span>Applications</span>
-              </Link>
-              <Link href="/admin" className="text-gray-700 hover:text-gray-900 flex items-center space-x-1">
-                <Settings className="h-4 w-4" />
-                <span>Admin</span>
-              </Link>
-              <div className="flex items-center space-x-3">
-                <span className="text-sm text-gray-700">
-                  {user.name} ({user.role?.name || 'Guest'})
-                </span>
-                <button
-                  onClick={handleLogout}
-                  className="text-gray-700 hover:text-gray-900 flex items-center space-x-1"
-                >
-                  <LogOut className="h-4 w-4" />
-                  <span>Logout</span>
-                </button>
-              </div>
-            </div>
+        {/* Page Content */}
+        <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <div className="mb-8">
+            <Link
+              href="/jobs"
+              className="inline-flex items-center text-indigo-600 hover:text-indigo-500 mb-4"
+            >
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              Back to Jobs
+            </Link>
+            <h1 className="text-3xl font-bold text-gray-900">Create New Job</h1>
+            <p className="mt-2 text-gray-600">
+              Fill out the form below to create a new job opening
+            </p>
           </div>
-        </div>
-      </nav>
-
-      {/* Page Content */}
-      <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="mb-8">
-          <Link
-            href="/jobs"
-            className="inline-flex items-center text-indigo-600 hover:text-indigo-500 mb-4"
-          >
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Back to Jobs
-          </Link>
-          <h1 className="text-3xl font-bold text-gray-900">Create New Job</h1>
-          <p className="mt-2 text-gray-600">
-            Fill out the form below to create a new job opening
-          </p>
-        </div>
 
         <form onSubmit={handleSubmit} className="bg-white rounded-lg shadow">
           <div className="px-6 py-4 border-b border-gray-200">
