@@ -2,6 +2,9 @@
 
 import { useState, useRef, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
+import Header from '@/components/Header'
+import { debugToken, validateTokenForAPI } from '@/lib/debug-token'
+import { checkEnvironment } from '@/lib/env-check'
 import { 
   ChevronLeft, 
   Send, 
@@ -53,8 +56,48 @@ export default function EmailSendPage() {
 
   // Fetch candidates on component mount
   useEffect(() => {
+    const fetchCandidates = async () => {
+      setCandidatesLoading(true)
+      try {
+        const token = localStorage.getItem('token')
+        if (!token) {
+          console.log('No token found when fetching candidates')
+          return
+        }
+
+        console.log('Fetching candidates with token:', token ? 'Token present' : 'No token')
+        
+        const response = await fetch('/api/admin/candidates', {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        })
+
+        console.log('Candidates response status:', response.status)
+
+        if (response.ok) {
+          const data = await response.json()
+          setCandidates(data.candidates || [])
+        } else if (response.status === 401) {
+          console.log('Authentication failed when fetching candidates')
+          setMessage({ 
+            type: 'error', 
+            text: 'Authentication failed. Please login again.' 
+          })
+          localStorage.removeItem('token')
+          router.push('/login')
+        } else {
+          console.error('Failed to fetch candidates, status:', response.status)
+        }
+      } catch (error) {
+        console.error('Failed to fetch candidates:', error)
+      } finally {
+        setCandidatesLoading(false)
+      }
+    }
+
     fetchCandidates()
-  }, [])
+  }, [router, setMessage])
 
   // Filter candidates based on email input
   useEffect(() => {
@@ -71,29 +114,6 @@ export default function EmailSendPage() {
       setShowSuggestions(false) // Don't auto-show when empty, will show on focus
     }
   }, [emailInput, candidates])
-
-  const fetchCandidates = async () => {
-    setCandidatesLoading(true)
-    try {
-      const token = localStorage.getItem('token')
-      if (!token) return
-
-      const response = await fetch('/api/admin/candidates', {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      })
-
-      if (response.ok) {
-        const data = await response.json()
-        setCandidates(data.candidates || [])
-      }
-    } catch (error) {
-      console.error('Failed to fetch candidates:', error)
-    } finally {
-      setCandidatesLoading(false)
-    }
-  }
 
   const isValidEmail = (email: string) => {
     return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
@@ -195,13 +215,20 @@ export default function EmailSendPage() {
     setSending(true)
     setMessage(null)
 
+    // Debug token before sending
+    console.log('=== EMAIL SEND DEBUG ===')
+    debugToken()
+    
     try {
       const token = localStorage.getItem('token')
       if (!token) {
+        setMessage({ type: 'error', text: 'Authentication required. Please login again.' })
         router.push('/login')
         return
       }
 
+      console.log('Sending email request with token:', token ? 'Token present' : 'No token')
+      
       const response = await fetch('/api/admin/send-email', {
         method: 'POST',
         headers: {
@@ -215,7 +242,10 @@ export default function EmailSendPage() {
         })
       })
 
+      console.log('Response status:', response.status)
+      
       const data = await response.json()
+      console.log('Response data:', data)
 
       if (response.ok) {
         setMessage({ 
@@ -227,20 +257,66 @@ export default function EmailSendPage() {
         setSubject('')
         setContent('')
       } else {
-        setMessage({ 
-          type: 'error', 
-          text: data.error || 'Failed to send email' 
-        })
+        if (response.status === 401) {
+          setMessage({ 
+            type: 'error', 
+            text: 'Authentication failed. Please login again.' 
+          })
+          localStorage.removeItem('token')
+          router.push('/login')
+        } else {
+          setMessage({ 
+            type: 'error', 
+            text: data.error || `Failed to send email (Status: ${response.status})` 
+          })
+        }
       }
     } catch (error) {
       console.error('Email send error:', error)
       setMessage({ 
         type: 'error', 
-        text: 'Failed to send email. Please try again.' 
+        text: 'Failed to send email. Please check your connection and try again.' 
       })
     } finally {
       setSending(false)
     }
+  }
+
+  const handleDebugToken = async () => {
+    console.log('=== MANUAL TOKEN DEBUG ===')
+    
+    // Debug token from localStorage
+    debugToken()
+    
+    // Check environment configuration
+    console.log('=== ENVIRONMENT CHECK ===')
+    try {
+      const response = await fetch('/api/debug/env')
+      const envData = await response.json()
+      console.log('Environment diagnostics:', envData)
+      
+      if (envData.diagnostics?.isUsingFallback) {
+        console.warn('⚠️ WARNING: Server is using fallback JWT_SECRET!')
+        setMessage({ 
+          type: 'error', 
+          text: '⚠️ WARNING: Server using fallback JWT_SECRET! Check console for details.' 
+        })
+        return
+      }
+    } catch (error) {
+      console.error('Failed to check environment:', error)
+    }
+    
+    // Test API token validation
+    console.log('=== API VALIDATION TEST ===')
+    const isValid = await validateTokenForAPI()
+    
+    setMessage({ 
+      type: isValid ? 'success' : 'error', 
+      text: isValid ? 'Token is valid ✅' : 'Token is invalid or expired ❌' 
+    })
+    
+    console.log('=== DEBUG SESSION COMPLETE ===')
   }
 
   const getEmailTemplates = () => [
@@ -267,7 +343,14 @@ export default function EmailSendPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <>
+      <Header 
+        title="Send Email - Admin Panel"
+        description="Send bulk emails to candidates and users using the system SMTP settings."
+        keywords="admin, email, bulk email, SMTP, notifications"
+      />
+      
+      <div className="min-h-screen bg-gray-50">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
         <div className="mb-8">
@@ -478,7 +561,14 @@ export default function EmailSendPage() {
               </div>
 
               {/* Send Button */}
-              <div className="flex justify-end">
+              <div className="flex justify-end gap-3">
+                <button
+                  onClick={handleDebugToken}
+                  className="inline-flex items-center px-4 py-3 border border-gray-300 text-base font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                >
+                  🔍 Debug Token
+                </button>
+                
                 <button
                   onClick={handleSendEmail}
                   disabled={sending}
@@ -536,6 +626,7 @@ export default function EmailSendPage() {
           </div>
         </div>
       </div>
-    </div>
+      </div>
+    </>
   )
 }

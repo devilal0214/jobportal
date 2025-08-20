@@ -153,12 +153,11 @@ const Header = ({
           {/* Canonical URL */}
           {canonicalUrl && <link rel="canonical" href={canonicalUrl} />}
           
-          {/* Favicons */}
-          <link rel="icon" type="image/x-icon" href="/favicon.ico" />
+          {/* Favicons - App Router handles favicon.ico automatically */}
           <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
           <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
           <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
-          <link rel="manifest" href="/site.webmanifest" />
+          <link rel="manifest" href="/manifest.json" />
           
           {/* Google Analytics - Replace with your GA ID */}
           {process.env.NEXT_PUBLIC_GA_ID && (
@@ -236,12 +235,11 @@ const Header = ({
         {/* Canonical URL */}
         {canonicalUrl && <link rel="canonical" href={canonicalUrl} />}
         
-        {/* Favicons */}
-        <link rel="icon" type="image/x-icon" href="/favicon.ico" />
+        {/* Favicons - App Router handles favicon.ico automatically */}
         <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
         <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
         <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
-        <link rel="manifest" href="/site.webmanifest" />
+        <link rel="manifest" href="/manifest.json" />
         
         {/* Google Analytics */}
         {process.env.NEXT_PUBLIC_GA_ID && (
