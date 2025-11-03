@@ -342,14 +342,27 @@ export default function ApplicationDetailPage({ params }: { params: Promise<{ id
     application.formData.forEach(field => {
       // Include fields that are SKILLS type OR contain skill rating data
       if (field.fieldType === 'SKILLS' || 
+          // Check for skills data from embed forms
+          (field.label.toLowerCase().includes('skill') && 
+           typeof field.value === 'string' && 
+           (field.value.startsWith('[') || 
+            field.value.startsWith('{'))) ||
+          // Check for skills with rating data
           (typeof field.value === 'string' && 
            field.value.startsWith('[') && 
            field.value.includes('skill') && 
            field.value.includes('rating')) ||
-          (field.label.toLowerCase().includes('skill') && 
-           typeof field.value === 'string' && 
-           field.value.startsWith('['))) {
-        skillsFields.push(field)
+          // Check if there's a corresponding fieldType field indicating this is SKILLS
+          application.formData.some(f => 
+            f.label === `${field.label}_fieldType` && 
+            f.value === 'SKILLS')) {
+        
+        // Create a proper FormFieldData object with SKILLS fieldType
+        const skillField: FormFieldData = {
+          ...field,
+          fieldType: 'SKILLS'
+        }
+        skillsFields.push(skillField)
       }
     })
 
@@ -531,7 +544,20 @@ export default function ApplicationDetailPage({ params }: { params: Promise<{ id
     const fileFields: FormFieldData[] = []
     
     application.formData.forEach(field => {
-      if (field.fieldType === 'FILE' || (typeof field.value === 'string' && field.value.startsWith('{') && field.value.includes('fileName'))) {
+      // Check for FILE field type or fields with file data format
+      if (field.fieldType === 'FILE' || 
+          // Check for JSON file data format (new embed format)
+          (typeof field.value === 'string' && 
+           field.value.startsWith('{') && 
+           field.value.includes('fileName')) ||
+          // Check for resume/upload fields that contain file data
+          ((field.label.toLowerCase().includes('resume') || 
+            field.label.toLowerCase().includes('upload') || 
+            field.label.toLowerCase().includes('cv')) &&
+           typeof field.value === 'string' && 
+           field.value.trim() !== '' &&
+           // Make sure it's not just a simple text field
+           (field.value.startsWith('{') || field.value.includes('.')))) {
         fileFields.push(field)
       }
     })
@@ -540,35 +566,63 @@ export default function ApplicationDetailPage({ params }: { params: Promise<{ id
   }
 
   const renderFileField = (field: FormFieldData) => {
-    if (typeof field.value === 'string' && field.value.startsWith('{')) {
-      try {
-        const fileData = JSON.parse(field.value)
-        if (fileData.fileName && fileData.originalName) {
-          return (
-            <div className="flex items-center justify-between py-2">
-              <span className="text-gray-700 text-sm">{field.label}</span>
-              <a 
-                href={`/api/download/${encodeURIComponent(fileData.fileName)}`}
-                className="text-blue-600 hover:text-blue-800 text-sm flex items-center space-x-1"
-                download
-              >
-                <Download className="h-4 w-4" />
-                <span>{fileData.originalName}</span>
-              </a>
-            </div>
-          )
+    if (typeof field.value === 'string') {
+      // Try to parse as JSON first (new format)
+      if (field.value.startsWith('{')) {
+        try {
+          const fileData = JSON.parse(field.value)
+          if (fileData.fileName && fileData.originalName) {
+            return (
+              <div className="flex items-center justify-between py-2">
+                <span className="text-gray-700 text-sm">{field.label}</span>
+                <a 
+                  href={`/api/download/${encodeURIComponent(fileData.fileName)}`}
+                  className="text-blue-600 hover:text-blue-800 text-sm flex items-center space-x-1"
+                  download
+                >
+                  <Download className="h-4 w-4" />
+                  <span>{fileData.originalName}</span>
+                </a>
+              </div>
+            )
+          }
+        } catch {
+          // Fall through to handle as simple filename
         }
-      } catch {
-        // If parsing fails, just show the label
+      }
+      
+      // Handle simple filename format (legacy format or direct filename)
+      if (field.value.trim() !== '') {
+        // Check if it looks like a timestamp filename (from embed forms)
+        const isTimestampFile = /^\d+_/.test(field.value)
+        const filename = isTimestampFile ? field.value : field.value
+        
+        // Extract original name - if it's a timestamp filename, extract the part after timestamp
+        let displayName = field.value
+        if (isTimestampFile) {
+          const parts = field.value.split('_')
+          if (parts.length > 1) {
+            displayName = parts.slice(1).join('_')
+          }
+        }
+        
         return (
           <div className="flex items-center justify-between py-2">
             <span className="text-gray-700 text-sm">{field.label}</span>
-            <span className="text-gray-500 text-sm">File uploaded</span>
+            <a 
+              href={`/api/download/${encodeURIComponent(filename)}`}
+              className="text-blue-600 hover:text-blue-800 text-sm flex items-center space-x-1"
+              download
+            >
+              <Download className="h-4 w-4" />
+              <span>{displayName}</span>
+            </a>
           </div>
         )
       }
     }
     
+    // Fallback for any other format
     return (
       <div className="flex items-center justify-between py-2">
         <span className="text-gray-700 text-sm">{field.label}</span>
@@ -849,20 +903,34 @@ export default function ApplicationDetailPage({ params }: { params: Promise<{ id
             {application.portfolioLinks && application.portfolioLinks.length > 0 && (
               <div className="bg-white rounded-lg p-6 shadow-sm border">
                 <h3 className="text-lg font-semibold text-gray-900 mb-4">Portfolio Links</h3>
-                <div className="space-y-2">
-                  {application.portfolioLinks.map((link, index) => (
-                    <div key={index} className="flex items-center">
-                      <span className="text-gray-600 text-sm mr-2">•</span>
-                      <a 
-                        href={link} 
-                        target="_blank" 
-                        rel="noopener noreferrer"
-                        className="text-blue-600 hover:text-blue-800 text-sm break-all"
-                      >
-                        {link}
-                      </a>
-                    </div>
-                  ))}
+                <div className="space-y-3">
+                  {application.portfolioLinks.map((link, index) => {
+                    // Handle both old format (string) and new format (object with name and url)
+                    const isOldFormat = typeof link === 'string';
+                    const linkData = isOldFormat 
+                      ? { name: 'Portfolio Link', url: link }
+                      : link;
+                    
+                    return (
+                      <div key={index} className="border border-gray-200 rounded-lg p-3 bg-gray-50">
+                        <div className="flex items-start justify-between">
+                          <div className="flex-1">
+                            <div className="flex items-center mb-1">
+                              <span className="text-sm font-medium text-gray-700">{linkData.name}</span>
+                            </div>
+                            <a 
+                              href={linkData.url} 
+                              target="_blank" 
+                              rel="noopener noreferrer"
+                              className="text-blue-600 hover:text-blue-800 text-sm break-all"
+                            >
+                              {linkData.url}
+                            </a>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
             )}

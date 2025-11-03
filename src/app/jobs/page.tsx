@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { 
@@ -22,7 +22,11 @@ import {
   Copy,
   X,
   FormInput,
-  ChevronDown
+  ChevronDown,
+  Calendar,
+  Building,
+  SortAsc,
+  FilterX
 } from 'lucide-react'
 import { User } from '@/types/user'
 
@@ -33,6 +37,7 @@ interface Job {
   location: string
   status: string
   description?: string
+  experienceLevel?: string
   applicationsCount: number
   createdAt: string
   formId?: string
@@ -52,38 +57,123 @@ export default function JobsPage() {
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
   const [statusFilter, setStatusFilter] = useState('')
+  const [departmentFilter, setDepartmentFilter] = useState('')
+  const [locationFilter, setLocationFilter] = useState('')
+  const [datePostedFilter, setDatePostedFilter] = useState('')
+  const [sortBy, setSortBy] = useState('')
   const [showEmbedModal, setShowEmbedModal] = useState(false)
   const [selectedJobForEmbed, setSelectedJobForEmbed] = useState<Job | null>(null)
   const [embedCopied, setEmbedCopied] = useState(false)
+  const [hasMore, setHasMore] = useState(true)
   const [currentPage, setCurrentPage] = useState(1)
-  const [totalPages, setTotalPages] = useState(1)
   const [totalJobs, setTotalJobs] = useState(0)
   const [showJobsDropdown, setShowJobsDropdown] = useState(false)
   const itemsPerPage = 10
   const router = useRouter()
 
-  const fetchJobs = async (page = 1) => {
+  // Fetch jobs data with pagination
+  const fetchJobsData = useCallback(async (page: number, limit: number = itemsPerPage) => {
     const token = localStorage.getItem('token')
-    if (!token) return
-
-    try {
-      const response = await fetch(`/api/jobs?limit=${itemsPerPage}&page=${page}`, {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      })
-
-      if (response.ok) {
-        const data = await response.json()
-        setJobs(data.jobs || [])
-        setTotalPages(data.pagination?.pages || 1)
-        setTotalJobs(data.pagination?.total || 0)
-        setCurrentPage(page)
-      }
-    } catch (error) {
-      console.error('Failed to fetch jobs:', error)
+    if (!token) {
+      throw new Error('No authentication token')
     }
-  }
+
+    const response = await fetch(`/api/jobs?limit=${limit}&page=${page}`, {
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    })
+
+    if (!response.ok) {
+      throw new Error('Failed to fetch jobs')
+    }
+
+    const data = await response.json()
+    return {
+      items: data.jobs || [],
+      total: data.pagination?.total || 0,
+      hasMore: page < (data.pagination?.pages || 1)
+    }
+  }, [])
+
+  // Load more jobs for infinite scroll
+  const loadMoreJobs = useCallback(async () => {
+    if (loading || !hasMore) return
+
+    setLoading(true)
+    try {
+      const data = await fetchJobsData(currentPage)
+      
+      if (data.items.length > 0) {
+        setJobs(prev => {
+          // Create a map of existing job IDs to avoid duplicates
+          const existingIds = new Set(prev.map(job => job.id))
+          const newJobs = data.items.filter((job: Job) => !existingIds.has(job.id))
+          return [...prev, ...newJobs]
+        })
+        setCurrentPage(prev => prev + 1)
+      }
+      
+      setTotalJobs(data.total)
+      setHasMore(data.hasMore)
+    } catch (error) {
+      console.error('Failed to load jobs:', error)
+    } finally {
+      setLoading(false)
+    }
+  }, [fetchJobsData, loading, hasMore, currentPage])
+
+  // Refresh function - resets and loads first page
+  const refreshJobs = useCallback(async () => {
+    setLoading(true)
+    setJobs([])
+    setCurrentPage(1)
+    setHasMore(true)
+    
+    try {
+      const data = await fetchJobsData(1)
+      setJobs(data.items)
+      setCurrentPage(2)
+      setTotalJobs(data.total)
+      setHasMore(data.hasMore)
+    } catch (error) {
+      console.error('Failed to refresh jobs:', error)
+    } finally {
+      setLoading(false)
+    }
+  }, [fetchJobsData])
+
+  // Scroll handler for infinite scroll
+  useEffect(() => {
+    let scrollTimeout: NodeJS.Timeout | null = null
+    
+    const handleScroll = () => {
+      // Clear previous timeout
+      if (scrollTimeout) {
+        clearTimeout(scrollTimeout)
+      }
+      
+      // Debounce scroll events
+      scrollTimeout = setTimeout(() => {
+        if (
+          window.innerHeight + document.documentElement.scrollTop >=
+          document.documentElement.offsetHeight - 100 &&
+          hasMore &&
+          !loading
+        ) {
+          loadMoreJobs()
+        }
+      }, 100) // 100ms debounce
+    }
+
+    window.addEventListener('scroll', handleScroll)
+    return () => {
+      window.removeEventListener('scroll', handleScroll)
+      if (scrollTimeout) {
+        clearTimeout(scrollTimeout)
+      }
+    }
+  }, [hasMore, loading, loadMoreJobs])
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -103,7 +193,7 @@ export default function JobsPage() {
         if (response.ok) {
           const userData = await response.json()
           setUser(userData)
-          await fetchJobs(1)
+          await refreshJobs()
         } else {
           localStorage.removeItem('token')
           router.push('/login')
@@ -117,7 +207,7 @@ export default function JobsPage() {
     }
 
     checkAuth()
-  }, [router])
+  }, [router, refreshJobs])
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -170,7 +260,7 @@ export default function JobsPage() {
 
       if (response.ok) {
         // Refresh the jobs list
-        await fetchJobs()
+        await refreshJobs()
       } else {
         console.error('Failed to delete job')
         alert('Failed to delete job. Please try again.')
@@ -209,7 +299,7 @@ export default function JobsPage() {
 
       if (response.ok) {
         // Refresh the jobs list
-        await fetchJobs()
+        await refreshJobs()
       } else {
         console.error('Failed to update job status')
         alert('Failed to update job status. Please try again.')
@@ -272,6 +362,23 @@ export default function JobsPage() {
     }
   }
 
+  // Get unique departments and locations for filter options
+  const uniqueDepartments = [...new Set(jobs.map(job => job.department).filter(Boolean))].sort()
+  const uniqueLocations = [...new Set(jobs.map(job => job.location).filter(Boolean))].sort()
+
+  // Clear all filters function
+  const clearAllFilters = () => {
+    setSearchTerm('')
+    setStatusFilter('')
+    setDepartmentFilter('')
+    setLocationFilter('')
+    setDatePostedFilter('')
+    setSortBy('')
+  }
+
+  // Check if any filters are active
+  const hasActiveFilters = searchTerm || statusFilter || departmentFilter || locationFilter || datePostedFilter || sortBy
+
   const filteredJobs = jobs.filter(job => {
     const matchesSearch = !searchTerm || 
       job.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -280,7 +387,46 @@ export default function JobsPage() {
     
     const matchesStatus = !statusFilter || job.status?.toLowerCase() === statusFilter.toLowerCase()
     
-    return matchesSearch && matchesStatus
+    const matchesDepartment = !departmentFilter || job.department?.toLowerCase() === departmentFilter.toLowerCase()
+    
+    const matchesLocation = !locationFilter || job.location?.toLowerCase() === locationFilter.toLowerCase()
+    
+    const matchesDatePosted = !datePostedFilter || (() => {
+      const jobDate = new Date(job.createdAt)
+      const now = new Date()
+      const diffTime = Math.abs(now.getTime() - jobDate.getTime())
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
+      
+      switch (datePostedFilter) {
+        case 'today':
+          return diffDays <= 1
+        case 'week':
+          return diffDays <= 7
+        case 'month':
+          return diffDays <= 30
+        case '3months':
+          return diffDays <= 90
+        default:
+          return true
+      }
+    })()
+    
+    return matchesSearch && matchesStatus && matchesDepartment && matchesLocation && matchesDatePosted
+  }).sort((a, b) => {
+    switch (sortBy) {
+      case 'name-asc':
+        return a.title.localeCompare(b.title)
+      case 'name-desc':
+        return b.title.localeCompare(a.title)
+      case 'latest':
+        return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+      case 'oldest':
+        return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+      case 'applications':
+        return (b.applicationsCount || 0) - (a.applicationsCount || 0)
+      default:
+        return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime() // Default to latest
+    }
   })
 
   if (loading) {
@@ -399,7 +545,21 @@ export default function JobsPage() {
 
         {/* Filters */}
         <div className="bg-white rounded-lg shadow mb-6 p-6">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="text-lg font-semibold text-gray-900">Filters & Search</h2>
+            {hasActiveFilters && (
+              <button
+                onClick={clearAllFilters}
+                className="flex items-center space-x-1 text-sm text-red-600 hover:text-red-800"
+              >
+                <FilterX className="h-4 w-4" />
+                <span>Clear Filters</span>
+              </button>
+            )}
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 mb-4">
+            {/* Search */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Search Jobs
@@ -416,6 +576,7 @@ export default function JobsPage() {
               </div>
             </div>
             
+            {/* Status Filter */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Filter by Status
@@ -436,10 +597,106 @@ export default function JobsPage() {
               </div>
             </div>
 
+            {/* Department Filter */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Filter by Department
+              </label>
+              <div className="relative">
+                <Building className="h-5 w-5 absolute left-3 top-3 text-gray-400" />
+                <select
+                  value={departmentFilter}
+                  onChange={(e) => setDepartmentFilter(e.target.value)}
+                  className="pl-10 w-full border border-gray-300 text-gray-600 rounded-md px-3 py-2 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                >
+                  <option value="">All Departments</option>
+                  {uniqueDepartments.map((department) => (
+                    <option key={department} value={department}>
+                      {department}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            {/* Location Filter */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Filter by Location
+              </label>
+              <div className="relative">
+                <MapPin className="h-5 w-5 absolute left-3 top-3 text-gray-400" />
+                <select
+                  value={locationFilter}
+                  onChange={(e) => setLocationFilter(e.target.value)}
+                  className="pl-10 w-full border border-gray-300 text-gray-600 rounded-md px-3 py-2 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                >
+                  <option value="">All Locations</option>
+                  {uniqueLocations.map((location) => (
+                    <option key={location} value={location}>
+                      {location}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {/* Date Posted Filter */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Posted Within
+              </label>
+              <div className="relative">
+                <Calendar className="h-5 w-5 absolute left-3 top-3 text-gray-400" />
+                <select
+                  value={datePostedFilter}
+                  onChange={(e) => setDatePostedFilter(e.target.value)}
+                  className="pl-10 w-full border border-gray-300 text-gray-600 rounded-md px-3 py-2 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                >
+                  <option value="">Any Time</option>
+                  <option value="today">Today</option>
+                  <option value="week">Past Week</option>
+                  <option value="month">Past Month</option>
+                  <option value="3months">Past 3 Months</option>
+                </select>
+              </div>
+            </div>
+
+            {/* Sort By */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Sort By
+              </label>
+              <div className="relative">
+                <SortAsc className="h-5 w-5 absolute left-3 top-3 text-gray-400" />
+                <select
+                  value={sortBy}
+                  onChange={(e) => setSortBy(e.target.value)}
+                  className="pl-10 w-full border border-gray-300 text-gray-600 rounded-md px-3 py-2 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                >
+                  <option value="">Latest First</option>
+                  <option value="latest">Latest First</option>
+                  <option value="oldest">Oldest First</option>
+                  <option value="name-asc">Name (A-Z)</option>
+                  <option value="name-desc">Name (Z-A)</option>
+                  <option value="applications">Most Applications</option>
+                </select>
+              </div>
+            </div>
+
+            {/* Results Count */}
             <div className="flex items-end">
-              <span className="text-sm text-gray-600">
-                {filteredJobs.length} of {jobs.length} jobs
-              </span>
+              <div className="text-sm text-gray-600">
+                <span className="font-medium">{filteredJobs.length}</span> of{' '}
+                <span className="font-medium">{jobs.length}</span> jobs
+                {hasActiveFilters && (
+                  <span className="block text-xs text-indigo-600 mt-1">
+                    Filters applied
+                  </span>
+                )}
+              </div>
             </div>
           </div>
         </div>
@@ -470,6 +727,14 @@ export default function JobsPage() {
                     <MapPin className="h-4 w-4 mr-2" />
                     {job.location || 'Not specified'}
                   </div>
+                  {job.experienceLevel && (
+                    <div className="flex items-center text-sm text-gray-600">
+                      <svg className="h-4 w-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+                      </svg>
+                      {job.experienceLevel}
+                    </div>
+                  )}
                   <div className="flex items-center text-sm text-gray-600">
                     <Users className="h-4 w-4 mr-2" />
                     {job.applicationsCount || 0} applications
@@ -481,10 +746,7 @@ export default function JobsPage() {
                 </div>
 
                 <div className="border-t pt-4">
-                  <div className="flex justify-between items-center">
-                    <div className="text-xs text-gray-500">
-                      Created by {job.creator?.name || 'Unknown'}
-                    </div>
+                  <div className="flex justify-end items-center">
                     <div className="flex space-x-2">
                       <button
                         onClick={() => {
@@ -562,58 +824,19 @@ export default function JobsPage() {
           </div>
         )}
 
-        {/* Pagination */}
-        {totalPages > 1 && (
-          <div className="mt-8 flex items-center justify-between">
+        {/* Infinite Scroll Loading Indicator */}
+        {loading && (
+          <div className="mt-8 flex justify-center py-4">
+            <div className="text-sm text-gray-500">Loading more jobs...</div>
+          </div>
+        )}
+        
+        {/* Jobs Count */}
+        {totalJobs > 0 && (
+          <div className="mt-8">
             <div className="text-sm text-gray-700">
-              Showing {((currentPage - 1) * itemsPerPage) + 1} to {Math.min(currentPage * itemsPerPage, totalJobs)} of {totalJobs} jobs
-            </div>
-            <div className="flex items-center space-x-2">
-              <button
-                onClick={() => fetchJobs(currentPage - 1)}
-                disabled={currentPage <= 1}
-                className="px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                Previous
-              </button>
-              
-              {/* Page numbers */}
-              <div className="flex items-center space-x-1">
-                {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                  let pageNum
-                  if (totalPages <= 5) {
-                    pageNum = i + 1
-                  } else if (currentPage <= 3) {
-                    pageNum = i + 1
-                  } else if (currentPage >= totalPages - 2) {
-                    pageNum = totalPages - 4 + i
-                  } else {
-                    pageNum = currentPage - 2 + i
-                  }
-                  
-                  return (
-                    <button
-                      key={pageNum}
-                      onClick={() => fetchJobs(pageNum)}
-                      className={`px-3 py-2 text-sm font-medium rounded-md ${
-                        currentPage === pageNum
-                          ? 'bg-indigo-600 text-white'
-                          : 'text-gray-500 bg-white border border-gray-300 hover:bg-gray-50'
-                      }`}
-                    >
-                      {pageNum}
-                    </button>
-                  )
-                })}
-              </div>
-              
-              <button
-                onClick={() => fetchJobs(currentPage + 1)}
-                disabled={currentPage >= totalPages}
-                className="px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                Next
-              </button>
+              Showing {jobs.length} of {totalJobs} jobs
+              {!hasMore && jobs.length > 0 && <span className="ml-2 text-gray-500">(All jobs loaded)</span>}
             </div>
           </div>
         )}

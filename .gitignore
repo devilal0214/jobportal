@@ -41,3 +41,42 @@ yarn-error.log*
 next-env.d.ts
 
 /src/generated/prisma
+
+# Testing and debug files (prevent re-adding)
+test-*.js
+check-*.js
+create-*.js
+fix-*.js
+update-*.js
+debug-*.js
+setup-*.js
+bulk-*.js
+verify-*.js
+clear-*.js
+archive-*.js
+get-*.js
+quick-*.js
+
+# Temporary and backup files
+*.tmp
+*.temp
+*.backup
+*.old
+*~
+permission-output.txt
+
+# Documentation files that should not be in root
+EMAIL_SETUP_GUIDE.md
+EMAIL_TESTING_GUIDE.md
+SMTP_TEST_GUIDE.md
+
+# Shell scripts in root (should be in scripts/ if needed)
+*.sh
+*.ps1
+
+# Temporary directories
+/temp/
+/tmp/
+
+# Root favicon (conflicts with App Router)
+/favicon.ico

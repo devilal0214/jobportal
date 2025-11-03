@@ -36,10 +36,19 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
       return NextResponse.json({ error: 'Application not found' }, { status: 404 })
     }
 
-    // Update the application status
+    // Update the application status and auto-archive if rejected
+    const updateData = {
+      status: status as 'PENDING' | 'UNDER_REVIEW' | 'SHORTLISTED' | 'SELECTED' | 'REJECTED',
+      ...(status === 'REJECTED' && {
+        isArchived: true,
+        archivedAt: new Date(),
+        archivedBy: 'system'
+      })
+    }
+    
     const updatedApplication = await prisma.application.update({
       where: { id },
-      data: { status }
+      data: updateData
     })
 
     // Get candidate information for email

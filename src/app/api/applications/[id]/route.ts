@@ -122,10 +122,26 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
         })
     }
 
-    // Extract portfolio links separately
-    const portfolioLinks = formData['Portfolio Links'] && Array.isArray(formData['Portfolio Links']) 
-      ? formData['Portfolio Links'].filter((link: string) => link && link.trim() !== '')
-      : []
+    // Extract portfolio links separately - handle both old format (strings) and new format (objects)
+    let portfolioLinks: (string | { name: string; url: string })[] = [];
+    if (formData['Portfolio Links'] && Array.isArray(formData['Portfolio Links'])) {
+      portfolioLinks = formData['Portfolio Links']
+        .filter((link: string | { name: string; url: string }) => {
+          if (typeof link === 'string') {
+            return link && link.trim() !== '';
+          } else if (typeof link === 'object' && link !== null) {
+            return link.name && link.url && link.name.trim() !== '' && link.url.trim() !== '';
+          }
+          return false;
+        })
+        .map((link: string | { name: string; url: string }) => {
+          if (typeof link === 'string') {
+            return link; // Return old format as-is for backward compatibility
+          } else {
+            return link; // Return new format object
+          }
+        });
+    }
 
     const response = {
       id: application.id,
@@ -183,10 +199,19 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
       return NextResponse.json({ error: 'Application not found' }, { status: 404 })
     }
 
-    // Update the application status
+    // Update the application status and auto-archive if rejected
+    const updateData = {
+      status: status as 'PENDING' | 'UNDER_REVIEW' | 'SHORTLISTED' | 'SELECTED' | 'REJECTED',
+      ...(status === 'REJECTED' && {
+        isArchived: true,
+        archivedAt: new Date(),
+        archivedBy: 'system' // Could be enhanced to track actual user
+      })
+    }
+    
     const updatedApplication = await prisma.application.update({
       where: { id },
-      data: { status }
+      data: updateData
     })
 
     // Extract candidate information for email
@@ -357,6 +382,69 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     })
   } catch (error) {
     console.error('Application status update error:', error)
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+  }
+}
+
+export async function DELETE(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  try {
+    const { id } = await params
+
+    // Check for authorization header
+    const authHeader = request.headers.get('authorization')
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    const token = authHeader.substring(7)
+    
+    // Import verifyToken here to avoid middleware issues
+    const { verifyToken } = await import('@/lib/auth')
+    const decoded = verifyToken(token)
+    
+    if (!decoded || typeof decoded === 'string') {
+      return NextResponse.json({ error: 'Invalid token' }, { status: 401 })
+    }
+
+    // Get user with role to check permissions
+    const user = await prisma.user.findUnique({
+      where: { id: decoded.userId },
+      include: { role: true }
+    })
+
+    if (!user) {
+      return NextResponse.json({ error: 'User not found' }, { status: 404 })
+    }
+
+    // Check if user is Administrator
+    if (user.role?.name !== 'Administrator') {
+      return NextResponse.json({ error: 'Only administrators can delete applications' }, { status: 403 })
+    }
+
+    // Check if application exists
+    const application = await prisma.application.findUnique({
+      where: { id },
+      select: { id: true, candidateName: true }
+    })
+
+    if (!application) {
+      return NextResponse.json({ error: 'Application not found' }, { status: 404 })
+    }
+
+    // Delete the application
+    await prisma.application.delete({
+      where: { id }
+    })
+
+    return NextResponse.json({ 
+      message: 'Application deleted successfully',
+      deletedApplication: {
+        id: application.id,
+        candidateName: application.candidateName
+      }
+    })
+  } catch (error) {
+    console.error('Application deletion error:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }

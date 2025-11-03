@@ -1,12 +1,52 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { emailService } from '@/lib/email'
+import { writeFile } from 'fs/promises'
+import path from 'path'
 
 export async function POST(request: NextRequest) {
   try {
-    const { jobId, formData, sourceInfo, fieldLabels } = await request.json()
+    const formData = await request.formData()
+    
+    const jobId = formData.get('jobId') as string
+    const formDataJson = formData.get('formData') as string
+    const sourceInfoJson = formData.get('sourceInfo') as string
+    const fieldLabelsJson = formData.get('fieldLabels') as string
+    const portfolioLinksJson = formData.get('portfolioLinks') as string
 
-    if (!jobId || !formData) {
+    if (!jobId || !formDataJson) {
+      return NextResponse.json(
+        { error: 'Missing required fields' },
+        { status: 400 }
+      )
+    }
+
+    const parsedFormData = JSON.parse(formDataJson)
+    const sourceInfo = sourceInfoJson ? JSON.parse(sourceInfoJson) : {}
+    const fieldLabels = fieldLabelsJson ? JSON.parse(fieldLabelsJson) : {}
+    const portfolioLinks = portfolioLinksJson ? JSON.parse(portfolioLinksJson) : []
+
+    // Handle file uploads
+    const uploadedFiles: Record<string, string> = {}
+    for (const [key, value] of formData.entries()) {
+      if (key.startsWith('file_') && value instanceof File) {
+        const fieldId = key.replace('file_', '')
+        const file = value as File
+        
+        // Generate unique filename
+        const timestamp = Date.now()
+        const filename = `${timestamp}_${file.name}`
+        const uploadPath = path.join(process.cwd(), 'uploads', filename)
+        
+        // Save file
+        const buffer = Buffer.from(await file.arrayBuffer())
+        await writeFile(uploadPath, buffer)
+        
+        uploadedFiles[fieldId] = filename
+      }
+    }
+
+    if (!jobId || !parsedFormData) {
       return NextResponse.json(
         { error: 'Missing required fields' },
         { status: 400 }
@@ -63,14 +103,57 @@ export async function POST(request: NextRequest) {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const labeledFormData: Record<string, any> = {}
     
-    for (const [fieldId, value] of Object.entries(formData)) {
+    for (const [fieldId, value] of Object.entries(parsedFormData)) {
       if (fieldId === 'portfolioLinks') {
         labeledFormData['Portfolio Links'] = value
         continue
       }
       
+
+      
+
       const label = fieldIdToLabel[fieldId] || fieldLabels?.[fieldId] || fieldId
-      labeledFormData[label] = value
+      
+      // Check if this is a file field - if so, skip storing the original value
+      // as it will be handled in the uploadedFiles section
+      if (uploadedFiles[fieldId]) {
+        // Skip storing the original filename value for file fields
+        continue
+      }
+      
+      // Check if this is a SKILLS field and handle it properly
+      const fieldInfo = jobWithForm.form?.fields.find(f => f.id === fieldId)
+      if (fieldInfo && fieldInfo.label.toLowerCase().includes('skill') && Array.isArray(value)) {
+        // Store skills data as JSON string with fieldType info for proper parsing
+        labeledFormData[label] = JSON.stringify(value)
+        // Also store the field type for proper identification
+        labeledFormData[`${label}_fieldType`] = 'SKILLS'
+      } else {
+        labeledFormData[label] = value
+      }
+    }
+
+    // Add uploaded file information
+    Object.entries(uploadedFiles).forEach(([fieldId, filename]) => {
+      const label = fieldLabels[fieldId] || fieldIdToLabel[fieldId] || fieldId
+      
+      // Get original filename from parsedFormData (the display name)
+      const originalName = parsedFormData[fieldId] || 'uploaded-file'
+      
+      // Store file information in the same format as regular applications
+      const fileInfo = {
+        fileName: filename,
+        originalName: originalName,
+        path: `uploads/${filename}`
+      }
+      
+      // Store without the " - File" suffix since we're not storing the original field
+      labeledFormData[label] = JSON.stringify(fileInfo)
+    })
+
+    // Add portfolio links
+    if (portfolioLinks.length > 0) {
+      labeledFormData['Portfolio Links'] = portfolioLinks
     }
 
     // Extract candidate info from labeled form data (same logic as main submission)
@@ -116,7 +199,7 @@ export async function POST(request: NextRequest) {
     if (jobWithForm.form) {
       for (const field of jobWithForm.form.fields) {
         if (field.isRequired) {
-          const value = formData[field.id]
+          const value = parsedFormData[field.id]
           if (!value || (Array.isArray(value) && value.length === 0) || (typeof value === 'string' && value.trim() === '')) {
             return NextResponse.json(
               { error: `${field.label} is required` },
@@ -150,14 +233,14 @@ export async function POST(request: NextRequest) {
     // Send notification emails
     try {
       // Email to candidate
-      if (formData.email) {
+      if (candidateEmail) {
         await emailService.sendEmail({
-          to: formData.email,
+          to: candidateEmail,
           subject: `Application Received - ${job.title}`,
           html: `
             <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
               <h2 style="color: #2563eb;">Application Received</h2>
-              <p>Dear ${formData.name || 'Candidate'},</p>
+              <p>Dear ${candidateName},</p>
               <p>Thank you for your interest in the <strong>${job.title}</strong> position.</p>
               <p>We have received your application and will review it shortly. You will hear from us within the next few business days.</p>
               <div style="background-color: #f3f4f6; padding: 16px; border-radius: 8px; margin: 16px 0;">
@@ -185,9 +268,9 @@ export async function POST(request: NextRequest) {
               <p>A new application has been submitted for the <strong>${job.title}</strong> position.</p>
               <div style="background-color: #f3f4f6; padding: 16px; border-radius: 8px; margin: 16px 0;">
                 <h3 style="margin-top: 0; color: #374151;">Candidate Information:</h3>
-                <p><strong>Name:</strong> ${formData.name || 'Not provided'}</p>
-                <p><strong>Email:</strong> ${formData.email || 'Not provided'}</p>
-                <p><strong>Phone:</strong> ${formData.phone || 'Not provided'}</p>
+                <p><strong>Name:</strong> ${candidateName}</p>
+                <p><strong>Email:</strong> ${candidateEmail}</p>
+                <p><strong>Phone:</strong> ${candidatePhone}</p>
                 <p><strong>Application ID:</strong> ${application.id}</p>
                 <p><strong>Submitted:</strong> ${new Date().toLocaleString()}</p>
                 ${sourceInfo?.domain ? `<p><strong>Source:</strong> ${sourceInfo.domain}</p>` : ''}

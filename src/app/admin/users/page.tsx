@@ -57,13 +57,14 @@ interface User {
 }
 
 export default function UsersPage() {
+  // State for infinite scroll users
   const [users, setUsers] = useState<User[]>([])
   const [roles, setRoles] = useState<Role[]>([])
   const [loading, setLoading] = useState(true)
   const [showAddForm, setShowAddForm] = useState(false)
   const [editingUser, setEditingUser] = useState<User | null>(null)
+  const [hasMore, setHasMore] = useState(true)
   const [currentPage, setCurrentPage] = useState(1)
-  const [totalPages, setTotalPages] = useState(1)
   const [totalUsers, setTotalUsers] = useState(0)
   const itemsPerPage = 10
   const [formData, setFormData] = useState({
@@ -73,12 +74,9 @@ export default function UsersPage() {
     role: ''
   })
 
-  useEffect(() => {
-    fetchUsers(1)
-    fetchRoles()
-  }, [])
+  // Initial load will be placed after function definitions
 
-  const fetchRoles = async () => {
+  const fetchRoles = useCallback(async () => {
     try {
       const token = localStorage.getItem('token')
       const response = await fetch('/api/admin/roles', {
@@ -104,29 +102,117 @@ export default function UsersPage() {
       console.error('Failed to fetch roles:', error)
       setRoles([])
     }
-  }
+  }, [formData.role])
 
-  const fetchUsers = async (page: number = 1) => {
-    try {
-      const token = localStorage.getItem('token')
-      const response = await fetch(`/api/admin/users?limit=${itemsPerPage}&page=${page}`, {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      })
-      if (response.ok) {
-        const data = await response.json()
-        setUsers(data.users || [])
-        setTotalPages(data.totalPages || 1)
-        setTotalUsers(data.total || 0)
-        setCurrentPage(page)
+  // Fetch users data with pagination
+  const fetchUsersData = useCallback(async (page: number, limit: number = itemsPerPage) => {
+    const token = localStorage.getItem('token')
+    if (!token) {
+      throw new Error('No authentication token')
+    }
+
+    const response = await fetch(`/api/admin/users?limit=${limit}&page=${page}`, {
+      headers: {
+        'Authorization': `Bearer ${token}`
       }
+    })
+
+    if (!response.ok) {
+      throw new Error('Failed to fetch users')
+    }
+
+    const data = await response.json()
+    return {
+      items: data.users || [],
+      total: data.total || 0,
+      hasMore: page < (data.totalPages || 1)
+    }
+  }, [])
+
+  // Load more users for infinite scroll
+  const loadMoreUsers = useCallback(async () => {
+    if (loading || !hasMore) return
+
+    setLoading(true)
+    try {
+      const data = await fetchUsersData(currentPage)
+      
+      if (data.items.length > 0) {
+        setUsers(prev => {
+          // Create a map of existing user IDs to avoid duplicates
+          const existingIds = new Set(prev.map(user => user.id))
+          const newUsers = data.items.filter((user: User) => !existingIds.has(user.id))
+          return [...prev, ...newUsers]
+        })
+        setCurrentPage(prev => prev + 1)
+      }
+      
+      setTotalUsers(data.total)
+      setHasMore(data.hasMore)
     } catch (error) {
-      console.error('Failed to fetch users:', error)
+      console.error('Failed to load users:', error)
     } finally {
       setLoading(false)
     }
-  }
+  }, [fetchUsersData, loading, hasMore, currentPage])
+
+  // Refresh function - resets and loads first page
+  const refreshUsers = useCallback(async () => {
+    setLoading(true)
+    setUsers([])
+    setCurrentPage(1)
+    setHasMore(true)
+    
+    try {
+      const data = await fetchUsersData(1)
+      setUsers(data.items)
+      setCurrentPage(2)
+      setTotalUsers(data.total)
+      setHasMore(data.hasMore)
+    } catch (error) {
+      console.error('Failed to refresh users:', error)
+    } finally {
+      setLoading(false)
+    }
+  }, [fetchUsersData])
+
+  // Scroll handler for infinite scroll
+  useEffect(() => {
+    let scrollTimeout: NodeJS.Timeout | null = null
+    
+    const handleScroll = () => {
+      // Clear previous timeout
+      if (scrollTimeout) {
+        clearTimeout(scrollTimeout)
+      }
+      
+      // Debounce scroll events
+      scrollTimeout = setTimeout(() => {
+        if (
+          window.innerHeight + document.documentElement.scrollTop >=
+          document.documentElement.offsetHeight - 100 &&
+          hasMore &&
+          !loading
+        ) {
+          loadMoreUsers()
+        }
+      }, 100) // 100ms debounce
+    }
+
+    window.addEventListener('scroll', handleScroll)
+    return () => {
+      window.removeEventListener('scroll', handleScroll)
+      if (scrollTimeout) {
+        clearTimeout(scrollTimeout)
+      }
+    }
+  }, [hasMore, loading, loadMoreUsers])
+
+  // Initial load effect
+  useEffect(() => {
+    refreshUsers()
+    fetchRoles()
+  }, [refreshUsers, fetchRoles])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -145,7 +231,7 @@ export default function UsersPage() {
       })
 
       if (response.ok) {
-        fetchUsers(1)
+        refreshUsers()
         setShowAddForm(false)
         setEditingUser(null)
         setFormData({ 
@@ -182,7 +268,7 @@ export default function UsersPage() {
           }
         })
         if (response.ok) {
-          fetchUsers(currentPage)
+          refreshUsers()
         }
       } catch (error) {
         console.error('Failed to delete user:', error)
@@ -202,7 +288,7 @@ export default function UsersPage() {
         body: JSON.stringify({ isActive: !isActive })
       })
       if (response.ok) {
-        fetchUsers(currentPage)
+        refreshUsers()
       }
     } catch (error) {
       console.error('Failed to update user status:', error)
@@ -393,78 +479,19 @@ export default function UsersPage() {
             </table>
           </div>
 
-          {/* Pagination */}
+          {/* Infinite Scroll Loading Indicator */}
+          {loading && (
+            <div className="flex justify-center py-4 border-t border-gray-200">
+              <div className="text-sm text-gray-500">Loading more users...</div>
+            </div>
+          )}
+          
+          {/* Users Count */}
           {totalUsers > 0 && (
-            <div className="flex flex-col sm:flex-row items-center justify-between px-4 py-3 bg-white border-t border-gray-200">
-              <div className="flex-1 flex justify-between sm:hidden">
-                <button
-                  onClick={() => fetchUsers(currentPage - 1)}
-                  disabled={currentPage === 1}
-                  className="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  Previous
-                </button>
-                <button
-                  onClick={() => fetchUsers(currentPage + 1)}
-                  disabled={currentPage === totalPages}
-                  className="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  Next
-                </button>
-              </div>
-              
-              <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
-                <div>
-                  <p className="text-sm text-gray-700">
-                    Showing{' '}
-                    <span className="font-medium">{Math.min((currentPage - 1) * itemsPerPage + 1, totalUsers)}</span>
-                    {' '}to{' '}
-                    <span className="font-medium">{Math.min(currentPage * itemsPerPage, totalUsers)}</span>
-                    {' '}of{' '}
-                    <span className="font-medium">{totalUsers}</span>
-                    {' '}users
-                  </p>
-                </div>
-                
-                <div>
-                  <nav className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
-                    <button
-                      onClick={() => fetchUsers(currentPage - 1)}
-                      disabled={currentPage === 1}
-                      className="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      <span className="sr-only">Previous</span>
-                      <svg className="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                        <path fillRule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clipRule="evenodd" />
-                      </svg>
-                    </button>
-                    
-                    {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-                      <button
-                        key={page}
-                        onClick={() => fetchUsers(page)}
-                        className={`relative inline-flex items-center px-4 py-2 border text-sm font-medium ${
-                          page === currentPage
-                            ? 'z-10 bg-indigo-50 border-indigo-500 text-indigo-600'
-                            : 'bg-white border-gray-300 text-gray-500 hover:bg-gray-50'
-                        }`}
-                      >
-                        {page}
-                      </button>
-                    ))}
-                    
-                    <button
-                      onClick={() => fetchUsers(currentPage + 1)}
-                      disabled={currentPage === totalPages}
-                      className="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      <span className="sr-only">Next</span>
-                      <svg className="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                        <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd" />
-                      </svg>
-                    </button>
-                  </nav>
-                </div>
+            <div className="px-4 py-3 bg-white border-t border-gray-200">
+              <div className="text-sm text-gray-700">
+                Showing {users.length} of {totalUsers} users
+                {!hasMore && users.length > 0 && <span className="ml-2 text-gray-500">(All users loaded)</span>}
               </div>
             </div>
           )}

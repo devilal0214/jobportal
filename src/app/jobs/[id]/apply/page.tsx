@@ -2,7 +2,7 @@
 
 import { useState, useEffect, use } from 'react'
 import Link from 'next/link'
-import { ArrowLeft, Upload, Plus, Trash2 } from 'lucide-react'
+import { ArrowLeft, Upload, Plus, Trash2, Eye, X } from 'lucide-react'
 import TagsInput from '@/components/TagsInput'
 import SkillsWithRatings from '@/components/SkillsWithRatings'
 
@@ -17,6 +17,17 @@ interface FormField {
   fieldWidth?: string
   isRequired: boolean
   order: number
+}
+
+interface FileData {
+  fileName: string
+  originalName: string
+  path: string
+}
+
+interface PortfolioLink {
+  name: string
+  url: string
 }
 
 interface Job {
@@ -39,8 +50,10 @@ export default function JobApplicationPage({ params }: { params: Promise<{ id: s
   const [successMessage, setSuccessMessage] = useState('')
   const [formData, setFormData] = useState<Record<string, string | string[]>>({})
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({})
-  const [portfolioLinks, setPortfolioLinks] = useState<string[]>([''])
+  const [portfolioLinks, setPortfolioLinks] = useState<PortfolioLink[]>([{ name: '', url: '' }])
   const [fileErrors, setFileErrors] = useState<Record<string, string>>({})
+  const [previewFile, setPreviewFile] = useState<{ fieldId: string; fileData: FileData } | null>(null)
+  const [showPreview, setShowPreview] = useState(false)
   const resolvedParams = use(params)
 
   useEffect(() => {
@@ -139,7 +152,7 @@ export default function JobApplicationPage({ params }: { params: Promise<{ id: s
       // Include portfolio links in form data
       const submissionData = {
         ...formData,
-        portfolioLinks: portfolioLinks.filter(link => link.trim() !== '')
+        portfolioLinks: portfolioLinks.filter(link => link.name.trim() !== '' && link.url.trim() !== '')
       }
 
       // Create field labels mapping
@@ -166,7 +179,7 @@ export default function JobApplicationPage({ params }: { params: Promise<{ id: s
         setSuccessMessage('Thank you! Your application has been submitted successfully. We will review your application and get back to you soon.')
         // Clear form data on success
         setFormData({})
-        setPortfolioLinks([''])
+        setPortfolioLinks([{ name: '', url: '' }])
         // Scroll to top to show success message
         window.scrollTo({ top: 0, behavior: 'smooth' })
       } else {
@@ -260,7 +273,7 @@ export default function JobApplicationPage({ params }: { params: Promise<{ id: s
 
   const addPortfolioLink = () => {
     if (portfolioLinks.length < 5) {
-      setPortfolioLinks(prev => [...prev, ''])
+      setPortfolioLinks(prev => [...prev, { name: '', url: '' }])
     }
   }
 
@@ -270,8 +283,28 @@ export default function JobApplicationPage({ params }: { params: Promise<{ id: s
     }
   }
 
-  const updatePortfolioLink = (index: number, value: string) => {
-    setPortfolioLinks(prev => prev.map((link, i) => i === index ? value : link))
+  const updatePortfolioLink = (index: number, field: 'name' | 'url', value: string) => {
+    setPortfolioLinks(prev => prev.map((link, i) => 
+      i === index ? { ...link, [field]: value } : link
+    ))
+  }
+
+  const handlePreviewFile = (fieldId: string) => {
+    const fieldValue = formData[fieldId] as string
+    if (fieldValue && fieldValue.startsWith('{')) {
+      try {
+        const fileData = JSON.parse(fieldValue) as FileData
+        setPreviewFile({ fieldId, fileData })
+        setShowPreview(true)
+      } catch (error) {
+        console.error('Error parsing file data:', error)
+      }
+    }
+  }
+
+  const closePreview = () => {
+    setShowPreview(false)
+    setPreviewFile(null)
   }
 
   const renderField = (field: FormField) => {
@@ -450,13 +483,25 @@ export default function JobApplicationPage({ params }: { params: Promise<{ id: s
                   />
                 </label>
                 {fieldValue && (
-                  <p className="text-sm text-green-600 mt-2">
-                    Selected: {
-                      typeof fieldValue === 'string' && fieldValue.startsWith('{')
-                        ? JSON.parse(fieldValue).originalName
-                        : fieldValue
-                    }
-                  </p>
+                  <div className="mt-3 space-y-2">
+                    <p className="text-sm text-green-600">
+                      Selected: {
+                        typeof fieldValue === 'string' && fieldValue.startsWith('{')
+                          ? JSON.parse(fieldValue).originalName
+                          : fieldValue
+                      }
+                    </p>
+                    {typeof fieldValue === 'string' && fieldValue.startsWith('{') && (
+                      <button
+                        type="button"
+                        onClick={() => handlePreviewFile(field.id)}
+                        className="inline-flex items-center px-3 py-1.5 text-xs font-medium text-indigo-600 bg-indigo-50 border border-indigo-200 rounded-md hover:bg-indigo-100 transition-colors"
+                      >
+                        <Eye className="h-3 w-3 mr-1" />
+                        Preview Resume
+                      </button>
+                    )}
+                  </div>
                 )}
                 {fileErrors[field.id] && (
                   <p className="text-sm text-red-600 mt-2">
@@ -598,7 +643,7 @@ export default function JobApplicationPage({ params }: { params: Promise<{ id: s
                       setSuccessMessage('')
                       setError('')
                       setFormData({})
-                      setPortfolioLinks([''])
+                      setPortfolioLinks([{ name: '', url: '' }])
                       setValidationErrors({})
                     }}
                     className="bg-green-600 text-white py-2 px-4 rounded-md text-sm font-medium hover:bg-green-700 transition-colors"
@@ -681,26 +726,47 @@ export default function JobApplicationPage({ params }: { params: Promise<{ id: s
               <p className="text-sm text-gray-600 mb-4">
                 Add up to 5 portfolio links to showcase your work.
               </p>
-              <div className="space-y-3">
+              <div className="space-y-4">
                 {portfolioLinks.map((link, index) => (
-                  <div key={index} className="flex gap-3 items-center">
-                    <input
-                      type="url"
-                      value={link}
-                      onChange={(e) => updatePortfolioLink(index, e.target.value)}
-                      placeholder={`Portfolio link ${index + 1}`}
-                      className="flex-1 px-4 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white text-gray-800"
-                    />
-                    {portfolioLinks.length > 1 && (
-                      <button
-                        type="button"
-                        onClick={() => removePortfolioLink(index)}
-                        className="p-2 text-red-600 hover:text-red-800 hover:bg-red-50 rounded-md transition-colors"
-                        title="Remove link"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </button>
-                    )}
+                  <div key={index} className="border border-gray-200 rounded-lg p-4 bg-gray-50">
+                    <div className="flex gap-3 items-start">
+                      <div className="flex-1 space-y-3">
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Platform/Type
+                          </label>
+                          <input
+                            type="text"
+                            value={link.name}
+                            onChange={(e) => updatePortfolioLink(index, 'name', e.target.value)}
+                            placeholder="e.g., GitHub, LinkedIn, Behance, Personal Website"
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white text-gray-800"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">
+                            URL
+                          </label>
+                          <input
+                            type="url"
+                            value={link.url}
+                            onChange={(e) => updatePortfolioLink(index, 'url', e.target.value)}
+                            placeholder={`https://example.com/your-profile`}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white text-gray-800"
+                          />
+                        </div>
+                      </div>
+                      {portfolioLinks.length > 1 && (
+                        <button
+                          type="button"
+                          onClick={() => removePortfolioLink(index)}
+                          className="p-2 text-red-600 hover:text-red-800 hover:bg-red-50 rounded-md transition-colors mt-6"
+                          title="Remove link"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      )}
+                    </div>
                   </div>
                 ))}
                 
@@ -747,6 +813,56 @@ export default function JobApplicationPage({ params }: { params: Promise<{ id: s
           </form>
         </div>
       </div>
+
+      {/* Preview Modal */}
+      {showPreview && previewFile && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] flex flex-col">
+            {/* Modal Header */}
+            <div className="flex items-center justify-between p-4 border-b">
+              <h3 className="text-lg font-semibold text-gray-900">
+                Resume Preview - {previewFile.fileData.originalName}
+              </h3>
+              <button
+                onClick={closePreview}
+                className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-md transition-colors"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+            
+            {/* Modal Content */}
+            <div className="flex-1 p-4 overflow-hidden">
+              {previewFile.fileData.originalName.toLowerCase().endsWith('.pdf') ? (
+                <iframe
+                  src={`/api/files/${previewFile.fileData.fileName}`}
+                  className="w-full h-full border rounded"
+                  title="Resume Preview"
+                />
+              ) : (
+                <div className="flex flex-col items-center justify-center h-full space-y-4">
+                  <div className="text-center">
+                    <Upload className="mx-auto h-16 w-16 text-gray-400" />
+                    <h4 className="mt-4 text-lg font-medium text-gray-900">
+                      Preview Not Available
+                    </h4>
+                    <p className="mt-2 text-sm text-gray-500">
+                      Preview is only available for PDF files. Your {previewFile.fileData.originalName.split('.').pop()?.toUpperCase()} file has been uploaded successfully.
+                    </p>
+                    <a
+                      href={`/api/files/${previewFile.fileData.fileName}`}
+                      download={previewFile.fileData.originalName}
+                      className="mt-4 inline-flex items-center px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-md hover:bg-indigo-700 transition-colors"
+                    >
+                      Download File
+                    </a>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

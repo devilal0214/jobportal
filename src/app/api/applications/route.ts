@@ -117,9 +117,10 @@ export async function GET(request: NextRequest) {
         id: app.id,
         candidateName,
         position: app.job.title,
-        status: app.status.replace('_', ' '),
+        status: app.status, // Keep original status for color mapping
         appliedAt: app.createdAt.toISOString(),
-        email
+        email,
+        isArchived: app.isArchived
       }
     })
 

@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { verifyToken } from './lib/auth'
 
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
@@ -30,30 +29,16 @@ export function middleware(request: NextRequest) {
     return NextResponse.next()
   }
 
-  // Check for authentication token
+  // Check for authentication token (basic check only)
   const token = request.cookies.get('auth-token')?.value
 
   if (!token) {
     return NextResponse.redirect(new URL('/login', request.url))
   }
 
-  // Verify token
-  const payload = verifyToken(token)
-  if (!payload) {
-    return NextResponse.redirect(new URL('/login', request.url))
-  }
-
-  // Add user info to headers for API routes
-  const requestHeaders = new Headers(request.headers)
-  requestHeaders.set('x-user-id', payload.userId)
-  requestHeaders.set('x-user-email', payload.email)
-  requestHeaders.set('x-user-role', payload.role)
-
-  return NextResponse.next({
-    request: {
-      headers: requestHeaders,
-    },
-  })
+  // For protected routes, let them through and handle verification on the API side
+  // This avoids Edge Runtime compatibility issues with JWT verification
+  return NextResponse.next()
 }
 
 export const config = {

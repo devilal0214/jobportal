@@ -12,19 +12,21 @@ interface EmailTestRequest {
     email: string
     name: string
   }>
+  customTemplate?: string
+  customSubject?: string
 }
 
 export async function POST(request: NextRequest) {
   try {
     const requestBody: EmailTestRequest = await request.json()
-    const { status, roles, testEmail, templateId, recipients } = requestBody
+    const { status, roles, testEmail, templateId, recipients, customTemplate, customSubject } = requestBody
 
-    console.log('Email test request:', { status, roles, recipientCount: recipients.length })
+    console.log('Email test request:', { status, roles, recipientCount: recipients.length, hasCustomTemplate: !!customTemplate })
 
-    // Validate required fields
-    if (!status || !roles.length || !templateId) {
+    // Validate required fields - adjust validation for new recipient modes
+    if (!status || !templateId || recipients.length === 0) {
       return NextResponse.json(
-        { error: 'Missing required fields: status, roles, and templateId are required' },
+        { error: 'Missing required fields: status, templateId, and at least one recipient are required' },
         { status: 400 }
       )
     }
@@ -57,8 +59,8 @@ export async function POST(request: NextRequest) {
     }
 
     // Replace variables in template
-    let subject = template.subject
-    let emailBody = template.body
+    let subject = customSubject || template.subject
+    let emailBody = customTemplate || template.body
 
     Object.entries(emailVariables).forEach(([key, value]) => {
       const placeholder = `{{${key}}}`
@@ -71,7 +73,9 @@ export async function POST(request: NextRequest) {
       <div style="background-color: #fef3cd; border: 1px solid #faebcc; color: #8a6d3b; padding: 15px; margin-bottom: 20px; border-radius: 4px;">
         <strong>🧪 EMAIL TEST:</strong> This is a test email sent from the Job Portal admin panel.<br>
         <strong>Status:</strong> ${status}<br>
-        <strong>Target Roles:</strong> ${roles.join(', ')}<br>
+        ${roles.length > 0 ? `<strong>Target Roles:</strong> ${roles.join(', ')}<br>` : ''}
+        ${customTemplate ? '<strong>Using Custom Template:</strong> Yes<br>' : ''}
+        ${customSubject ? '<strong>Using Custom Subject:</strong> Yes<br>' : ''}
         <strong>Sent at:</strong> ${new Date().toLocaleString()}
       </div>
     `
@@ -107,42 +111,16 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Send to additional test email if provided
-    if (testEmail && testEmail.includes('@')) {
-      try {
-        const success = await emailService.sendEmail({
-          to: testEmail,
-          subject: `[TEST] ${subject}`,
-          html: emailBody,
-          templateId: template.id
-        })
-
-        emailResults.push({
-          email: testEmail,
-          success
-        })
-
-        if (success) {
-          emailsSent++
-        }
-
-      } catch (error) {
-        console.error(`Failed to send email to ${testEmail}:`, error)
-        emailResults.push({
-          email: testEmail,
-          success: false,
-          error: error instanceof Error ? error.message : 'Unknown error'
-        })
-      }
-    }
+    // Remove the additional test email handling since it's now handled in recipients array
+    // Send to system users with selected roles is now handled in the main recipients loop
 
     // Log the test activity
     try {
       await prisma.emailLog.create({
         data: {
-          to: recipients.map(r => r.email).join(', ') + (testEmail ? `, ${testEmail}` : ''),
+          to: recipients.map(r => r.email).join(', '),
           subject: `[EMAIL TEST] ${status} notification`,
-          body: `Email test performed for status: ${status}, roles: ${roles.join(', ')}, recipients: ${emailsSent}`,
+          body: `Email test performed for status: ${status}${roles.length > 0 ? `, roles: ${roles.join(', ')}` : ''}, recipients: ${emailsSent}${customTemplate ? ' (custom template used)' : ''}`,
           status: emailsSent > 0 ? 'sent' : 'failed',
           templateId: template.id
         }
@@ -154,12 +132,13 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       success: true,
       emailsSent,
-      totalRecipients: recipients.length + (testEmail ? 1 : 0),
+      totalRecipients: recipients.length,
       results: emailResults,
       template: {
         name: template.name,
         type: template.type,
-        subject: template.subject
+        subject: template.subject,
+        customUsed: !!customTemplate
       }
     })
 

@@ -44,11 +44,7 @@ export async function GET(request: NextRequest) {
           status: 'UNDER_REVIEW'
         }
       }),
-      prisma.job.count({
-        where: {
-          status: 'ACTIVE'
-        }
-      }),
+      prisma.job.count(), // Count all jobs created (regardless of status)
       prisma.user.count(),
       prisma.emailLog.count()
     ])

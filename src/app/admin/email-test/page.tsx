@@ -1,8 +1,8 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import Link from 'next/link'
-import { Mail, Send, CheckCircle, AlertCircle, Users, Settings } from 'lucide-react'
+import { Mail, Send, CheckCircle, AlertCircle, Users, Settings, Edit3 } from 'lucide-react'
 
 interface Role {
   id: string
@@ -36,11 +36,17 @@ export default function EmailTestPage() {
   const [selectedStatus, setSelectedStatus] = useState('SHORTLISTED')
   const [selectedRoles, setSelectedRoles] = useState<string[]>(['Administrator'])
   const [testEmail, setTestEmail] = useState('test@example.com')
+  const [recipientMode, setRecipientMode] = useState<'roles' | 'email'>('roles')
+  const [customTemplate, setCustomTemplate] = useState('')
+  const [customSubject, setCustomSubject] = useState('')
+  const [isEditingTemplate, setIsEditingTemplate] = useState(false)
+  const [selectedUserEmails, setSelectedUserEmails] = useState<string[]>([])
   
   // Data from API
   const [roles, setRoles] = useState<Role[]>([])
   const [templates, setTemplates] = useState<EmailTemplate[]>([])
   const [users, setUsers] = useState<User[]>([])
+  const [selectedUsers, setSelectedUsers] = useState<string[]>([])
 
   const applicationStatuses = [
     { value: 'SHORTLISTED', label: 'Shortlisted', description: 'Candidate has been shortlisted for next round' },
@@ -54,24 +60,90 @@ export default function EmailTestPage() {
     fetchData()
   }, [])
 
+  useEffect(() => {
+    // Initialize custom template and subject when templates load
+    const getTemplateForStatus = () => {
+      const statusTemplateMap: { [key: string]: string } = {
+        'SHORTLISTED': 'APPLICATION_STATUS',
+        'SELECTED': 'APPLICATION_STATUS', 
+        'REJECTED': 'APPLICATION_STATUS',
+        'UNDER_REVIEW': 'APPLICATION_STATUS',
+        'INTERVIEW': 'INTERVIEW_SCHEDULED'
+      }
+      
+      const templateType = statusTemplateMap[selectedStatus] || 'APPLICATION_STATUS'
+      return templates.find(t => t.type === templateType)
+    }
+
+    const template = getTemplateForStatus()
+    if (template) {
+      if (!customTemplate) {
+        setCustomTemplate(template.body)
+      }
+      if (!customSubject) {
+        setCustomSubject(template.subject)
+      }
+    }
+  }, [selectedStatus, templates, customTemplate, customSubject])
+
   const fetchData = async () => {
     try {
-      // Fetch roles
-      const rolesResponse = await fetch('/api/roles?includePermissions=true')
-      if (rolesResponse.ok) {
-        const rolesData = await rolesResponse.json()
-        setRoles(rolesData.filter((role: Role) => role.isSystem))
+      // Get the auth token
+      const token = localStorage.getItem('token')
+      if (!token) {
+        setMessage({ 
+          type: 'error', 
+          text: 'Authentication token not found. Please login again.' 
+        })
+        return
       }
 
-      // Fetch users
-      const usersResponse = await fetch('/api/users')
+      const authHeaders = {
+        'Authorization': `Bearer ${token}`
+      }
+
+      // Fetch roles - don't fail if this fails, just show a message
+      const rolesResponse = await fetch('/api/roles?includePermissions=true', {
+        headers: authHeaders
+      })
+      if (rolesResponse.ok) {
+        const rolesData = await rolesResponse.json()
+        console.log('Roles data:', rolesData)
+        // rolesData has structure { roles: [...] }
+        setRoles((rolesData.roles || []).filter((role: Role) => role.isSystem))
+      } else {
+        console.error('Failed to fetch roles:', rolesResponse.status, rolesResponse.statusText)
+        if (rolesResponse.status === 401) {
+          setMessage({ 
+            type: 'error', 
+            text: 'Authentication expired. Please refresh the page or login again.' 
+          })
+        }
+      }
+
+      // Fetch users - don't fail if this fails, just show a message  
+      const usersResponse = await fetch('/api/users', {
+        headers: authHeaders
+      })
       if (usersResponse.ok) {
         const usersData = await usersResponse.json()
+        console.log('Users data:', usersData)
         setUsers(usersData.users || [])
+      } else {
+        console.error('Failed to fetch users:', usersResponse.status, usersResponse.statusText)
+        // Don't set another error message if we already have one
+        if (usersResponse.status === 401 && !message) {
+          setMessage({ 
+            type: 'error', 
+            text: 'Authentication expired. Please refresh the page or login again.' 
+          })
+        }
       }
 
       // Fetch email templates
-      const templatesResponse = await fetch('/api/admin/email-templates')
+      const templatesResponse = await fetch('/api/admin/email-templates', {
+        headers: authHeaders
+      })
       if (templatesResponse.ok) {
         const templatesData = await templatesResponse.json()
         setTemplates(templatesData.filter((template: EmailTemplate) => template.isActive))
@@ -93,10 +165,45 @@ export default function EmailTestPage() {
     )
   }
 
+  const handleUserToggle = (userId: string) => {
+    setSelectedUsers(prev => 
+      prev.includes(userId)
+        ? prev.filter(u => u !== userId)
+        : [...prev, userId]
+    )
+  }
+
+  const handleUserEmailToggle = (userEmail: string) => {
+    setSelectedUserEmails(prev => 
+      prev.includes(userEmail)
+        ? prev.filter(e => e !== userEmail)
+        : [...prev, userEmail]
+    )
+  }
+
   const getEmailRecipients = () => {
     return users.filter(user => 
       user.role && selectedRoles.includes(user.role.name)
     )
+  }
+
+  const getSelectedUsers = () => {
+    return users.filter(user => selectedUsers.includes(user.id))
+  }
+
+  const getUsersByRoles = () => {
+    return users.filter(user => 
+      user.role && selectedRoles.includes(user.role.name)
+    )
+  }
+
+  const getRecipientCount = () => {
+    if (recipientMode === 'roles') {
+      return selectedUsers.length > 0 ? selectedUsers.length : selectedUserEmails.length
+    } else if (recipientMode === 'email' && testEmail) {
+      return 1
+    }
+    return 0
   }
 
   const getTemplateForStatus = () => {
@@ -113,8 +220,19 @@ export default function EmailTestPage() {
   }
 
   const handleSendTestEmail = async () => {
-    if (!selectedStatus || selectedRoles.length === 0) {
-      setMessage({ type: 'error', text: 'Please select status and at least one role' })
+    // Validate based on recipient mode
+    if (!selectedStatus) {
+      setMessage({ type: 'error', text: 'Please select an application status' })
+      return
+    }
+
+    if (recipientMode === 'roles' && selectedUsers.length === 0) {
+      setMessage({ type: 'error', text: 'Please select at least one user' })
+      return
+    }
+
+    if (recipientMode === 'email' && !testEmail) {
+      setMessage({ type: 'error', text: 'Please enter an email address' })
       return
     }
 
@@ -122,7 +240,6 @@ export default function EmailTestPage() {
     setMessage(null)
 
     try {
-      const recipients = getEmailRecipients()
       const template = getTemplateForStatus()
 
       if (!template) {
@@ -130,9 +247,17 @@ export default function EmailTestPage() {
         return
       }
 
-      if (recipients.length === 0) {
-        setMessage({ type: 'error', text: 'No users found with selected roles' })
-        return
+      let emailRecipients: Array<{ id: string; email: string; name: string }> = []
+
+      if (recipientMode === 'roles') {
+        const selectedUsersList = getSelectedUsers()
+        if (selectedUsersList.length === 0) {
+          setMessage({ type: 'error', text: 'No users selected' })
+          return
+        }
+        emailRecipients = selectedUsersList.map(r => ({ id: r.id, email: r.email, name: r.name }))
+      } else if (recipientMode === 'email') {
+        emailRecipients = [{ id: 'test-email', email: testEmail, name: 'Test Recipient' }]
       }
 
       // Send test emails
@@ -140,22 +265,26 @@ export default function EmailTestPage() {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
         },
         body: JSON.stringify({
           status: selectedStatus,
-          roles: selectedRoles,
-          testEmail,
+          roles: recipientMode === 'roles' ? selectedRoles : [],
+          testEmail: recipientMode === 'email' ? testEmail : undefined,
           templateId: template.id,
-          recipients: recipients.map(r => ({ id: r.id, email: r.email, name: r.name }))
+          recipients: emailRecipients,
+          customTemplate: isEditingTemplate ? customTemplate : undefined,
+          customSubject: customSubject || template.subject
         }),
       })
 
       const result = await response.json()
 
       if (response.ok) {
+        const recipientCount = emailRecipients.length
         setMessage({ 
           type: 'success', 
-          text: `✅ Test emails sent successfully! ${result.emailsSent} emails sent to ${recipients.length} recipients.` 
+          text: `✅ Test emails sent successfully! ${result.emailsSent || recipientCount} emails sent to ${recipientCount} recipients.` 
         })
       } else {
         setMessage({ type: 'error', text: result.error || 'Failed to send test emails' })
@@ -167,6 +296,14 @@ export default function EmailTestPage() {
     } finally {
       setSending(false)
     }
+  }
+
+  // Validation for send button
+  const canSendEmail = () => {
+    if (!selectedStatus) return false
+    if (recipientMode === 'roles' && selectedUsers.length === 0) return false
+    if (recipientMode === 'email' && !testEmail) return false
+    return true
   }
 
   if (loading) {
@@ -181,7 +318,6 @@ export default function EmailTestPage() {
   }
 
   const selectedTemplate = getTemplateForStatus()
-  const recipients = getEmailRecipients()
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -239,8 +375,152 @@ export default function EmailTestPage() {
           )}
 
           {/* Form */}
-          <div className="p-6 space-y-6">
-            {/* Application Status Selection */}
+          <div className="p-6 space-y-8">
+            {/* Recipient Selection Method */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-3">
+                Select Recipients
+              </label>
+              <div className="space-y-4">
+                {/* Radio buttons for recipient selection method */}
+                <div className="flex flex-col space-y-3">
+                  <label className="flex items-center">
+                    <input
+                      type="radio"
+                      name="recipientMode"
+                      value="roles"
+                      checked={recipientMode === 'roles'}
+                      onChange={(e) => setRecipientMode(e.target.value as 'roles' | 'email')}
+                      className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300"
+                    />
+                    <span className="ml-3 text-sm font-medium text-gray-700">By User Roles</span>
+                  </label>
+                  <label className="flex items-center">
+                    <input
+                      type="radio"
+                      name="recipientMode"
+                      value="email"
+                      checked={recipientMode === 'email'}
+                      onChange={(e) => setRecipientMode(e.target.value as 'roles' | 'email')}
+                      className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300"
+                    />
+                    <span className="ml-3 text-sm font-medium text-gray-700">Specific Email Address</span>
+                  </label>
+                </div>
+
+                {/* Role and User Selection (when roles mode is selected) */}
+                {recipientMode === 'roles' && (
+                  <div className="ml-7 space-y-4 border-l-2 border-gray-200 pl-4">
+                    {/* Role Selection */}
+                    <div>
+                      <p className="text-sm text-gray-600 mb-2">First, select user roles:</p>
+                      {roles.length > 0 ? (
+                        <div className="space-y-2">
+                          {roles.map((role) => (
+                            <label key={role.id} className="flex items-center">
+                              <input
+                                type="checkbox"
+                                checked={selectedRoles.includes(role.name)}
+                                onChange={() => handleRoleToggle(role.name)}
+                                className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
+                              />
+                              <span className="ml-3 text-sm text-gray-700">
+                                <span className="font-medium">{role.name}</span>
+                                <span className="text-gray-500 ml-1">- {role.description}</span>
+                              </span>
+                            </label>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="text-sm text-amber-600 bg-amber-50 p-4 rounded border border-amber-200">
+                          <div className="flex items-center mb-2">
+                            <AlertCircle className="h-4 w-4 mr-2" />
+                            <strong>Unable to Load Roles</strong>
+                          </div>
+                          <p className="mb-2">Cannot load user roles at the moment. This might be a temporary issue.</p>
+                          <div className="text-xs text-amber-700">
+                            <p>Debug info: {loading ? 'Loading...' : `Roles count: ${roles.length}`}</p>
+                            <p className="mt-1">
+                              <button 
+                                onClick={() => window.location.reload()}
+                                className="underline hover:no-underline cursor-pointer"
+                              >
+                                Click here to refresh the page
+                              </button>
+                            </p>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* User Selection based on roles */}
+                    {selectedRoles.length > 0 && (
+                      <div>
+                        <p className="text-sm text-gray-600 mb-2">Then, select specific users:</p>
+                        {users.length > 0 ? (
+                          <div className="space-y-2 max-h-40 overflow-y-auto border rounded-md p-3 bg-gray-50">
+                            {getUsersByRoles().map((user) => (
+                              <label key={user.id} className="flex items-center">
+                                <input
+                                  type="checkbox"
+                                  checked={selectedUsers.includes(user.id)}
+                                  onChange={() => handleUserToggle(user.id)}
+                                  className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
+                                />
+                                <span className="ml-3 text-sm text-gray-700">
+                                  <span className="font-medium">{user.name}</span>
+                                  <span className="text-gray-500 ml-1">({user.email}) - {user.role.name}</span>
+                                </span>
+                              </label>
+                            ))}
+                            {getUsersByRoles().length === 0 && (
+                              <p className="text-sm text-gray-500">No users found with selected roles</p>
+                            )}
+                          </div>
+                        ) : (
+                          <div className="text-sm text-amber-600 bg-amber-50 p-4 rounded border border-amber-200">
+                            <div className="flex items-center mb-2">
+                              <AlertCircle className="h-4 w-4 mr-2" />
+                              <strong>Cannot Load Users</strong>
+                            </div>
+                            <p className="mb-2">Unable to load users at the moment. This might be a temporary issue.</p>
+                            <div className="text-xs text-amber-700">
+                              <p>Debug info: Users count: {users.length}</p>
+                              <p className="mt-1">
+                                <button 
+                                  onClick={() => window.location.reload()}
+                                  className="underline hover:no-underline cursor-pointer"
+                                >
+                                  Refresh page
+                                </button>
+                              </p>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Email Input (when email mode is selected) */}
+                {recipientMode === 'email' && (
+                  <div className="ml-7 border-l-2 border-gray-200 pl-4">
+                    <input
+                      type="email"
+                      value={testEmail}
+                      onChange={(e) => setTestEmail(e.target.value)}
+                      placeholder="Enter email address"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 text-gray-700"
+                    />
+                    <p className="mt-1 text-sm text-gray-500">
+                      Enter the specific email address to receive the test email
+                    </p>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Application Status Selection - Moved near template */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Application Status
@@ -257,94 +537,114 @@ export default function EmailTestPage() {
                 ))}
               </select>
               <p className="mt-1 text-sm text-gray-500">
-                This will determine which email template is used
+                This will determine which email template is used and auto-populate the editor below
               </p>
             </div>
 
-            {/* User Roles Selection */}
+            {/* Template Editor */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                User Roles (Recipients)
-              </label>
-              <div className="space-y-2">
-                {roles.map((role) => (
-                  <label key={role.id} className="flex items-center">
-                    <input
-                      type="checkbox"
-                      checked={selectedRoles.includes(role.name)}
-                      onChange={() => handleRoleToggle(role.name)}
-                      className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
-                    />
-                    <span className="ml-3 text-sm text-gray-700">
-                      <span className="font-medium">{role.name}</span>
-                      <span className="text-gray-500 ml-1">- {role.description}</span>
-                    </span>
-                  </label>
-                ))}
+              <div className="flex items-center justify-between mb-2">
+                <label className="block text-sm font-medium text-gray-700">
+                  Email Template
+                </label>
+                <button
+                  onClick={() => setIsEditingTemplate(!isEditingTemplate)}
+                  className="text-sm text-indigo-600 hover:text-indigo-500 font-medium flex items-center"
+                >
+                  <Edit3 className="h-4 w-4 mr-1" />
+                  {isEditingTemplate ? 'View Preview' : 'Edit Template'}
+                </button>
               </div>
-              <p className="mt-1 text-sm text-gray-500">
-                Users with selected roles will receive the test email
-              </p>
-            </div>
-
-            {/* Test Email Address */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Additional Test Email (Optional)
-              </label>
-              <input
-                type="email"
-                value={testEmail}
-                onChange={(e) => setTestEmail(e.target.value)}
-                placeholder="test@example.com"
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 text-gray-700"
-              />
-              <p className="mt-1 text-sm text-gray-500">
-                An additional email address to receive the test email
-              </p>
+              
+              {isEditingTemplate ? (
+                <div className="space-y-4">
+                  <div>
+                    <label htmlFor="subject" className="block text-sm font-medium text-gray-700 mb-1">
+                      Subject
+                    </label>
+                    <input
+                      id="subject"
+                      type="text"
+                      value={customSubject}
+                      onChange={(e) => setCustomSubject(e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 text-gray-700"
+                      placeholder="Enter email subject..."
+                    />
+                  </div>
+                  <div>
+                    <label htmlFor="template" className="block text-sm font-medium text-gray-700 mb-1">
+                      Email Body
+                    </label>
+                    <textarea
+                      id="template"
+                      value={customTemplate}
+                      onChange={(e) => setCustomTemplate(e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 text-gray-700 font-mono text-sm"
+                      rows={10}
+                      placeholder="Enter your email template..."
+                    />
+                    <p className="mt-1 text-sm text-gray-500">
+                      You can use variables like {'{applicant_name}'}, {'{job_title}'}, {'{status}'}, etc.
+                    </p>
+                  </div>
+                </div>
+              ) : (
+                <div className="bg-gray-50 border border-gray-200 rounded-md p-4">
+                  {selectedTemplate ? (
+                    <div>
+                      <div className="flex items-center text-sm text-gray-600 mb-2">
+                        <Mail className="h-4 w-4 mr-1" />
+                        <span>Template: <strong>{selectedTemplate.name}</strong></span>
+                      </div>
+                      <div className="text-sm text-gray-600 mb-3">
+                        Subject: <em>{customSubject || selectedTemplate.subject}</em>
+                      </div>
+                      <div className="text-sm text-gray-700 whitespace-pre-wrap bg-white p-3 rounded border">
+                        {customTemplate || selectedTemplate.body}
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="text-sm text-red-600">
+                      ⚠️ No active email template found for this status
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
 
             {/* Preview Section */}
             <div className="bg-gray-50 rounded-lg p-4">
               <h3 className="text-lg font-medium text-gray-900 mb-3">Email Preview</h3>
               
-              {/* Template Info */}
-              {selectedTemplate ? (
-                <div className="mb-4">
-                  <div className="flex items-center text-sm text-gray-600 mb-2">
-                    <Mail className="h-4 w-4 mr-1" />
-                    <span>Template: <strong>{selectedTemplate.name}</strong></span>
-                  </div>
-                  <div className="text-sm text-gray-600 mb-2">
-                    Subject: <em>{selectedTemplate.subject}</em>
-                  </div>
-                </div>
-              ) : (
-                <div className="text-sm text-red-600 mb-4">
-                  ⚠️ No active email template found for this status
-                </div>
-              )}
-
               {/* Recipients */}
               <div>
                 <div className="flex items-center text-sm text-gray-600 mb-2">
                   <Users className="h-4 w-4 mr-1" />
-                  <span>Recipients ({recipients.length + (testEmail ? 1 : 0)} total):</span>
+                  <span>Recipients ({getRecipientCount()} total):</span>
                 </div>
                 <div className="space-y-1">
-                  {recipients.map((user) => (
-                    <div key={user.id} className="text-sm text-gray-700 pl-5">
-                      • {user.name} ({user.email}) - {user.role.name}
-                    </div>
-                  ))}
-                  {testEmail && (
+                  {recipientMode === 'roles' && (
+                    <>
+                      {getSelectedUsers().map((user) => (
+                        <div key={user.id} className="text-sm text-gray-700 pl-5">
+                          • {user.name} ({user.email}) - {user.role.name}
+                        </div>
+                      ))}
+                      {getSelectedUsers().length === 0 && (
+                        <div className="text-sm text-gray-500 pl-5">
+                          No users selected
+                        </div>
+                      )}
+                    </>
+                  )}
+                  {recipientMode === 'email' && testEmail && (
                     <div className="text-sm text-gray-700 pl-5">
                       • Test Email ({testEmail})
                     </div>
                   )}
-                  {recipients.length === 0 && !testEmail && (
+                  {recipientMode === 'email' && !testEmail && (
                     <div className="text-sm text-gray-500 pl-5">
-                      No recipients selected
+                      No email address provided
                     </div>
                   )}
                 </div>
@@ -371,7 +671,7 @@ export default function EmailTestPage() {
                 
                 <button
                   onClick={handleSendTestEmail}
-                  disabled={sending || !selectedStatus || selectedRoles.length === 0}
+                  disabled={sending || !canSendEmail()}
                   className="inline-flex items-center px-6 py-2 border border-transparent rounded-md text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {sending ? (

@@ -10,7 +10,7 @@ interface Job {
   id: string
   title: string
   description: string
-  location: string
+  location?: string
   position?: string
   status: string
   createdAt: string
@@ -22,6 +22,13 @@ interface Job {
   form?: {
     id: string
     name: string
+    fields?: Array<{
+      id: string
+      label: string
+      type: string
+      required: boolean
+      options?: string[]
+    }>
   }
 }
 
@@ -34,6 +41,14 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
   const [showJobsDropdown, setShowJobsDropdown] = useState(false)
   const router = useRouter()
   const resolvedParams = use(params)
+
+  // Check if the job form has a location field
+  const hasLocationField = (job: Job): boolean => {
+    return job.form?.fields?.some(field => 
+      field.type === 'text' && 
+      field.label.toLowerCase().includes('location')
+    ) || false
+  }
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -317,10 +332,10 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
                     <Briefcase className="h-5 w-5 mr-2" />
                     <span>{job.position}</span>
                   </div>
-                  {job.location && (
+                  {(job.location || hasLocationField(job)) && (
                     <div className="flex items-center">
                       <MapPin className="h-5 w-5 mr-2" />
-                      <span>{job.location}</span>
+                      <span>{job.location || 'Location will be specified in application form'}</span>
                     </div>
                   )}
                   <div className="flex items-center">

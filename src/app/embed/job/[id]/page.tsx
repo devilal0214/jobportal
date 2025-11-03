@@ -3,17 +3,23 @@
 import { useState, useEffect, use } from 'react'
 import { Briefcase, MapPin, Clock, Send } from 'lucide-react'
 import TagsInput from '@/components/TagsInput'
+import SkillsWithRatings from '@/components/SkillsWithRatings'
 
 interface FormField {
   id: string
   label: string
   fieldType: string
   placeholder?: string
-  options?: string[]
+  options?: string[] | string // Can be JSON string from DB or parsed array
   cssClass?: string
   fieldId?: string
   isRequired: boolean
   order: number
+}
+
+interface SkillRating {
+  skill: string
+  rating: number
 }
 
 interface Job {
@@ -40,7 +46,9 @@ export default function EmbedJobPage({ params }: { params: Promise<{ id: string 
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState(false)
-  const [formData, setFormData] = useState<Record<string, string | string[]>>({})
+  const [formData, setFormData] = useState<Record<string, string | string[] | SkillRating[]>>({})
+  const [fileData, setFileData] = useState<Record<string, File>>({})
+  const [portfolioLinks, setPortfolioLinks] = useState<{ name: string; url: string }[]>([{ name: '', url: '' }])
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({})
   const resolvedParams = use(params)
 
@@ -54,9 +62,11 @@ export default function EmbedJobPage({ params }: { params: Promise<{ id: string 
           
           // Initialize form data
           if (data.form?.fields) {
-            const initialData: Record<string, string | string[]> = {}
+            const initialData: Record<string, string | string[] | SkillRating[]> = {}
             data.form.fields.forEach((field: FormField) => {
               if (field.fieldType === 'TAGS' || field.fieldType === 'CHECKBOX') {
+                initialData[field.id] = []
+              } else if (field.fieldType === 'SKILLS') {
                 initialData[field.id] = []
               } else {
                 initialData[field.id] = ''
@@ -87,7 +97,20 @@ export default function EmbedJobPage({ params }: { params: Promise<{ id: string 
     job.form.fields.forEach((field) => {
       if (field.isRequired) {
         const value = formData[field.id]
-        if (!value || (Array.isArray(value) && value.length === 0) || (typeof value === 'string' && value.trim() === '')) {
+        
+        if (field.fieldType === 'SKILLS') {
+          // For skills, check if it's a valid array with at least one skill and all skills are rated
+          const skills = value as SkillRating[]
+          if (!skills || skills.length === 0) {
+            errors[field.id] = `${field.label} is required`
+          } else {
+            // Check if all skills have ratings > 0
+            const hasUnratedSkills = skills.some(skill => !skill.rating || skill.rating === 0)
+            if (hasUnratedSkills) {
+              errors[field.id] = `Please rate all skills in ${field.label}`
+            }
+          }
+        } else if (!value || (Array.isArray(value) && value.length === 0) || (typeof value === 'string' && value.trim() === '')) {
           errors[field.id] = `${field.label} is required`
         }
       }
@@ -124,22 +147,32 @@ export default function EmbedJobPage({ params }: { params: Promise<{ id: string 
         })
       }
 
+      // Prepare form data with files and portfolio links
+      const submissionData = new FormData()
+      submissionData.append('jobId', resolvedParams.id)
+      submissionData.append('formData', JSON.stringify(formData))
+      submissionData.append('sourceInfo', JSON.stringify(sourceInfo))
+      submissionData.append('fieldLabels', JSON.stringify(fieldLabels))
+      
+      // Add portfolio links
+      const validPortfolioLinks = portfolioLinks.filter(link => link.name.trim() && link.url.trim())
+      submissionData.append('portfolioLinks', JSON.stringify(validPortfolioLinks))
+      
+      // Add files
+      Object.entries(fileData).forEach(([fieldId, file]) => {
+        submissionData.append(`file_${fieldId}`, file)
+      })
+
       const response = await fetch('/api/applications/embed', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          jobId: resolvedParams.id,
-          formData: formData,
-          sourceInfo: sourceInfo,
-          fieldLabels
-        }),
+        body: submissionData, // Changed from JSON to FormData
       })
 
       if (response.ok) {
         setSuccess(true)
         setFormData({})
+        setFileData({})
+        setPortfolioLinks([{ name: '', url: '' }])
       } else {
         const errorData = await response.json()
         setError(errorData.error || 'Failed to submit application')
@@ -151,7 +184,7 @@ export default function EmbedJobPage({ params }: { params: Promise<{ id: string 
     }
   }
 
-  const updateFormData = (fieldId: string, value: string | string[]) => {
+  const updateFormData = (fieldId: string, value: string | string[] | SkillRating[]) => {
     setFormData(prev => ({
       ...prev,
       [fieldId]: value
@@ -165,10 +198,29 @@ export default function EmbedJobPage({ params }: { params: Promise<{ id: string 
     }
   }
 
+  // Helper function to parse options from JSON string to array
+  const parseOptions = (options: unknown): string[] => {
+    if (!options) return []
+    if (Array.isArray(options)) return options
+    if (typeof options === 'string') {
+      try {
+        const parsed = JSON.parse(options)
+        return Array.isArray(parsed) ? parsed : []
+      } catch {
+        // If JSON parse fails, try splitting by comma as fallback
+        return options.split(',').map((opt: string) => opt.trim()).filter(Boolean)
+      }
+    }
+    return []
+  }
+
   const renderField = (field: FormField) => {
-    const fieldValue = formData[field.id] || (field.fieldType === 'TAGS' || field.fieldType === 'CHECKBOX' ? [] : '')
+    const fieldValue = formData[field.id] || (field.fieldType === 'TAGS' || field.fieldType === 'CHECKBOX' || field.fieldType === 'SKILLS' ? [] : '')
     const hasError = validationErrors[field.id]
-    const fieldClass = `w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${hasError ? 'border-red-500' : 'border-gray-300'} ${field.cssClass || ''}`
+    const fieldClass = `w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-gray-900 ${hasError ? 'border-red-500' : 'border-gray-300'} ${field.cssClass || ''}`
+    
+    // Parse options properly for select, radio, and checkbox fields
+    const fieldOptions = parseOptions(field.options)
 
     switch (field.fieldType) {
       case 'TEXT':
@@ -233,7 +285,7 @@ export default function EmbedJobPage({ params }: { params: Promise<{ id: string 
             required={field.isRequired}
           >
             <option value="">{field.placeholder || 'Select an option'}</option>
-            {field.options?.map((option, index) => (
+            {fieldOptions.map((option, index) => (
               <option key={index} value={option}>
                 {option}
               </option>
@@ -244,7 +296,7 @@ export default function EmbedJobPage({ params }: { params: Promise<{ id: string 
       case 'RADIO':
         return (
           <div className={`space-y-2 ${field.cssClass || ''}`} id={field.fieldId || field.id}>
-            {field.options?.map((option, index) => (
+            {fieldOptions.map((option, index) => (
               <label key={index} className="flex items-center cursor-pointer">
                 <input
                   type="radio"
@@ -255,7 +307,7 @@ export default function EmbedJobPage({ params }: { params: Promise<{ id: string 
                   className="mr-2 w-4 h-4 text-blue-600"
                   required={field.isRequired}
                 />
-                <span className="text-sm">{option}</span>
+                <span className="text-sm text-gray-700">{option}</span>
               </label>
             ))}
           </div>
@@ -264,7 +316,7 @@ export default function EmbedJobPage({ params }: { params: Promise<{ id: string 
       case 'CHECKBOX':
         return (
           <div className={`space-y-2 ${field.cssClass || ''}`} id={field.fieldId || field.id}>
-            {field.options?.map((option, index) => (
+            {fieldOptions.map((option, index) => (
               <label key={index} className="flex items-center cursor-pointer">
                 <input
                   type="checkbox"
@@ -280,7 +332,7 @@ export default function EmbedJobPage({ params }: { params: Promise<{ id: string 
                   }}
                   className="mr-2 w-4 h-4 text-blue-600"
                 />
-                <span className="text-sm">{option}</span>
+                <span className="text-sm text-gray-700">{option}</span>
               </label>
             ))}
           </div>
@@ -291,7 +343,7 @@ export default function EmbedJobPage({ params }: { params: Promise<{ id: string 
           <TagsInput
             value={fieldValue as string[]}
             onChange={(tags) => updateFormData(field.id, tags)}
-            options={field.options || []}
+            options={fieldOptions}
             placeholder={field.placeholder || 'Type to add tags...'}
             className={field.cssClass || ''}
             id={field.fieldId || field.id}
@@ -320,6 +372,43 @@ export default function EmbedJobPage({ params }: { params: Promise<{ id: string 
             placeholder={field.placeholder}
             className={fieldClass}
             required={field.isRequired}
+          />
+        )
+
+      case 'FILE':
+        return (
+          <div className="space-y-2">
+            <input
+              type="file"
+              id={field.fieldId || field.id}
+              onChange={(e) => {
+                const file = e.target.files?.[0]
+                if (file) {
+                  // Store file info for display
+                  updateFormData(field.id, file.name)
+                  // Store actual file separately
+                  setFileData(prev => ({ ...prev, [field.id]: file }))
+                }
+              }}
+              accept=".pdf,.doc,.docx"
+              className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+              required={field.isRequired}
+            />
+            {fieldValue && (
+              <p className="text-sm text-gray-600">Selected: {fieldValue as string}</p>
+            )}
+          </div>
+        )
+
+      case 'SKILLS':
+        return (
+          <SkillsWithRatings
+            value={fieldValue as SkillRating[]}
+            onChange={(skills) => updateFormData(field.id, skills)}
+            options={fieldOptions}
+            placeholder={field.placeholder || 'Type to add skills...'}
+            className={field.cssClass || ''}
+            id={field.fieldId || field.id}
           />
         )
 
@@ -455,6 +544,124 @@ export default function EmbedJobPage({ params }: { params: Promise<{ id: string 
                           )}
                         </div>
                       ))}
+
+                    {/* Portfolio Links Section */}
+                    <div className="pt-4 border-t border-gray-200">
+                      <div className="mb-4">
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Portfolio Links (GitHub, personal website, etc.)
+                        </label>
+                        <div className="space-y-3">
+                          {portfolioLinks.map((link, index) => (
+                            <div key={index} className="flex gap-2">
+                              <div className="flex-1">
+                                <input
+                                  type="text"
+                                  value={link.name}
+                                  onChange={(e) => {
+                                    const updated = [...portfolioLinks]
+                                    updated[index].name = e.target.value
+                                    setPortfolioLinks(updated)
+                                  }}
+                                  placeholder="Link name (e.g., GitHub, Portfolio)"
+                                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white text-gray-900"
+                                />
+                              </div>
+                              <div className="flex-1">
+                                <input
+                                  type="url"
+                                  value={link.url}
+                                  onChange={(e) => {
+                                    const updated = [...portfolioLinks]
+                                    updated[index].url = e.target.value
+                                    setPortfolioLinks(updated)
+                                  }}
+                                  placeholder="https://github.com/yourusername"
+                                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white text-gray-900"
+                                />
+                              </div>
+                              {portfolioLinks.length > 1 && (
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setPortfolioLinks(portfolioLinks.filter((_, i) => i !== index))
+                                  }}
+                                  className="px-3 py-2 text-red-600 hover:text-red-800 hover:bg-red-50 rounded-md transition-colors"
+                                  title="Remove link"
+                                >
+                                  ×
+                                </button>
+                              )}
+                            </div>
+                          ))}
+                          
+                          {portfolioLinks.length < 5 && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setPortfolioLinks([...portfolioLinks, { name: '', url: '' }])
+                              }}
+                              className="text-blue-600 hover:text-blue-800 text-sm font-medium"
+                            >
+                              + Add Another Link
+                            </button>
+                          )}
+                        </div>
+                        <div className="mt-2">
+                          <div className="flex flex-wrap gap-1">
+                            <span className="text-xs text-gray-500">Available:</span>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const updated = [...portfolioLinks]
+                                const index = updated.findIndex(link => link.name === '')
+                                if (index !== -1) {
+                                  updated[index] = { name: 'GitHub', url: 'https://github.com/' }
+                                  setPortfolioLinks(updated)
+                                } else if (updated.length < 5) {
+                                  setPortfolioLinks([...updated, { name: 'GitHub', url: 'https://github.com/' }])
+                                }
+                              }}
+                              className="text-xs bg-gray-100 hover:bg-gray-200 px-2 py-1 rounded"
+                            >
+                              + GitHub
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const updated = [...portfolioLinks]
+                                const index = updated.findIndex(link => link.name === '')
+                                if (index !== -1) {
+                                  updated[index] = { name: 'Website', url: 'https://' }
+                                  setPortfolioLinks(updated)
+                                } else if (updated.length < 5) {
+                                  setPortfolioLinks([...updated, { name: 'Website', url: 'https://' }])
+                                }
+                              }}
+                              className="text-xs bg-gray-100 hover:bg-gray-200 px-2 py-1 rounded"
+                            >
+                              + Website
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const updated = [...portfolioLinks]
+                                const index = updated.findIndex(link => link.name === '')
+                                if (index !== -1) {
+                                  updated[index] = { name: 'Personal', url: 'https://' }
+                                  setPortfolioLinks(updated)
+                                } else if (updated.length < 5) {
+                                  setPortfolioLinks([...updated, { name: 'Personal', url: 'https://' }])
+                                }
+                              }}
+                              className="text-xs bg-gray-100 hover:bg-gray-200 px-2 py-1 rounded"
+                            >
+                              + Personal
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
 
                     {error && (
                       <div className="p-3 bg-red-50 border border-red-200 rounded-md">
