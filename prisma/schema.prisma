@@ -261,6 +261,7 @@ enum FieldType {
   NUMBER
   URL
   PASSWORD
+  COUNTRY_CODE
 }
 
 enum TemplateType {
