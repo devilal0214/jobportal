@@ -212,6 +212,13 @@ export default function AdminPage() {
       color: 'bg-blue-500'
     },
     {
+      title: 'Careers Page Settings',
+      description: 'Customize careers page banner, logo, and content',
+      icon: Briefcase,
+      href: '/admin/careers-settings',
+      color: 'bg-emerald-500'
+    },
+    {
       title: 'Email Templates',
       description: 'Create and manage email notification templates',
       icon: Mail,
@@ -368,6 +375,9 @@ export default function AdminPage() {
             </Link>
             <Link href="/admin/form-builder" className="text-gray-500 hover:text-gray-700 border-b-2 border-transparent hover:border-gray-300 py-4 px-1 text-sm font-medium">
               Form Builder
+            </Link>
+            <Link href="/admin/careers-settings" className="text-gray-500 hover:text-gray-700 border-b-2 border-transparent hover:border-gray-300 py-4 px-1 text-sm font-medium">
+              Careers Settings
             </Link>
           </div>
         </div>

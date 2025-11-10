@@ -8,6 +8,8 @@ export function middleware(request: NextRequest) {
     '/',
     '/jobs',
     '/jobs/',
+    '/careers',
+    '/careers/',
     '/apply/',
     '/login',
     '/register',

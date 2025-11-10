@@ -5,6 +5,7 @@ import { useRouter, usePathname } from 'next/navigation'
 import Link from 'next/link'
 import Head from 'next/head'
 import Script from 'next/script'
+import Image from 'next/image'
 import { 
   LogOut, 
   Briefcase, 
@@ -36,6 +37,13 @@ interface HeaderProps {
   noIndex?: boolean
 }
 
+interface LogoSettings {
+  logoImage?: string
+  logoHeight: string
+  logoWidth: string
+  companyName: string
+}
+
 const Header = ({
   title = 'Job Portal - Find Your Dream Job',
   description = 'Professional job portal for finding and posting job opportunities. Connect with top employers and talented candidates.',
@@ -48,6 +56,11 @@ const Header = ({
   const [loading, setLoading] = useState(true)
   const [showJobsDropdown, setShowJobsDropdown] = useState(false)
   const [showMobileMenu, setShowMobileMenu] = useState(false)
+  const [logoSettings, setLogoSettings] = useState<LogoSettings>({
+    logoHeight: '40px',
+    logoWidth: '40px',
+    companyName: 'Job Portal'
+  })
   const router = useRouter()
   const pathname = usePathname()
 
@@ -89,7 +102,27 @@ const Header = ({
       }
     }
 
+    const fetchLogoSettings = async () => {
+      try {
+        const response = await fetch('/api/careers-settings/public')
+        if (response.ok) {
+          const data = await response.json()
+          if (data.settings) {
+            setLogoSettings({
+              logoImage: data.settings.logoImage,
+              logoHeight: data.settings.logoHeight || '40px',
+              logoWidth: data.settings.logoWidth || '40px',
+              companyName: data.settings.companyName || 'Job Portal'
+            })
+          }
+        }
+      } catch (error) {
+        console.error('Failed to fetch logo settings:', error)
+      }
+    }
+
     checkAuth()
+    fetchLogoSettings()
   }, [router, pathname])
 
   // Close dropdowns when clicking outside
@@ -292,9 +325,25 @@ const Header = ({
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             {/* Logo */}
-            <div className="flex items-center">
+            <div className="flex items-center space-x-3">
+              {logoSettings.logoImage && (
+                <div 
+                  className="relative"
+                  style={{
+                    width: logoSettings.logoWidth,
+                    height: logoSettings.logoHeight
+                  }}
+                >
+                  <Image
+                    src={logoSettings.logoImage}
+                    alt={logoSettings.companyName}
+                    fill
+                    className="object-contain"
+                  />
+                </div>
+              )}
               <Link href="/" className="text-xl font-semibold text-gray-900">
-                Job Portal
+                {logoSettings.companyName}
               </Link>
             </div>
 

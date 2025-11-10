@@ -95,6 +95,8 @@ model Job {
   status       JobStatus @default(ACTIVE)
   isExternal   Boolean   @default(false)
   embedCode    String?
+  imageUrl     String?   // Job card image
+  bannerImageUrl String? // Job details page banner image
   createdAt    DateTime  @default(now())
   updatedAt    DateTime  @updatedAt
 

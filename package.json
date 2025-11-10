@@ -25,6 +25,7 @@
     "bcryptjs": "^3.0.2",
     "better-sqlite3": "^12.2.0",
     "clsx": "^2.1.1",
+    "gsap": "^3.13.0",
     "jsonwebtoken": "^9.0.2",
     "lucide-react": "^0.533.0",
     "multer": "^2.0.2",

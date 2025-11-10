@@ -11,6 +11,15 @@ const nextConfig: NextConfig = {
     // Allow production builds to complete even with ESLint errors
     ignoreDuringBuilds: true,
   },
+  images: {
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'images.unsplash.com',
+        pathname: '/**',
+      },
+    ],
+  },
   // Suppress hydration warnings caused by browser extensions
   webpack: (config, { dev }) => {
     if (dev) {

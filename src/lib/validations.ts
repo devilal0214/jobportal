@@ -23,6 +23,9 @@ export const jobSchema = z.object({
   status: z.enum(['ACTIVE', 'PAUSED', 'CLOSED', 'DRAFT']).optional(),
   assigneeId: z.string().optional(),
   formId: z.string().optional(),
+  salary: z.string().optional(),
+  imageUrl: z.string().optional(),
+  bannerImageUrl: z.string().optional(),
 })
 
 // Application schemas

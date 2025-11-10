@@ -29,7 +29,7 @@ export async function PUT(
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
 
-    const { title, description, position, location, status, formId } = await request.json()
+    const { title, description, position, location, status, formId, imageUrl, bannerImageUrl, salary } = await request.json()
 
     if (!title || !description) {
       return NextResponse.json(
@@ -47,9 +47,18 @@ export async function PUT(
       status
     }
 
-    // Add formId if it exists in the schema
+    // Add optional fields if they exist
     if (formId !== undefined) {
       updateData.formId = formId || null
+    }
+    if (imageUrl !== undefined) {
+      updateData.imageUrl = imageUrl || null
+    }
+    if (bannerImageUrl !== undefined) {
+      updateData.bannerImageUrl = bannerImageUrl || null
+    }
+    if (salary !== undefined) {
+      updateData.salary = salary || null
     }
 
     const job = await prisma.job.update({

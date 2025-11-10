@@ -1,9 +1,10 @@
 'use client'
 
 import { useState, useEffect, use } from 'react'
-import { Briefcase, MapPin, Clock, Send } from 'lucide-react'
+import { Briefcase, MapPin, Clock, Send, Building2, Calendar } from 'lucide-react'
 import TagsInput from '@/components/TagsInput'
 import SkillsWithRatings from '@/components/SkillsWithRatings'
+import CountryCodeInput from '@/components/CountryCodeInput'
 
 interface FormField {
   id: string
@@ -29,7 +30,6 @@ interface Job {
   department: string
   location: string
   description: string
-  requirements: string
   experienceLevel: string
   createdAt: string
   form?: {
@@ -217,7 +217,7 @@ export default function EmbedJobPage({ params }: { params: Promise<{ id: string 
   const renderField = (field: FormField) => {
     const fieldValue = formData[field.id] || (field.fieldType === 'TAGS' || field.fieldType === 'CHECKBOX' || field.fieldType === 'SKILLS' ? [] : '')
     const hasError = validationErrors[field.id]
-    const fieldClass = `w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-gray-900 ${hasError ? 'border-red-500' : 'border-gray-300'} ${field.cssClass || ''}`
+    const fieldClass = `w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-white text-gray-900 ${hasError ? 'border-red-500 ring-2 ring-red-200' : 'border-gray-300'} ${field.cssClass || ''}`
     
     // Parse options properly for select, radio, and checkbox fields
     const fieldOptions = parseOptions(field.options)
@@ -412,6 +412,17 @@ export default function EmbedJobPage({ params }: { params: Promise<{ id: string 
           />
         )
 
+      case 'COUNTRY_CODE':
+        return (
+          <CountryCodeInput
+            id={field.fieldId || field.id}
+            value={fieldValue as string}
+            onChange={(value) => updateFormData(field.id, value)}
+            required={field.isRequired}
+            className={field.cssClass || ''}
+          />
+        )
+
       default:
         return (
           <input
@@ -469,199 +480,261 @@ export default function EmbedJobPage({ params }: { params: Promise<{ id: string 
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-4">
-      <div className="max-w-4xl mx-auto">
-        <div className="bg-white rounded-lg shadow-md overflow-hidden">
-          {/* Job Header */}
-          <div className="bg-gradient-to-r from-blue-600 to-blue-700 text-white p-6">
-            <div className="flex items-start justify-between">
-              <div>
-                <h1 className="text-2xl font-bold mb-2">{job.title}</h1>
-                <div className="flex flex-wrap gap-4 text-blue-100">
-                  <div className="flex items-center">
-                    <Briefcase className="h-4 w-4 mr-2" />
-                    {job.position}
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-4 md:p-8">
+      <div className="max-w-5xl mx-auto">
+        <div className="bg-white rounded-xl shadow-lg overflow-hidden">
+          {/* Professional Job Header */}
+          <div className="border-b border-gray-200 bg-white">
+            <div className="p-6 md:p-8">
+              {/* Company Badge */}
+              <div className="inline-flex items-center gap-2 px-4 py-2 bg-indigo-50 text-indigo-700 rounded-full text-sm font-medium mb-4">
+                <Briefcase className="h-4 w-4" />
+                <span>Job Opening</span>
+              </div>
+
+              {/* Job Title */}
+              <h1 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4 leading-tight">
+                {job.title}
+              </h1>
+
+              {/* Job Metadata */}
+              <div className="flex flex-wrap items-center gap-4 md:gap-6 text-gray-600">
+                <div className="flex items-center gap-2">
+                  <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-gray-100">
+                    <Briefcase className="h-4 w-4 text-gray-600" />
                   </div>
-                  <div className="flex items-center">
-                    <MapPin className="h-4 w-4 mr-2" />
-                    {job.location}
-                  </div>
-                  <div className="flex items-center">
-                    <Clock className="h-4 w-4 mr-2" />
-                    Posted {new Date(job.createdAt).toLocaleDateString()}
+                  <div>
+                    <p className="text-xs text-gray-500">Position</p>
+                    <p className="text-sm font-medium text-gray-900">{job.position}</p>
                   </div>
                 </div>
+
+                {job.department && (
+                  <div className="flex items-center gap-2">
+                    <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-gray-100">
+                      <Building2 className="h-4 w-4 text-gray-600" />
+                    </div>
+                    <div>
+                      <p className="text-xs text-gray-500">Department</p>
+                      <p className="text-sm font-medium text-gray-900">{job.department}</p>
+                    </div>
+                  </div>
+                )}
+
+                <div className="flex items-center gap-2">
+                  <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-gray-100">
+                    <MapPin className="h-4 w-4 text-gray-600" />
+                  </div>
+                  <div>
+                    <p className="text-xs text-gray-500">Location</p>
+                    <p className="text-sm font-medium text-gray-900">{job.location}</p>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-gray-100">
+                    <Calendar className="h-4 w-4 text-gray-600" />
+                  </div>
+                  <div>
+                    <p className="text-xs text-gray-500">Posted</p>
+                    <p className="text-sm font-medium text-gray-900">
+                      {new Date(job.createdAt).toLocaleDateString()}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Experience Level Badge */}
+              <div className="mt-4">
+                <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-green-50 text-green-700 rounded-lg text-sm font-medium">
+                  <Clock className="h-3.5 w-3.5" />
+                  {job.experienceLevel}
+                </span>
               </div>
             </div>
           </div>
 
           {/* Job Content */}
-          <div className="p-6">
+          <div className="p-6 md:p-8">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
               {/* Job Description */}
-              <div>
-                <h2 className="text-lg font-bold text-gray-900 mb-4">Job Description</h2>
-                <div 
-                  className="prose prose-sm max-w-none text-gray-700 mb-6"
-                  dangerouslySetInnerHTML={{ __html: job.description }}
-                />
-                
-                {job.requirements && (
-                  <>
-                    <h3 className="text-md font-bold text-gray-900 mb-3">Requirements</h3>
-                    <div 
-                      className="prose prose-sm max-w-none text-gray-700 mb-6"
-                      dangerouslySetInnerHTML={{ __html: job.requirements }}
-                    />
-                  </>
-                )}
-
-                <div className="bg-blue-50 border border-blue-200 rounded-md p-4">
-                  <h4 className="text-sm font-medium text-blue-900 mb-1">Experience Level</h4>
-                  <p className="text-sm text-blue-800">{job.experienceLevel}</p>
+              <div className="space-y-6">
+                <div>
+                  <h2 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
+                    <div className="w-1 h-6 bg-indigo-600 rounded-full"></div>
+                    Job Description
+                  </h2>
+                  <div 
+                    className="prose prose-sm max-w-none
+                      [&_h1]:text-2xl [&_h1]:font-bold [&_h1]:text-gray-900 [&_h1]:mb-3 [&_h1]:mt-4
+                      [&_h2]:text-xl [&_h2]:font-bold [&_h2]:text-gray-900 [&_h2]:mb-3 [&_h2]:mt-4
+                      [&_h3]:text-lg [&_h3]:font-bold [&_h3]:text-gray-900 [&_h3]:mb-2 [&_h3]:mt-3
+                      [&_h4]:text-base [&_h4]:font-semibold [&_h4]:text-gray-900 [&_h4]:mb-2 [&_h4]:mt-3
+                      [&_h5]:text-sm [&_h5]:font-semibold [&_h5]:text-gray-900 [&_h5]:mb-2 [&_h5]:mt-2
+                      [&_h6]:text-sm [&_h6]:font-semibold [&_h6]:text-gray-900 [&_h6]:mb-2 [&_h6]:mt-2
+                      [&_p]:text-gray-700 [&_p]:mb-3 [&_p]:leading-relaxed
+                      [&_ul]:list-disc [&_ul]:ml-5 [&_ul]:mb-3 [&_ul]:text-gray-700
+                      [&_ol]:list-decimal [&_ol]:ml-5 [&_ol]:mb-3 [&_ol]:text-gray-700
+                      [&_li]:mb-1 [&_li]:text-gray-700 [&_li]:leading-relaxed
+                      [&_strong]:font-bold [&_strong]:text-gray-900
+                      [&_em]:italic [&_em]:text-gray-700
+                      [&_blockquote]:border-l-4 [&_blockquote]:border-indigo-500 [&_blockquote]:pl-3 [&_blockquote]:italic [&_blockquote]:text-gray-600 [&_blockquote]:my-3
+                      [&_code]:bg-gray-100 [&_code]:px-1 [&_code]:py-0.5 [&_code]:rounded [&_code]:text-xs [&_code]:text-gray-800
+                      [&_pre]:bg-gray-900 [&_pre]:text-gray-100 [&_pre]:p-3 [&_pre]:rounded [&_pre]:overflow-x-auto [&_pre]:mb-3
+                      [&_hr]:border-gray-300 [&_hr]:my-4"
+                    dangerouslySetInnerHTML={{ __html: job.description }}
+                  />
                 </div>
               </div>
 
               {/* Application Form */}
-              <div>
-                <h2 className="text-lg font-bold text-gray-900 mb-4">Apply for this Position</h2>
-                
-                {job.form ? (
-                  <form onSubmit={handleSubmit} className="space-y-4">
-                    {job.form.fields
-                      .sort((a, b) => a.order - b.order)
-                      .map((field) => (
-                        <div key={field.id}>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">
-                            {field.label}
-                            {field.isRequired && <span className="text-red-600 ml-1">*</span>}
-                          </label>
-                          
-                          {renderField(field)}
-                          
-                          {validationErrors[field.id] && (
-                            <p className="text-red-600 text-xs mt-1">{validationErrors[field.id]}</p>
-                          )}
-                        </div>
-                      ))}
+              <div className="lg:sticky lg:top-8 lg:self-start">
+                <div className="bg-gradient-to-br from-indigo-50 to-purple-50 rounded-xl p-6 border border-indigo-100">
+                  <h2 className="text-xl font-bold text-gray-900 mb-2 flex items-center gap-2">
+                    <div className="w-1 h-6 bg-indigo-600 rounded-full"></div>
+                    Apply for this Position
+                  </h2>
+                  <p className="text-sm text-gray-600 mb-6">Fill out the form below and we&apos;ll get back to you soon!</p>
+                  {job.form ? (
+                    <form onSubmit={handleSubmit} className="space-y-4">
+                      {job.form.fields
+                        .sort((a, b) => a.order - b.order)
+                        .map((field) => (
+                          <div key={field.id}>
+                            <label className="block text-sm font-semibold text-gray-900 mb-2">
+                              {field.label}
+                              {field.isRequired && <span className="text-red-600 ml-1">*</span>}
+                            </label>
+                            
+                            {renderField(field)}
+                            
+                            {validationErrors[field.id] && (
+                              <p className="text-red-600 text-xs mt-1.5 flex items-center gap-1">
+                                <span>⚠</span>
+                                {validationErrors[field.id]}
+                              </p>
+                            )}
+                          </div>
+                        ))}
 
-                    {/* Portfolio Links Section */}
-                    <div className="pt-4 border-t border-gray-200">
-                      <div className="mb-4">
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Portfolio Links (GitHub, personal website, etc.)
-                        </label>
-                        <div className="space-y-3">
-                          {portfolioLinks.map((link, index) => (
-                            <div key={index} className="flex gap-2">
-                              <div className="flex-1">
-                                <input
-                                  type="text"
-                                  value={link.name}
-                                  onChange={(e) => {
-                                    const updated = [...portfolioLinks]
-                                    updated[index].name = e.target.value
-                                    setPortfolioLinks(updated)
-                                  }}
-                                  placeholder="Link name (e.g., GitHub, Portfolio)"
-                                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white text-gray-900"
-                                />
+                      {/* Portfolio Links Section */}
+                      <div className="pt-6 border-t border-gray-200">
+                        <div className="mb-4">
+                          <label className="block text-sm font-semibold text-gray-900 mb-3">
+                            Portfolio Links (Optional)
+                          </label>
+                          <p className="text-xs text-gray-500 mb-3">Add your GitHub, personal website, or other portfolio links</p>
+                          <div className="space-y-3">
+                            {portfolioLinks.map((link, index) => (
+                              <div key={index} className="flex gap-2">
+                                <div className="flex-1">
+                                  <input
+                                    type="text"
+                                    value={link.name}
+                                    onChange={(e) => {
+                                      const updated = [...portfolioLinks]
+                                      updated[index].name = e.target.value
+                                      setPortfolioLinks(updated)
+                                    }}
+                                    placeholder="Link name (e.g., GitHub)"
+                                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-white text-gray-900"
+                                  />
+                                </div>
+                                <div className="flex-1">
+                                  <input
+                                    type="url"
+                                    value={link.url}
+                                    onChange={(e) => {
+                                      const updated = [...portfolioLinks]
+                                      updated[index].url = e.target.value
+                                      setPortfolioLinks(updated)
+                                    }}
+                                    placeholder="https://github.com/yourusername"
+                                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-white text-gray-900"
+                                  />
+                                </div>
+                                {portfolioLinks.length > 1 && (
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      setPortfolioLinks(portfolioLinks.filter((_, i) => i !== index))
+                                    }}
+                                    className="px-3 py-2.5 text-red-600 hover:text-red-800 hover:bg-red-50 rounded-lg transition-colors font-bold text-lg"
+                                    title="Remove link"
+                                  >
+                                    ×
+                                  </button>
+                                )}
                               </div>
-                              <div className="flex-1">
-                                <input
-                                  type="url"
-                                  value={link.url}
-                                  onChange={(e) => {
-                                    const updated = [...portfolioLinks]
-                                    updated[index].url = e.target.value
+                            ))}
+                            
+                            {portfolioLinks.length < 5 && (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setPortfolioLinks([...portfolioLinks, { name: '', url: '' }])
+                                }}
+                                className="text-indigo-600 hover:text-indigo-800 text-sm font-semibold"
+                              >
+                                + Add Another Link
+                              </button>
+                            )}
+                          </div>
+                          <div className="mt-3 pt-3 border-t border-gray-200">
+                            <div className="flex flex-wrap gap-2">
+                              <span className="text-xs text-gray-500 self-center">Quick add:</span>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  const updated = [...portfolioLinks]
+                                  const index = updated.findIndex(link => link.name === '')
+                                  if (index !== -1) {
+                                    updated[index] = { name: 'GitHub', url: 'https://github.com/' }
                                     setPortfolioLinks(updated)
-                                  }}
-                                  placeholder="https://github.com/yourusername"
-                                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white text-gray-900"
-                                />
-                              </div>
-                              {portfolioLinks.length > 1 && (
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    setPortfolioLinks(portfolioLinks.filter((_, i) => i !== index))
-                                  }}
-                                  className="px-3 py-2 text-red-600 hover:text-red-800 hover:bg-red-50 rounded-md transition-colors"
-                                  title="Remove link"
-                                >
-                                  ×
-                                </button>
-                              )}
+                                  } else if (updated.length < 5) {
+                                    setPortfolioLinks([...updated, { name: 'GitHub', url: 'https://github.com/' }])
+                                  }
+                                }}
+                                className="text-xs bg-white hover:bg-indigo-50 text-indigo-600 border border-indigo-200 px-3 py-1.5 rounded-lg font-medium transition-colors"
+                              >
+                                + GitHub
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  const updated = [...portfolioLinks]
+                                  const index = updated.findIndex(link => link.name === '')
+                                  if (index !== -1) {
+                                    updated[index] = { name: 'Website', url: 'https://' }
+                                    setPortfolioLinks(updated)
+                                  } else if (updated.length < 5) {
+                                    setPortfolioLinks([...updated, { name: 'Website', url: 'https://' }])
+                                  }
+                                }}
+                                className="text-xs bg-white hover:bg-indigo-50 text-indigo-600 border border-indigo-200 px-3 py-1.5 rounded-lg font-medium transition-colors"
+                              >
+                                + Website
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  const updated = [...portfolioLinks]
+                                  const index = updated.findIndex(link => link.name === '')
+                                  if (index !== -1) {
+                                    updated[index] = { name: 'Personal', url: 'https://' }
+                                    setPortfolioLinks(updated)
+                                  } else if (updated.length < 5) {
+                                    setPortfolioLinks([...updated, { name: 'Personal', url: 'https://' }])
+                                  }
+                                }}
+                                className="text-xs bg-white hover:bg-indigo-50 text-indigo-600 border border-indigo-200 px-3 py-1.5 rounded-lg font-medium transition-colors"
+                              >
+                                + Personal
+                              </button>
                             </div>
-                          ))}
-                          
-                          {portfolioLinks.length < 5 && (
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setPortfolioLinks([...portfolioLinks, { name: '', url: '' }])
-                              }}
-                              className="text-blue-600 hover:text-blue-800 text-sm font-medium"
-                            >
-                              + Add Another Link
-                            </button>
-                          )}
-                        </div>
-                        <div className="mt-2">
-                          <div className="flex flex-wrap gap-1">
-                            <span className="text-xs text-gray-500">Available:</span>
-                            <button
-                              type="button"
-                              onClick={() => {
-                                const updated = [...portfolioLinks]
-                                const index = updated.findIndex(link => link.name === '')
-                                if (index !== -1) {
-                                  updated[index] = { name: 'GitHub', url: 'https://github.com/' }
-                                  setPortfolioLinks(updated)
-                                } else if (updated.length < 5) {
-                                  setPortfolioLinks([...updated, { name: 'GitHub', url: 'https://github.com/' }])
-                                }
-                              }}
-                              className="text-xs bg-gray-100 hover:bg-gray-200 px-2 py-1 rounded"
-                            >
-                              + GitHub
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => {
-                                const updated = [...portfolioLinks]
-                                const index = updated.findIndex(link => link.name === '')
-                                if (index !== -1) {
-                                  updated[index] = { name: 'Website', url: 'https://' }
-                                  setPortfolioLinks(updated)
-                                } else if (updated.length < 5) {
-                                  setPortfolioLinks([...updated, { name: 'Website', url: 'https://' }])
-                                }
-                              }}
-                              className="text-xs bg-gray-100 hover:bg-gray-200 px-2 py-1 rounded"
-                            >
-                              + Website
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => {
-                                const updated = [...portfolioLinks]
-                                const index = updated.findIndex(link => link.name === '')
-                                if (index !== -1) {
-                                  updated[index] = { name: 'Personal', url: 'https://' }
-                                  setPortfolioLinks(updated)
-                                } else if (updated.length < 5) {
-                                  setPortfolioLinks([...updated, { name: 'Personal', url: 'https://' }])
-                                }
-                              }}
-                              className="text-xs bg-gray-100 hover:bg-gray-200 px-2 py-1 rounded"
-                            >
-                              + Personal
-                            </button>
                           </div>
                         </div>
                       </div>
-                    </div>
 
                     {error && (
                       <div className="p-3 bg-red-50 border border-red-200 rounded-md">
@@ -669,29 +742,30 @@ export default function EmbedJobPage({ params }: { params: Promise<{ id: string 
                       </div>
                     )}
 
-                    <button
-                      type="submit"
-                      disabled={submitting}
-                      className="w-full bg-blue-600 text-white py-3 px-4 rounded-md font-medium hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center"
-                    >
-                      {submitting ? (
-                        <>
-                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                          Submitting...
-                        </>
-                      ) : (
-                        <>
-                          <Send className="h-4 w-4 mr-2" />
-                          Submit Application
-                        </>
-                      )}
-                    </button>
-                  </form>
-                ) : (
-                  <div className="text-center py-8">
-                    <p className="text-gray-600">No application form is currently available for this position.</p>
-                  </div>
-                )}
+                      <button
+                        type="submit"
+                        disabled={submitting}
+                        className="w-full bg-indigo-600 text-white py-3 px-4 rounded-lg font-semibold hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center shadow-lg shadow-indigo-200"
+                      >
+                        {submitting ? (
+                          <>
+                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                            Submitting...
+                          </>
+                        ) : (
+                          <>
+                            <Send className="h-4 w-4 mr-2" />
+                            Submit Application
+                          </>
+                        )}
+                      </button>
+                    </form>
+                  ) : (
+                    <div className="text-center py-8">
+                      <p className="text-gray-600">No application form is currently available for this position.</p>
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
           </div>

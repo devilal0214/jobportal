@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { ArrowLeft, Upload, Plus, Trash2, Eye, X } from 'lucide-react'
 import TagsInput from '@/components/TagsInput'
 import SkillsWithRatings from '@/components/SkillsWithRatings'
+import CountryCodeInput from '@/components/CountryCodeInput'
 
 interface FormField {
   id: string
@@ -454,6 +455,17 @@ export default function JobApplicationPage({ params }: { params: Promise<{ id: s
             placeholder={field.placeholder || 'Type to add skills...'}
             className={field.cssClass || ''}
             id={field.fieldId || field.id}
+          />
+        )
+
+      case 'COUNTRY_CODE':
+        return (
+          <CountryCodeInput
+            id={field.fieldId || field.id}
+            value={fieldValue as string}
+            onChange={(value) => updateFormData(field.id, value)}
+            required={field.isRequired}
+            className={field.cssClass || ''}
           />
         )
 

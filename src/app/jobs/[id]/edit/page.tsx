@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import Image from 'next/image'
 import { Save, ArrowLeft, LogOut, Briefcase, FileText, Settings, ChevronDown, Plus, FormInput } from 'lucide-react'
 import TiptapEditor from '@/components/TiptapEditor'
 
@@ -52,8 +53,15 @@ export default function EditJobPage({ params }: { params: Promise<{ id: string }
     position: '',
     description: '',
     status: 'ACTIVE',
-    formId: ''
+    formId: '',
+    imageUrl: '',
+    bannerImageUrl: '',
+    salary: ''
   })
+  const [imageFile, setImageFile] = useState<File | null>(null)
+  const [imagePreview, setImagePreview] = useState<string>('')
+  const [bannerImageFile, setBannerImageFile] = useState<File | null>(null)
+  const [bannerImagePreview, setBannerImagePreview] = useState<string>('')
   const [customTitle, setCustomTitle] = useState('')
   const [showCustomTitle, setShowCustomTitle] = useState(false)
   const [availableForms, setAvailableForms] = useState([])
@@ -114,8 +122,19 @@ export default function EditJobPage({ params }: { params: Promise<{ id: string }
             position: jobData.position || '',
             description: jobData.description,
             status: jobData.status,
-            formId: jobData.formId || ''
+            formId: jobData.formId || '',
+            imageUrl: jobData.imageUrl || '',
+            bannerImageUrl: jobData.bannerImageUrl || '',
+            salary: jobData.salary || ''
           })
+          
+          // Set existing images as previews
+          if (jobData.imageUrl) {
+            setImagePreview(jobData.imageUrl)
+          }
+          if (jobData.bannerImageUrl) {
+            setBannerImagePreview(jobData.bannerImageUrl)
+          }
           
           // Check if it's a custom title (this logic can be removed if no longer needed)
           // if (!ENTRY_LEVELS.includes(jobData.title)) {
@@ -199,6 +218,30 @@ export default function EditJobPage({ params }: { params: Promise<{ id: string }
     }
   }
 
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (file) {
+      setImageFile(file)
+      const reader = new FileReader()
+      reader.onloadend = () => {
+        setImagePreview(reader.result as string)
+      }
+      reader.readAsDataURL(file)
+    }
+  }
+
+  const handleBannerImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (file) {
+      setBannerImageFile(file)
+      const reader = new FileReader()
+      reader.onloadend = () => {
+        setBannerImagePreview(reader.result as string)
+      }
+      reader.readAsDataURL(file)
+    }
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setSaving(true)
@@ -208,6 +251,46 @@ export default function EditJobPage({ params }: { params: Promise<{ id: string }
       const token = localStorage.getItem('token')
       const finalTitle = showCustomTitle ? customTitle : formData.title
       
+      // Upload job card image if a new one is selected
+      let uploadedImageUrl = formData.imageUrl
+      if (imageFile) {
+        const imageFormData = new FormData()
+        imageFormData.append('image', imageFile)
+        
+        const uploadResponse = await fetch('/api/upload/job-image', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`
+          },
+          body: imageFormData
+        })
+        
+        if (uploadResponse.ok) {
+          const uploadData = await uploadResponse.json()
+          uploadedImageUrl = uploadData.imageUrl
+        }
+      }
+
+      // Upload banner image if a new one is selected
+      let uploadedBannerImageUrl = formData.bannerImageUrl
+      if (bannerImageFile) {
+        const bannerFormData = new FormData()
+        bannerFormData.append('image', bannerImageFile)
+        
+        const bannerUploadResponse = await fetch('/api/upload/job-image', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`
+          },
+          body: bannerFormData
+        })
+        
+        if (bannerUploadResponse.ok) {
+          const bannerUploadData = await bannerUploadResponse.json()
+          uploadedBannerImageUrl = bannerUploadData.imageUrl
+        }
+      }
+      
       const response = await fetch(`/api/jobs/${resolvedParams.id}/edit`, {
         method: 'PUT',
         headers: {
@@ -216,7 +299,9 @@ export default function EditJobPage({ params }: { params: Promise<{ id: string }
         },
         body: JSON.stringify({
           ...formData,
-          title: finalTitle
+          title: finalTitle,
+          imageUrl: uploadedImageUrl,
+          bannerImageUrl: uploadedBannerImageUrl
         })
       })
 
@@ -403,6 +488,110 @@ export default function EditJobPage({ params }: { params: Promise<{ id: string }
                   <option key={level} value={level}>{level}</option>
                 ))}
               </select>
+            </div>
+
+            <div>
+              <label htmlFor="salary" className="block text-sm font-medium text-gray-700 mb-2">
+                Salary Range
+              </label>
+              <input
+                type="text"
+                id="salary"
+                name="salary"
+                value={formData.salary}
+                onChange={(e) => setFormData(prev => ({ ...prev, salary: e.target.value }))}
+                placeholder="₹50,000 - ₹80,000 or $60,000 - $90,000"
+                className="w-full border border-gray-300 rounded-md px-3 py-2 text-gray-900 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+              />
+              <p className="text-sm text-gray-500 mt-1">
+                Enter the salary range with currency symbol (e.g., ₹50,000 - ₹80,000). Leave blank if not applicable.
+              </p>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Job Card Image
+              </label>
+              {imagePreview && (
+                <div className="relative w-full h-48 mb-3 border-2 border-gray-300 rounded-lg overflow-hidden">
+                  <Image
+                    src={imagePreview}
+                    alt="Job preview"
+                    fill
+                    className="object-cover"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setImagePreview('')
+                      setImageFile(null)
+                    }}
+                    className="absolute top-2 right-2 p-2 bg-red-500 text-white rounded-full hover:bg-red-600 z-10"
+                  >
+                    <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                </div>
+              )}
+              <label className="cursor-pointer inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50">
+                <svg className="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                </svg>
+                Upload Card Image
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleImageChange}
+                  className="hidden"
+                />
+              </label>
+              <p className="text-sm text-gray-500 mt-1">
+                This image will appear on the job card in the careers page.
+              </p>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Job Details Banner Image
+              </label>
+              {bannerImagePreview && (
+                <div className="relative w-full h-48 mb-3 border-2 border-gray-300 rounded-lg overflow-hidden">
+                  <Image
+                    src={bannerImagePreview}
+                    alt="Banner preview"
+                    fill
+                    className="object-cover"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setBannerImagePreview('')
+                      setBannerImageFile(null)
+                    }}
+                    className="absolute top-2 right-2 p-2 bg-red-500 text-white rounded-full hover:bg-red-600 z-10"
+                  >
+                    <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                </div>
+              )}
+              <label className="cursor-pointer inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50">
+                <svg className="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                </svg>
+                Upload Banner Image
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleBannerImageChange}
+                  className="hidden"
+                />
+              </label>
+              <p className="text-sm text-gray-500 mt-1">
+                This image will appear as the banner on the job details page (similar to careers page banner).
+              </p>
             </div>
 
             <div>
