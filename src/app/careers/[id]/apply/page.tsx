@@ -568,7 +568,7 @@ export default function CareerApplyPage() {
           <h1 className="text-2xl font-semibold text-gray-900">
             Application Form
           </h1>
-          <p className="text-sm text-gray-600">
+          <p className="text-m text-gray-600">
             Please complete all required fields. It only takes a few minutes.
           </p>
           <div className="flex flex-wrap gap-4 text-xs text-gray-500">
@@ -603,7 +603,7 @@ export default function CareerApplyPage() {
         <div className="bg-white rounded-xl shadow-md p-6 sm:p-8">
           {/* Step indicator */}
           <div className="mb-4">
-            <p className="text-xs text-gray-500 mb-1">
+            <p className="text-s text-gray-500 mb-1">
               Step {step + 1} of {steps.length}
             </p>
             <div className="flex gap-1">
@@ -626,7 +626,7 @@ export default function CareerApplyPage() {
                   key={f.id}
                   className={`${widthToCols(f.fieldWidth)} flex flex-col gap-1`}
                 >
-                  <label className="text-xs font-medium text-gray-700">
+                  <label className="text-s font-medium text-gray-700">
                     {f.label}
                     {f.isRequired && (
                       <span className="text-red-500 ml-0.5">*</span>
