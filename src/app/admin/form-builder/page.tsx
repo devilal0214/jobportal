@@ -1,18 +1,18 @@
-'use client'
+"use client";
 
-import React, { useState, useEffect, useCallback, Suspense } from 'react'
-import { useRouter, useSearchParams } from 'next/navigation'
-import Link from 'next/link'
-import { 
-  Save, 
-  ArrowLeft, 
-  Plus, 
-  Trash2, 
-  Eye, 
-  Move, 
-  Type, 
-  Mail, 
-  Phone, 
+import React, { useState, useEffect, useCallback, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import Link from "next/link";
+import {
+  Save,
+  ArrowLeft,
+  Plus,
+  Trash2,
+  Eye,
+  Move,
+  Type,
+  Mail,
+  Phone,
   Calendar,
   Hash,
   List,
@@ -26,546 +26,546 @@ import {
   Briefcase,
   ChevronDown,
   FormInput,
-  Globe
-} from 'lucide-react'
-import TagsInput from '@/components/TagsInput'
-import { User } from '@/types/user'
+  Globe,
+  Minus,
+} from "lucide-react";
+import TagsInput from "@/components/TagsInput";
+import { User } from "@/types/user";
+
+
 
 interface FormField {
-  id: string
-  label: string
-  fieldType: string
-  placeholder?: string
-  options?: string[]
-  cssClass?: string
-  fieldId?: string
-  isRequired: boolean
-  order: number
-  fieldWidth?: string // New field for width configuration (25%, 50%, 75%, 100%)
+  id: string;
+  label: string;
+  fieldType: string;
+  placeholder?: string;
+  options?: string[] | string;
+  cssClass?: string;
+  fieldId?: string;
+  fieldWidth?: string; 
+  isRequired: boolean;
+  order: number;
 }
 
 interface Form {
-  id: string
-  name: string
-  isDefault: boolean
-  fields: FormField[]
+  id: string;
+  name: string;
+  isDefault: boolean;
+  fields: FormField[];
+  description?: string;
 }
 
-interface FieldType {
-  type: string
-  label: string
-  icon: React.ComponentType<{ className?: string }>
-  defaultPlaceholder: string
+interface FieldTypeDef {
+  type: string;
+  label: string;
+  icon: React.ComponentType<{ className?: string }>;
+  defaultPlaceholder: string;
 }
 
-// Comprehensive list of country codes with names
+
+
+const LOCALSTORAGE_KEY = "FORM_BUILDER_AUTOSEED_V1";
+
 const COUNTRY_CODES = [
-  '+1 - United States/Canada',
-  '+7 - Russia/Kazakhstan',
-  '+20 - Egypt',
-  '+27 - South Africa',
-  '+30 - Greece',
-  '+31 - Netherlands',
-  '+32 - Belgium',
-  '+33 - France',
-  '+34 - Spain',
-  '+36 - Hungary',
-  '+39 - Italy',
-  '+40 - Romania',
-  '+41 - Switzerland',
-  '+43 - Austria',
-  '+44 - United Kingdom',
-  '+45 - Denmark',
-  '+46 - Sweden',
-  '+47 - Norway',
-  '+48 - Poland',
-  '+49 - Germany',
-  '+51 - Peru',
-  '+52 - Mexico',
-  '+53 - Cuba',
-  '+54 - Argentina',
-  '+55 - Brazil',
-  '+56 - Chile',
-  '+57 - Colombia',
-  '+58 - Venezuela',
-  '+60 - Malaysia',
-  '+61 - Australia',
-  '+62 - Indonesia',
-  '+63 - Philippines',
-  '+64 - New Zealand',
-  '+65 - Singapore',
-  '+66 - Thailand',
-  '+81 - Japan',
-  '+82 - South Korea',
-  '+84 - Vietnam',
-  '+86 - China',
-  '+90 - Turkey',
-  '+91 - India',
-  '+92 - Pakistan',
-  '+93 - Afghanistan',
-  '+94 - Sri Lanka',
-  '+95 - Myanmar',
-  '+98 - Iran',
-  '+212 - Morocco',
-  '+213 - Algeria',
-  '+216 - Tunisia',
-  '+218 - Libya',
-  '+220 - Gambia',
-  '+221 - Senegal',
-  '+222 - Mauritania',
-  '+223 - Mali',
-  '+224 - Guinea',
-  '+225 - Côte d\'Ivoire',
-  '+226 - Burkina Faso',
-  '+227 - Niger',
-  '+228 - Togo',
-  '+229 - Benin',
-  '+230 - Mauritius',
-  '+231 - Liberia',
-  '+232 - Sierra Leone',
-  '+233 - Ghana',
-  '+234 - Nigeria',
-  '+235 - Chad',
-  '+236 - Central African Republic',
-  '+237 - Cameroon',
-  '+238 - Cape Verde',
-  '+239 - São Tomé and Príncipe',
-  '+240 - Equatorial Guinea',
-  '+241 - Gabon',
-  '+242 - Republic of the Congo',
-  '+243 - Democratic Republic of the Congo',
-  '+244 - Angola',
-  '+245 - Guinea-Bissau',
-  '+246 - British Indian Ocean Territory',
-  '+248 - Seychelles',
-  '+249 - Sudan',
-  '+250 - Rwanda',
-  '+251 - Ethiopia',
-  '+252 - Somalia',
-  '+253 - Djibouti',
-  '+254 - Kenya',
-  '+255 - Tanzania',
-  '+256 - Uganda',
-  '+257 - Burundi',
-  '+258 - Mozambique',
-  '+260 - Zambia',
-  '+261 - Madagascar',
-  '+262 - Mayotte/Réunion',
-  '+263 - Zimbabwe',
-  '+264 - Namibia',
-  '+265 - Malawi',
-  '+266 - Lesotho',
-  '+267 - Botswana',
-  '+268 - Eswatini',
-  '+269 - Comoros',
-  '+290 - Saint Helena',
-  '+291 - Eritrea',
-  '+297 - Aruba',
-  '+298 - Faroe Islands',
-  '+299 - Greenland',
-  '+350 - Gibraltar',
-  '+351 - Portugal',
-  '+352 - Luxembourg',
-  '+353 - Ireland',
-  '+354 - Iceland',
-  '+355 - Albania',
-  '+356 - Malta',
-  '+357 - Cyprus',
-  '+358 - Finland',
-  '+359 - Bulgaria',
-  '+370 - Lithuania',
-  '+371 - Latvia',
-  '+372 - Estonia',
-  '+373 - Moldova',
-  '+374 - Armenia',
-  '+375 - Belarus',
-  '+376 - Andorra',
-  '+377 - Monaco',
-  '+378 - San Marino',
-  '+380 - Ukraine',
-  '+381 - Serbia',
-  '+382 - Montenegro',
-  '+383 - Kosovo',
-  '+385 - Croatia',
-  '+386 - Slovenia',
-  '+387 - Bosnia and Herzegovina',
-  '+389 - North Macedonia',
-  '+420 - Czech Republic',
-  '+421 - Slovakia',
-  '+423 - Liechtenstein',
-  '+500 - Falkland Islands',
-  '+501 - Belize',
-  '+502 - Guatemala',
-  '+503 - El Salvador',
-  '+504 - Honduras',
-  '+505 - Nicaragua',
-  '+506 - Costa Rica',
-  '+507 - Panama',
-  '+508 - Saint Pierre and Miquelon',
-  '+509 - Haiti',
-  '+590 - Guadeloupe',
-  '+591 - Bolivia',
-  '+592 - Guyana',
-  '+593 - Ecuador',
-  '+594 - French Guiana',
-  '+595 - Paraguay',
-  '+596 - Martinique',
-  '+597 - Suriname',
-  '+598 - Uruguay',
-  '+599 - Curaçao',
-  '+670 - East Timor',
-  '+672 - Norfolk Island',
-  '+673 - Brunei',
-  '+674 - Nauru',
-  '+675 - Papua New Guinea',
-  '+676 - Tonga',
-  '+677 - Solomon Islands',
-  '+678 - Vanuatu',
-  '+679 - Fiji',
-  '+680 - Palau',
-  '+681 - Wallis and Futuna',
-  '+682 - Cook Islands',
-  '+683 - Niue',
-  '+684 - American Samoa',
-  '+685 - Samoa',
-  '+686 - Kiribati',
-  '+687 - New Caledonia',
-  '+688 - Tuvalu',
-  '+689 - French Polynesia',
-  '+690 - Tokelau',
-  '+691 - Micronesia',
-  '+692 - Marshall Islands',
-  '+850 - North Korea',
-  '+852 - Hong Kong',
-  '+853 - Macau',
-  '+855 - Cambodia',
-  '+856 - Laos',
-  '+880 - Bangladesh',
-  '+886 - Taiwan',
-  '+960 - Maldives',
-  '+961 - Lebanon',
-  '+962 - Jordan',
-  '+963 - Syria',
-  '+964 - Iraq',
-  '+965 - Kuwait',
-  '+966 - Saudi Arabia',
-  '+967 - Yemen',
-  '+968 - Oman',
-  '+970 - Palestine',
-  '+971 - United Arab Emirates',
-  '+972 - Israel',
-  '+973 - Bahrain',
-  '+974 - Qatar',
-  '+975 - Bhutan',
-  '+976 - Mongolia',
-  '+977 - Nepal',
-  '+992 - Tajikistan',
-  '+993 - Turkmenistan',
-  '+994 - Azerbaijan',
-  '+995 - Georgia',
-  '+996 - Kyrgyzstan',
-  '+998 - Uzbekistan'
-]
+  "+1 - United States/Canada",
+  "+44 - United Kingdom",
+  "+91 - India",
+  
+];
 
-const FIELD_TYPES: FieldType[] = [
-  { type: 'TEXT', label: 'Text Input', icon: Type, defaultPlaceholder: 'Enter text...' },
-  { type: 'EMAIL', label: 'Email', icon: Mail, defaultPlaceholder: 'Enter email...' },
-  { type: 'PHONE', label: 'Phone', icon: Phone, defaultPlaceholder: 'Enter phone number...' },
-  { type: 'COUNTRY_CODE', label: 'Country Code', icon: Globe, defaultPlaceholder: 'Select country code...' },
-  { type: 'TEXTAREA', label: 'Text Area', icon: FileText, defaultPlaceholder: 'Enter details...' },
-  { type: 'SELECT', label: 'Dropdown', icon: List, defaultPlaceholder: 'Select an option...' },
-  { type: 'RADIO', label: 'Radio Buttons', icon: CheckSquare, defaultPlaceholder: '' },
-  { type: 'CHECKBOX', label: 'Checkboxes', icon: CheckSquare, defaultPlaceholder: '' },
-  { type: 'DATE', label: 'Date Picker', icon: Calendar, defaultPlaceholder: '' },
-  { type: 'NUMBER', label: 'Number', icon: Hash, defaultPlaceholder: 'Enter number...' },
-  { type: 'TAGS', label: 'Tags', icon: Tags, defaultPlaceholder: 'Type to add tags...' },
-  { type: 'SKILLS', label: 'Skills with Ratings', icon: Tags, defaultPlaceholder: 'Select skills and rate your expertise...' },
-  { type: 'FILE', label: 'File Upload', icon: Upload, defaultPlaceholder: 'Choose file...' },
-  { type: 'URL', label: 'URL/Link', icon: LinkIcon, defaultPlaceholder: 'Enter URL...' }
-]
+const FIELD_TYPES: FieldTypeDef[] = [
+  {
+    type: "TEXT",
+    label: "Text Input",
+    icon: Type,
+    defaultPlaceholder: "Enter text...",
+  },
+  {
+    type: "EMAIL",
+    label: "Email",
+    icon: Mail,
+    defaultPlaceholder: "Enter email...",
+  },
+  {
+    type: "PHONE",
+    label: "Phone",
+    icon: Phone,
+    defaultPlaceholder: "Enter phone number...",
+  },
+  {
+    type: "COUNTRY_CODE",
+    label: "Country Code",
+    icon: Globe,
+    defaultPlaceholder: "Select country code...",
+  },
+  {
+    type: "TEXTAREA",
+    label: "Text Area",
+    icon: FileText,
+    defaultPlaceholder: "Enter details...",
+  },
+  {
+    type: "SELECT",
+    label: "Dropdown",
+    icon: List,
+    defaultPlaceholder: "Select an option...",
+  },
+  {
+    type: "RADIO",
+    label: "Radio Buttons",
+    icon: CheckSquare,
+    defaultPlaceholder: "",
+  },
+  {
+    type: "CHECKBOX",
+    label: "Checkboxes",
+    icon: CheckSquare,
+    defaultPlaceholder: "",
+  },
+  {
+    type: "DATE",
+    label: "Date Picker",
+    icon: Calendar,
+    defaultPlaceholder: "",
+  },
+  {
+    type: "NUMBER",
+    label: "Number",
+    icon: Hash,
+    defaultPlaceholder: "Enter number...",
+  },
+  {
+    type: "TAGS",
+    label: "Tags",
+    icon: Tags,
+    defaultPlaceholder: "Type to add tags...",
+  },
+  {
+    type: "SKILLS",
+    label: "Skills with Ratings",
+    icon: Tags,
+    defaultPlaceholder: "Select skills and rate your expertise...",
+  },
+  {
+    type: "FILE",
+    label: "File Upload",
+    icon: Upload,
+    defaultPlaceholder: "Choose file...",
+  },
+  {
+    type: "URL",
+    label: "URL/Link",
+    icon: LinkIcon,
+    defaultPlaceholder: "Enter URL...",
+  },
+  {
+    type: "PAGE_BREAK",
+    label: "Page Break",
+    icon: Minus,
+    defaultPlaceholder: "",
+  },
+];
+
+
+const DEFAULT_AUTOSEED: string[] = [
+  "TEXT:Full name",
+  "EMAIL:Email",
+  "PHONE:Phone number",
+];
+
+
+function groupByPageBreak(fields: FormField[]) {
+  const steps: FormField[][] = [];
+  let buf: FormField[] = [];
+  for (const f of fields) {
+    if (f.fieldType === "PAGE_BREAK") {
+      steps.push(buf);
+      buf = [];
+      continue;
+    }
+    buf.push(f);
+  }
+  steps.push(buf);
+  return steps.filter((step) => step.length > 0);
+}
+
+
+function makeField(fieldType: string, label: string, order: number): FormField {
+ 
+  const def = FIELD_TYPES.find((d) => d.type === fieldType);
+  const placeholder = def?.defaultPlaceholder ?? "";
+  const options = ["SELECT", "RADIO", "CHECKBOX", "TAGS"].includes(fieldType)
+    ? ["Option 1", "Option 2", "Option 3"]
+    : fieldType === "COUNTRY_CODE"
+    ? COUNTRY_CODES
+    : [];
+
+  // sensible default fieldId for common fields
+  let fieldId = "";
+  if (label.toLowerCase().includes("full name")) fieldId = "candidateName";
+  if (label.toLowerCase() === "email") fieldId = "candidateEmail";
+  if (label.toLowerCase().includes("phone")) fieldId = "candidatePhone";
+
+  return {
+    id: `field_${Date.now()}_${Math.random().toString(36).slice(2)}`,
+    label,
+    fieldType,
+    placeholder,
+    options,
+    cssClass: "",
+    fieldId,
+    fieldWidth: "100%",
+    isRequired: ["EMAIL", "TEXT", "PHONE"].includes(fieldType),
+    order,
+  };
+}
+
+
 
 function FormBuilderContent() {
-  const [user, setUser] = useState<User | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [saving, setSaving] = useState(false)
-  const [forms, setForms] = useState<Form[]>([])
-  const [selectedForm, setSelectedForm] = useState<Form | null>(null)
-  const [formName, setFormName] = useState('')
-  const [isDefault, setIsDefault] = useState(false)
-  const [fields, setFields] = useState<FormField[]>([])
-  const [showPreview, setShowPreview] = useState(false)
-  const [draggedField, setDraggedField] = useState<FormField | null>(null)
-  const [draggedFieldType, setDraggedFieldType] = useState<FieldType | null>(null)
-  const [error, setError] = useState('')
-  const [success, setSuccess] = useState('')
-  const [showJobsDropdown, setShowJobsDropdown] = useState(false)
-  const router = useRouter()
-  const searchParams = useSearchParams()
+  const [user, setUser] = useState<User | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [forms, setForms] = useState<Form[]>([]);
+  const [selectedForm, setSelectedForm] = useState<Form | null>(null);
+  const [formName, setFormName] = useState("");
+  const [isDefault, setIsDefault] = useState(false);
+  const [fields, setFields] = useState<FormField[]>([]);
+  const [showPreview, setShowPreview] = useState(false);
+  const [previewStep, setPreviewStep] = useState(0);
+  const [draggedField, setDraggedField] = useState<FormField | null>(null);
+  const [draggedFieldType, setDraggedFieldType] = useState<FieldTypeDef | null>(
+    null
+  );
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
+  const [showJobsDropdown, setShowJobsDropdown] = useState(false);
+
+  
+  const [autoSeed, setAutoSeed] = useState<string[]>([]);
+
+  const router = useRouter();
+  const searchParams = useSearchParams();
+
+  
+  useEffect(() => {
+    const raw = localStorage.getItem(LOCALSTORAGE_KEY);
+    if (raw) {
+      try {
+        const parsed = JSON.parse(raw);
+        if (
+          Array.isArray(parsed) &&
+          parsed.every((x) => typeof x === "string")
+        ) {
+          setAutoSeed(parsed);
+          return;
+        }
+      } catch {}
+    }
+    
+    setAutoSeed(DEFAULT_AUTOSEED);
+  }, []);
+
+  const persistAutoSeed = (list: string[]) => {
+    setAutoSeed(list);
+    localStorage.setItem(LOCALSTORAGE_KEY, JSON.stringify(list));
+  };
+
+  const toggleAutoSeedItem = (key: string) => {
+    const exists = autoSeed.includes(key);
+    const next = exists
+      ? autoSeed.filter((k) => k !== key)
+      : [...autoSeed, key];
+    persistAutoSeed(next);
+  };
+
+  const moveAutoSeedItem = (index: number, dir: -1 | 1) => {
+    const target = index + dir;
+    if (target < 0 || target >= autoSeed.length) return;
+    const clone = [...autoSeed];
+    const [it] = clone.splice(index, 1);
+    clone.splice(target, 0, it);
+    persistAutoSeed(clone);
+  };
+
+  
 
   const fetchForms = useCallback(async () => {
     try {
-      const token = localStorage.getItem('token')
-      const response = await fetch('/api/admin/forms', {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      })
-
+      const token = localStorage.getItem("token");
+      const response = await fetch("/api/admin/forms", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
       if (response.ok) {
-        const data = await response.json()
-        setForms(data)
-        
-        // Auto-load form if editId parameter is present
-        const editId = searchParams.get('editId')
+        const data = await response.json();
+        setForms(data);
+
+        const editId = searchParams.get("editId");
         if (editId) {
-          const formToEdit = data.find((form: Form) => form.id === editId)
-          if (formToEdit) {
-            selectForm(formToEdit)
-          }
+          const formToEdit = data.find((form: Form) => form.id === editId);
+          if (formToEdit) selectForm(formToEdit);
         }
       }
-    } catch (error) {
-      console.error('Error fetching forms:', error)
+    } catch (err) {
+      console.error("Error fetching forms:", err);
     }
-  }, [searchParams])
+  }, [searchParams]);
 
   useEffect(() => {
     const checkAuth = async () => {
-      const token = localStorage.getItem('token')
+      const token = localStorage.getItem("token");
       if (!token) {
-        router.push('/login')
-        return
+        router.push("/login");
+        return;
       }
-
       try {
-        const response = await fetch('/api/auth/me', {
-          headers: {
-            'Authorization': `Bearer ${token}`
-          }
-        })
-
+        const response = await fetch("/api/auth/me", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
         if (response.ok) {
-          const userData = await response.json()
-          if (userData.role?.name !== 'Administrator') {
-            router.push('/admin')
-            return
+          const userData = await response.json();
+          if (userData.role?.name !== "Administrator") {
+            router.push("/admin");
+            return;
           }
-          setUser(userData)
-          await fetchForms()
+          setUser(userData);
+          await fetchForms();
         } else {
-          localStorage.removeItem('token')
-          router.push('/login')
+          localStorage.removeItem("token");
+          router.push("/login");
         }
-      } catch (error) {
-        console.error('Auth check failed:', error)
-        router.push('/login')
+      } catch (err) {
+        console.error("Auth check failed:", err);
+        router.push("/login");
       } finally {
-        setLoading(false)
+        setLoading(false);
       }
-    }
+    };
+    checkAuth();
+  }, [router, searchParams, fetchForms]);
 
-    checkAuth()
-  }, [router, searchParams, fetchForms])
-
-  // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (showJobsDropdown) {
-        const target = event.target as Element
-        if (!target.closest('.relative')) {
-          setShowJobsDropdown(false)
-        }
+        const target = event.target as Element;
+        if (!target.closest(".relative")) setShowJobsDropdown(false);
       }
-    }
-
-    document.addEventListener('mousedown', handleClickOutside)
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside)
-    }
-  }, [showJobsDropdown])
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [showJobsDropdown]);
 
   const selectForm = (form: Form) => {
-    setSelectedForm(form)
-    setFormName(form.name)
-    setIsDefault(form.isDefault)
-    
-    // Parse options from JSON strings back to arrays when loading form
-    const parsedFields = form.fields.map(field => ({
+    setSelectedForm(form);
+    setFormName(form.name);
+    setIsDefault(form.isDefault);
+
+    const parsedFields = (form.fields || []).map((field) => ({
       ...field,
-      options: field.options ? 
-        (typeof field.options === 'string' ? 
-          ((field.options as string).startsWith('[') ? JSON.parse(field.options as string) : [field.options]) 
+      options: field.options
+        ? typeof field.options === "string"
+          ? field.options.startsWith("[")
+            ? JSON.parse(field.options)
+            : [field.options]
           : field.options
-        ) : []
-    }))
-    
-    setFields(parsedFields.sort((a, b) => a.order - b.order))
-    setError('')
-    setSuccess('')
-  }
+        : [],
+    }));
 
+    const ordered = parsedFields.sort((a, b) => a.order - b.order);
+    setFields(ordered);
+    setPreviewStep(0);
+    setError("");
+    setSuccess("");
+  };
+
+  
   const createNewForm = () => {
-    setSelectedForm(null)
-    setFormName('')
-    setIsDefault(false)
-    setFields([])
-    setError('')
-    setSuccess('')
-  }
+    setSelectedForm(null);
+    setFormName("");
+    setIsDefault(false);
 
-  const generateFieldId = () => {
-    return `field_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
-  }
+    const seeded: FormField[] = autoSeed.map((key, idx) => {
+      const [type, ...labelParts] = key.split(":");
+      const label = labelParts.join(":").trim() || type; 
+      return makeField(type, label, idx);
+    });
+
+    setFields(seeded);
+    setPreviewStep(0);
+    setError("");
+    setSuccess("");
+  };
+
+  const generateFieldId = () =>
+    `field_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
   const updateField = (fieldId: string, updates: Partial<FormField>) => {
-    setFields(fields.map(field => 
-      field.id === fieldId ? { ...field, ...updates } : field
-    ))
-  }
+    setFields(
+      fields.map((field) =>
+        field.id === fieldId ? { ...field, ...updates } : field
+      )
+    );
+  };
 
   const removeField = (fieldId: string) => {
-    const newFields = fields.filter(field => field.id !== fieldId)
-    const reorderedFields = newFields.map((field, index) => ({ ...field, order: index }))
-    setFields(reorderedFields)
-  }
+    const newFields = fields.filter((field) => field.id !== fieldId);
+    const reordered = newFields.map((field, index) => ({
+      ...field,
+      order: index,
+    }));
+    setFields(reordered);
+  };
 
-  const handleDragStart = (e: React.DragEvent, field: FormField | null, fieldType: FieldType | null) => {
+  
+
+  const handleDragStart = (
+    e: React.DragEvent,
+    field: FormField | null,
+    fieldType: FieldTypeDef | null
+  ) => {
     if (field) {
-      setDraggedField(field)
-      e.dataTransfer.setData('text/plain', 'existing-field')
+      setDraggedField(field);
+      e.dataTransfer.setData("text/plain", "existing-field");
     } else if (fieldType) {
-      setDraggedFieldType(fieldType)
-      e.dataTransfer.setData('text/plain', 'new-field')
+      setDraggedFieldType(fieldType);
+      e.dataTransfer.setData("text/plain", "new-field");
     }
-  }
+  };
 
-  const handleDragOver = (e: React.DragEvent) => {
-    e.preventDefault()
-  }
+  const handleDragOver = (e: React.DragEvent) => e.preventDefault();
 
   const handleDrop = (e: React.DragEvent, targetIndex: number) => {
-    e.preventDefault()
-    const dataType = e.dataTransfer.getData('text/plain')
+    e.preventDefault();
+    const dataType = e.dataTransfer.getData("text/plain");
 
-    if (dataType === 'new-field' && draggedFieldType) {
-      const newField: FormField = {
-        id: generateFieldId(),
-        label: `${draggedFieldType.label} Field`,
-        fieldType: draggedFieldType.type,
-        placeholder: draggedFieldType.defaultPlaceholder,
-        options: ['SELECT', 'RADIO', 'CHECKBOX', 'TAGS'].includes(draggedFieldType.type) 
-          ? ['Option 1', 'Option 2', 'Option 3'] 
-          : draggedFieldType.type === 'COUNTRY_CODE' 
-            ? COUNTRY_CODES 
-            : [],
-        cssClass: '',
-        fieldId: '',
-        isRequired: false,
-        order: targetIndex,
-        fieldWidth: '100%' // Default to full width
-      }
+    if (dataType === "new-field" && draggedFieldType) {
+      const newField: FormField = makeField(
+        draggedFieldType.type,
+        `${draggedFieldType.label}${
+          draggedFieldType.type === "PAGE_BREAK" ? "" : " Field"
+        }`,
+        targetIndex
+      );
 
-      const newFields = [...fields]
-      newFields.splice(targetIndex, 0, newField)
-      const reorderedFields = newFields.map((field, index) => ({ ...field, order: index }))
-      setFields(reorderedFields)
-      setDraggedFieldType(null)
-    } else if (dataType === 'existing-field' && draggedField) {
-      const newFields = [...fields]
-      const draggedIndex = newFields.findIndex(f => f.id === draggedField.id)
-      
-      if (draggedIndex !== -1) {
-        newFields.splice(draggedIndex, 1)
-        newFields.splice(targetIndex > draggedIndex ? targetIndex - 1 : targetIndex, 0, draggedField)
-        const reorderedFields = newFields.map((field, index) => ({ ...field, order: index }))
-        setFields(reorderedFields)
-      }
-      setDraggedField(null)
+      const newFields = [...fields];
+      newFields.splice(targetIndex, 0, newField);
+      const reordered = newFields.map((f, i) => ({ ...f, order: i }));
+      setFields(reordered);
+      setDraggedFieldType(null);
+      return;
     }
-  }
+
+    if (dataType === "existing-field" && draggedField) {
+      const newFields = [...fields];
+      const draggedIndex = newFields.findIndex((f) => f.id === draggedField.id);
+      if (draggedIndex !== -1) {
+        newFields.splice(draggedIndex, 1);
+        newFields.splice(
+          targetIndex > draggedIndex ? targetIndex - 1 : targetIndex,
+          0,
+          draggedField
+        );
+        const reordered = newFields.map((f, i) => ({ ...f, order: i }));
+        setFields(reordered);
+      }
+      setDraggedField(null);
+    }
+  };
+
+  
 
   const saveForm = async () => {
     if (!formName.trim()) {
-      setError('Form name is required')
-      return
+      setError("Form name is required");
+      return;
     }
 
-    setSaving(true)
-    setError('')
-    setSuccess('')
+    setSaving(true);
+    setError("");
+    setSuccess("");
 
     try {
-      const token = localStorage.getItem('token')
+      const token = localStorage.getItem("token");
       if (!token) {
-        setError('Authentication required. Please log in again.')
-        router.push('/login')
-        return
+        setError("Authentication required. Please log in again.");
+        router.push("/login");
+        return;
       }
 
-      const url = selectedForm ? `/api/admin/forms/${selectedForm.id}` : '/api/admin/forms'
-      const method = selectedForm ? 'PUT' : 'POST'
+      const url = selectedForm
+        ? `/api/admin/forms/${selectedForm.id}`
+        : "/api/admin/forms";
+      const method = selectedForm ? "PUT" : "POST";
 
-      console.log('Saving form:', { name: formName, fields })
+      const payload = {
+        name: formName,
+        isDefault,
+        description: selectedForm?.description || "",
+        fields: fields.map((f, index) => ({
+          label: f.label,
+          fieldType: f.fieldType, 
+          placeholder: f.placeholder || "",
+          options: Array.isArray(f.options) ? f.options : [],
+          cssClass: f.cssClass || "",
+          fieldId: f.fieldId || "",
+          fieldWidth: f.fieldWidth || "100%",
+          isRequired: f.isRequired || false,
+          order: index,
+        })),
+      };
 
-      const response = await fetch(url, {
+      const resp = await fetch(url, {
         method,
         headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({
-          name: formName,
-          isDefault,
-          fields: fields.map((field, index) => ({ ...field, order: index }))
-        })
-      })
+        body: JSON.stringify(payload),
+      });
 
-      console.log('Response status:', response.status)
-      const responseText = await response.text()
-      console.log('Response text:', responseText)
-
-      if (response.ok) {
-        let savedForm
+      const text = await resp.text();
+      if (!resp.ok) {
+        let msg = "Failed to save form";
         try {
-          savedForm = JSON.parse(responseText)
-        } catch (parseError) {
-          console.error('Failed to parse response:', parseError)
-          setError('Invalid response from server')
-          return
-        }
-        
-        setSuccess(selectedForm ? 'Form updated successfully!' : 'Form created successfully!')
-        await fetchForms()
-        
-        if (!selectedForm) {
-          selectForm(savedForm)
-        }
-      } else {
-        if (responseText.includes('<!DOCTYPE')) {
-          setError('Server error: Please check if you have admin permissions and try again.')
-        } else {
-          try {
-            const data = JSON.parse(responseText)
-            setError(data.error || 'Failed to save form')
-          } catch {
-            setError('Failed to save form: ' + response.status)
-          }
-        }
+          const j = JSON.parse(text);
+          if (j?.error) msg = j.error;
+        } catch {}
+        setError(msg);
+        return;
       }
-    } catch (error) {
-      console.error('Save form error:', error)
-      setError('An error occurred while saving the form')
+
+      let saved: Form;
+      try {
+        saved = JSON.parse(text);
+      } catch {
+        setError("Invalid response from server");
+        return;
+      }
+
+      setSuccess(
+        selectedForm
+          ? "Form updated successfully!"
+          : "Form created successfully!"
+      );
+      await fetchForms();
+      if (!selectedForm) selectForm(saved);
+    } catch (err) {
+      console.error("Save form error:", err);
+      setError("An error occurred while saving the form");
     } finally {
-      setSaving(false)
+      setSaving(false);
     }
-  }
+  };
+
+  
 
   const renderField = (field: FormField) => {
-    // Improved styling with darker colors for better visibility
-    const fieldClass = `w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 border-gray-300 text-gray-900 placeholder-gray-600 ${field.cssClass || ''}`
+    const fieldClass = `w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 border-gray-300 text-gray-900 placeholder-gray-600 ${
+      field.cssClass || ""
+    }`;
 
     switch (field.fieldType) {
-      case 'TEXT':
+      case "TEXT":
         return (
           <input
             type="text"
@@ -573,9 +573,8 @@ function FormBuilderContent() {
             className={fieldClass}
             id={field.fieldId || `field-${field.id}`}
           />
-        )
-
-      case 'EMAIL':
+        );
+      case "EMAIL":
         return (
           <input
             type="email"
@@ -583,9 +582,8 @@ function FormBuilderContent() {
             className={fieldClass}
             id={field.fieldId || `field-${field.id}`}
           />
-        )
-
-      case 'PHONE':
+        );
+      case "PHONE":
         return (
           <input
             type="tel"
@@ -593,21 +591,25 @@ function FormBuilderContent() {
             className={fieldClass}
             id={field.fieldId || `field-${field.id}`}
           />
-        )
-
-      case 'COUNTRY_CODE':
+        );
+      case "COUNTRY_CODE":
         return (
-          <select className={fieldClass} id={field.fieldId || `field-${field.id}`}>
-            <option value="" className="text-gray-600">{field.placeholder || 'Select country code'}</option>
-            {Array.isArray(field.options) && field.options.map((option, index) => (
-              <option key={index} value={option} className="text-gray-900">
-                {option}
-              </option>
-            ))}
+          <select
+            className={fieldClass}
+            id={field.fieldId || `field-${field.id}`}
+          >
+            <option value="">
+              {field.placeholder || "Select country code"}
+            </option>
+            {Array.isArray(field.options) &&
+              field.options.map((opt, i) => (
+                <option key={i} value={String(opt)}>
+                  {String(opt)}
+                </option>
+              ))}
           </select>
-        )
-
-      case 'TEXTAREA':
+        );
+      case "TEXTAREA":
         return (
           <textarea
             placeholder={field.placeholder}
@@ -615,70 +617,82 @@ function FormBuilderContent() {
             rows={3}
             id={field.fieldId || `field-${field.id}`}
           />
-        )
-
-      case 'SELECT':
+        );
+      case "SELECT":
         return (
-          <select className={fieldClass} id={field.fieldId || `field-${field.id}`}>
-            <option value="" className="text-gray-600">{field.placeholder || 'Select an option'}</option>
-            {Array.isArray(field.options) && field.options.map((option, index) => (
-              <option key={index} value={option} className="text-gray-900">
-                {option}
-              </option>
-            ))}
+          <select
+            className={fieldClass}
+            id={field.fieldId || `field-${field.id}`}
+          >
+            <option value="">{field.placeholder || "Select an option"}</option>
+            {Array.isArray(field.options) &&
+              field.options.map((opt, i) => (
+                <option key={i} value={String(opt)}>
+                  {String(opt)}
+                </option>
+              ))}
           </select>
-        )
-
-      case 'RADIO':
+        );
+      case "RADIO":
         return (
-          <div className={`space-y-2 ${field.cssClass || ''}`} id={field.fieldId || `field-${field.id}`}>
-            {Array.isArray(field.options) && field.options.map((option, index) => (
-              <label key={index} className="flex items-center cursor-pointer">
-                <input
-                  type="radio"
-                  name={field.fieldId || field.id}
-                  value={option}
-                  className="mr-2 w-4 h-4 text-blue-600 focus:ring-blue-500"
-                />
-                <span className="text-sm text-gray-800">{option}</span>
-              </label>
-            ))}
+          <div
+            className={`space-y-2 ${field.cssClass || ""}`}
+            id={field.fieldId || `field-${field.id}`}
+          >
+            {Array.isArray(field.options) &&
+              field.options.map((opt, i) => (
+                <label key={i} className="flex items-center cursor-pointer">
+                  <input
+                    type="radio"
+                    name={field.fieldId || field.id}
+                    value={String(opt)}
+                    className="mr-2 w-4 h-4 text-blue-600 focus:ring-blue-500"
+                  />
+                  <span className="text-sm text-gray-800">{String(opt)}</span>
+                </label>
+              ))}
           </div>
-        )
-
-      case 'CHECKBOX':
+        );
+      case "CHECKBOX":
         return (
-          <div className={`space-y-2 ${field.cssClass || ''}`} id={field.fieldId || `field-${field.id}`}>
-            {Array.isArray(field.options) && field.options.map((option, index) => (
-              <label key={index} className="flex items-center cursor-pointer">
-                <input
-                  type="checkbox"
-                  value={option}
-                  className="mr-2 w-4 h-4 text-blue-600 focus:ring-blue-500"
-                />
-                <span className="text-sm text-gray-800">{option}</span>
-              </label>
-            ))}
+          <div
+            className={`space-y-2 ${field.cssClass || ""}`}
+            id={field.fieldId || `field-${field.id}`}
+          >
+            {Array.isArray(field.options) &&
+              field.options.map((opt, i) => (
+                <label key={i} className="flex items-center cursor-pointer">
+                  <input
+                    type="checkbox"
+                    value={String(opt)}
+                    className="mr-2 w-4 h-4 text-blue-600 focus:ring-blue-500"
+                  />
+                  <span className="text-sm text-gray-800">{String(opt)}</span>
+                </label>
+              ))}
           </div>
-        )
-
-      case 'TAGS':
+        );
+      case "TAGS":
         return (
           <TagsInput
             value={[]}
             onChange={() => {}}
-            options={Array.isArray(field.options) ? field.options : []}
-            placeholder={field.placeholder || 'Type to add tags...'}
-            className={field.cssClass || ''}
+            options={
+              Array.isArray(field.options) ? (field.options as string[]) : []
+            }
+            placeholder={field.placeholder || "Type to add tags..."}
+            className={field.cssClass || ""}
             id={field.fieldId || `field-${field.id}`}
           />
-        )
-
-      case 'SKILLS':
+        );
+      case "SKILLS":
         return (
-          <div className={`${field.cssClass || ''}`} id={field.fieldId || `field-${field.id}`}>
+          <div
+            className={`${field.cssClass || ""}`}
+            id={field.fieldId || `field-${field.id}`}
+          >
             <div className="text-sm text-gray-600 mb-3">
-              {field.placeholder || 'Select skills and rate your expertise...'}
+              {field.placeholder || "Select skills and rate your expertise..."}
             </div>
             <div className="space-y-3">
               <div className="text-xs text-gray-500">
@@ -686,18 +700,16 @@ function FormBuilderContent() {
               </div>
             </div>
           </div>
-        )
-
-      case 'DATE':
+        );
+      case "DATE":
         return (
           <input
             type="date"
             className={fieldClass}
             id={field.fieldId || `field-${field.id}`}
           />
-        )
-
-      case 'NUMBER':
+        );
+      case "NUMBER":
         return (
           <input
             type="number"
@@ -705,31 +717,45 @@ function FormBuilderContent() {
             className={fieldClass}
             id={field.fieldId || `field-${field.id}`}
           />
-        )
-
-      case 'FILE':
+        );
+      case "FILE":
         return (
-          <div className={`border-2 border-dashed border-gray-300 rounded-md p-6 text-center ${field.cssClass || ''}`} id={field.fieldId || `field-${field.id}`}>
+          <div
+            className={`border-2 border-dashed border-gray-300 rounded-md p-6 text-center ${
+              field.cssClass || ""
+            }`}
+            id={field.fieldId || `field-${field.id}`}
+          >
             <Upload className="mx-auto h-8 w-8 text-gray-400" />
             <div className="mt-2">
               <span className="text-sm font-medium text-gray-900">
-                {field.placeholder || 'Choose file to upload'}
+                {field.placeholder || "Choose file to upload"}
               </span>
-              <p className="text-xs text-gray-500 mt-1">PDF, DOC, DOCX (Max 2MB)</p>
+              <p className="text-xs text-gray-500 mt-1">
+                PDF, DOC, DOCX (Max 2MB)
+              </p>
             </div>
           </div>
-        )
-
-      case 'URL':
+        );
+      case "URL":
         return (
           <input
             type="url"
-            placeholder={field.placeholder || 'Enter URL...'}
+            placeholder={field.placeholder || "Enter URL..."}
             className={fieldClass}
             id={field.fieldId || `field-${field.id}`}
           />
-        )
-
+        );
+      case "PAGE_BREAK":
+        return (
+          <div className="flex items-center justify-center">
+            <div className="w-full border-t border-dashed border-gray-300 relative">
+              <span className="absolute left-1/2 -translate-x-1/2 -top-3 bg-white px-2 text-xs text-gray-500">
+                --- Page Break ---
+              </span>
+            </div>
+          </div>
+        );
       default:
         return (
           <input
@@ -738,25 +764,45 @@ function FormBuilderContent() {
             className={fieldClass}
             id={field.fieldId || `field-${field.id}`}
           />
-        )
+        );
     }
-  }
+  };
+
+  /** ------------ UI helpers ------------ */
+
+  const stepsForPreview = groupByPageBreak(fields);
+
+  const getGridCols = (width?: string) => {
+    switch (width) {
+      case "25%":
+        return "col-span-3";
+      case "33%":
+        return "col-span-4";
+      case "50%":
+        return "col-span-6";
+      case "66%":
+        return "col-span-8";
+      case "75%":
+        return "col-span-9";
+      case "100%":
+      default:
+        return "col-span-12";
+    }
+  };
 
   const handleLogout = async () => {
     try {
-      await fetch('/api/auth/logout', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        }
-      })
-    } catch (error) {
-      console.error('Logout error:', error)
+      await fetch("/api/auth/logout", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
+      });
+    } catch (err) {
+      console.error("Logout error:", err);
     } finally {
-      localStorage.removeItem('token')
-      router.push('/login')
+      localStorage.removeItem("token");
+      router.push("/login");
     }
-  }
+  };
 
   if (loading) {
     return (
@@ -766,16 +812,14 @@ function FormBuilderContent() {
           <p className="mt-4 text-gray-600">Loading...</p>
         </div>
       </div>
-    )
+    );
   }
 
-  if (!user) {
-    return null
-  }
+  if (!user) return null;
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Navigation */}
+      {/* Nav */}
       <nav className="bg-white shadow-sm border-b">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
@@ -825,17 +869,23 @@ function FormBuilderContent() {
                   </div>
                 )}
               </div>
-              <Link href="/applications" className="text-gray-700 hover:text-gray-900 flex items-center space-x-1">
+              <Link
+                href="/applications"
+                className="text-gray-700 hover:text-gray-900 flex items-center space-x-1"
+              >
                 <FileText className="h-4 w-4" />
                 <span>Applications</span>
               </Link>
-              <Link href="/admin" className="text-gray-700 hover:text-gray-900 flex items-center space-x-1">
+              <Link
+                href="/admin"
+                className="text-gray-700 hover:text-gray-900 flex items-center space-x-1"
+              >
                 <Settings className="h-4 w-4" />
                 <span>Admin</span>
               </Link>
               <div className="flex items-center space-x-3">
                 <span className="text-sm text-gray-700">
-                  {user.name} ({user.role?.name || 'Guest'})
+                  {user.name} ({user.role?.name || "Guest"})
                 </span>
                 <button
                   onClick={handleLogout}
@@ -850,24 +900,26 @@ function FormBuilderContent() {
         </div>
       </nav>
 
-      {/* Page Content */}
+      {/* Page */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="mb-8">
-          <Link href="/admin" className="inline-flex items-center text-indigo-600 hover:text-indigo-500 mb-4">
+          <Link
+            href="/admin"
+            className="inline-flex items-center text-indigo-600 hover:text-indigo-500 mb-4"
+          >
             <ArrowLeft className="h-4 w-4 mr-2" />
             Back to Admin
           </Link>
           <h1 className="text-3xl font-bold text-gray-900">Form Builder</h1>
           <p className="mt-2 text-gray-600">
-            Create and manage application forms with drag and drop functionality
+            Create and manage application forms with drag & drop and page breaks
           </p>
         </div>
 
-        {/* Main Layout - Left and Right Columns */}
         <div className="flex gap-6">
-          {/* Left Sidebar - Fixed Width and Sticky */}
+          {/* Left column */}
           <div className="w-80 flex-shrink-0 space-y-6 sticky top-6 self-start max-h-[calc(100vh-8rem)] overflow-y-auto">
-            {/* Forms List */}
+            {/* Forms list */}
             <div className="bg-white rounded-lg shadow">
               <div className="p-4 border-b border-gray-200">
                 <div className="flex justify-between items-center">
@@ -880,7 +932,6 @@ function FormBuilderContent() {
                   </button>
                 </div>
               </div>
-              
               <div className="p-4 max-h-64 overflow-y-auto">
                 <div className="space-y-2">
                   {forms.map((form) => (
@@ -889,12 +940,14 @@ function FormBuilderContent() {
                       onClick={() => selectForm(form)}
                       className={`p-3 rounded-md cursor-pointer transition-colors ${
                         selectedForm?.id === form.id
-                          ? 'bg-indigo-50 border-indigo-200 border text-indigo-900'
-                          : 'hover:bg-gray-50 border border-transparent text-gray-900'
+                          ? "bg-indigo-50 border-indigo-200 border text-indigo-900"
+                          : "hover:bg-gray-50 border border-transparent text-gray-900"
                       }`}
                     >
                       <div className="font-medium">{form.name}</div>
-                      <div className="text-sm text-gray-500">{form.fields.length} fields</div>
+                      <div className="text-sm text-gray-500">
+                        {form.fields.length} fields
+                      </div>
                       {form.isDefault && (
                         <span className="inline-flex px-2 py-1 text-xs font-medium bg-green-100 text-green-800 rounded-full mt-1">
                           Default
@@ -903,22 +956,28 @@ function FormBuilderContent() {
                     </div>
                   ))}
                   {forms.length === 0 && (
-                    <p className="text-gray-500 text-sm text-center py-4">No forms created yet</p>
+                    <p className="text-gray-500 text-sm text-center py-4">
+                      No forms created yet
+                    </p>
                   )}
                 </div>
               </div>
             </div>
 
-            {/* Field Types */}
+            
             <div className="bg-white rounded-lg shadow">
               <div className="p-4 border-b border-gray-200">
-                <h3 className="text-lg font-semibold text-gray-900">Field Types</h3>
-                <p className="text-sm text-gray-500 mt-1">Drag fields to the form area</p>
+                <h3 className="text-lg font-semibold text-gray-900">
+                  Field Types
+                </h3>
+                <p className="text-sm text-gray-500 mt-1">
+                  Drag fields to the form area
+                </p>
               </div>
               <div className="p-4">
                 <div className="space-y-2">
                   {FIELD_TYPES.map((fieldType) => {
-                    const Icon = fieldType.icon
+                    const Icon = fieldType.icon;
                     return (
                       <div
                         key={fieldType.type}
@@ -927,19 +986,125 @@ function FormBuilderContent() {
                         className="flex items-center p-3 bg-gray-50 rounded-md cursor-move hover:bg-gray-100 transition-colors border border-gray-200"
                       >
                         <Icon className="h-4 w-4 text-gray-600 mr-3 flex-shrink-0" />
-                        <span className="text-sm font-medium text-gray-700">{fieldType.label}</span>
+                        <span className="text-sm font-medium text-gray-700">
+                          {fieldType.label}
+                        </span>
                       </div>
-                    )
+                    );
                   })}
+                </div>
+              </div>
+            </div>
+
+           
+            <div className="bg-white rounded-lg shadow">
+              <div className="p-4 border-b border-gray-200">
+                <h3 className="text-lg font-semibold text-gray-900">
+                  Auto-add on New Form
+                </h3>
+                <p className="text-sm text-gray-500 mt-1">
+                  Choose which fields appear automatically when creating a new
+                  form. Drag to reorder.
+                </p>
+              </div>
+              <div className="p-4 space-y-3">
+               
+                {autoSeed.length > 0 ? (
+                  <div className="space-y-2">
+                    {autoSeed.map((key, idx) => {
+                      const [type, ...labelParts] = key.split(":");
+                      const label = labelParts.join(":").trim() || type;
+                      return (
+                        <div
+                          key={key}
+                          className="flex items-center justify-between border rounded-md px-2 py-2 bg-indigo-50/40"
+                        >
+                          <div className="flex items-center">
+                            <span className="text-sm font-medium text-gray-800">
+                              {label}{" "}
+                              <span className="text-[11px] text-gray-500">
+                                ({type})
+                              </span>
+                            </span>
+                          </div>
+                          <button
+                            onClick={() => toggleAutoSeedItem(key)}
+                            className="text-xs px-2 py-1 rounded bg-red-50 text-red-700 hover:bg-red-100"
+                          >
+                            Remove
+                          </button>
+                        </div>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <div className="text-xs text-gray-500">
+                    No fields selected. Use “Add from library” below.
+                  </div>
+                )}
+
+               
+                <div className="pt-2">
+                  <div className="text-xs font-semibold text-gray-700 mb-2">
+                    Add from library
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    {FIELD_TYPES.filter((f) => f.type !== "PAGE_BREAK").map(
+                      (ft) => {
+                        
+                        const defaultLabel =
+                          ft.type === "TEXT"
+                            ? "Text"
+                            : ft.type === "EMAIL"
+                            ? "Email"
+                            : ft.type === "PHONE"
+                            ? "Phone number"
+                            : ft.label;
+                        const key = `${ft.type}:${defaultLabel}`;
+                        const selected = autoSeed.includes(key);
+                        return (
+                          <button
+                            type="button"
+                            key={key}
+                            onClick={() => toggleAutoSeedItem(key)}
+                            className={`text-[13px] border rounded px-3 py-2 text-left ${
+                              selected
+                                ? "bg-green-50 border-green-200 text-green-700"
+                                : "bg-gray-50 hover:bg-gray-100"
+                            }`}
+                            title={
+                              selected
+                                ? "Click to remove from auto-seed"
+                                : "Click to add to auto-seed"
+                            }
+                          >
+                            {defaultLabel}{" "}
+                            <span className="text-[10px] text-gray-500">
+                              ({ft.type})
+                            </span>
+                          </button>
+                        );
+                      }
+                    )}
+                  </div>
+
+                 
+                  <button
+                    type="button"
+                    onClick={() => persistAutoSeed(DEFAULT_AUTOSEED)}
+                    className="mt-3 text-xs px-2 py-1 rounded bg-gray-100 hover:bg-gray-200"
+                  >
+                    Restore defaults (Full name, Email, Phone)
+                  </button>
                 </div>
               </div>
             </div>
           </div>
 
-          {/* Right Main Content - Flexible Width */}
+          
           <div className="flex-1 min-w-0">
             <div className="bg-white rounded-lg shadow">
-              {/* Form Header */}
+             
               <div className="p-6 border-b border-gray-200">
                 <div className="grid grid-cols-2 gap-4 mb-4">
                   <div>
@@ -964,16 +1129,21 @@ function FormBuilderContent() {
                       onChange={(e) => setIsDefault(e.target.checked)}
                       className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
                     />
-                    <span className="ml-2 text-sm text-gray-700">Set as default form</span>
+                    <span className="ml-2 text-sm text-gray-700">
+                      Set as default form
+                    </span>
                   </label>
 
                   <div className="flex space-x-3">
                     <button
-                      onClick={() => setShowPreview(!showPreview)}
+                      onClick={() => {
+                        setShowPreview(!showPreview);
+                        setPreviewStep(0);
+                      }}
                       className="flex items-center px-3 py-2 text-sm bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 transition-colors"
                     >
                       <Eye className="h-4 w-4 mr-2" />
-                      {showPreview ? 'Hide Preview' : 'Show Preview'}
+                      {showPreview ? "Hide Preview" : "Show Preview"}
                     </button>
                     <button
                       onClick={saveForm}
@@ -981,7 +1151,7 @@ function FormBuilderContent() {
                       className="flex items-center px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 disabled:opacity-50 transition-colors"
                     >
                       <Save className="h-4 w-4 mr-2" />
-                      {saving ? 'Saving...' : 'Save Form'}
+                      {saving ? "Saving..." : "Save Form"}
                     </button>
                   </div>
                 </div>
@@ -991,7 +1161,6 @@ function FormBuilderContent() {
                     {error}
                   </div>
                 )}
-
                 {success && (
                   <div className="mt-4 p-3 bg-green-50 border border-green-200 text-green-700 rounded-md">
                     {success}
@@ -999,61 +1168,97 @@ function FormBuilderContent() {
                 )}
               </div>
 
-              {/* Form Content */}
+              
               <div className="p-6">
                 {showPreview ? (
+                  
                   <div>
                     <div className="flex items-center justify-between mb-6">
-                      <h3 className="text-lg font-semibold text-gray-900">Form Preview</h3>
-                      <span className="text-sm text-gray-500">How applicants will see the form</span>
+                      <h3 className="text-lg font-semibold text-gray-900">
+                        Form Preview
+                      </h3>
+                      <span className="text-sm text-gray-500">
+                        Step {Math.min(previewStep + 1, stepsForPreview.length)}{" "}
+                        of {stepsForPreview.length}
+                      </span>
                     </div>
-                    <div className="max-w-2xl">
-                      <div className="grid grid-cols-12 gap-4">
-                        {fields.map((field) => {
-                          // Convert percentage width to grid columns
-                          const getGridCols = (width: string) => {
-                            switch (width) {
-                              case '25%': return 'col-span-3'
-                              case '33%': return 'col-span-4' 
-                              case '50%': return 'col-span-6'
-                              case '66%': return 'col-span-8'
-                              case '75%': return 'col-span-9'
-                              case '100%': 
-                              default: return 'col-span-12'
-                            }
-                          }
 
-                          return (
-                            <div 
-                              key={field.id} 
-                              className={`space-y-2 ${getGridCols(field.fieldWidth || '100%')}`}
+                    {stepsForPreview.length === 0 ? (
+                      <div className="text-center py-12 text-gray-500">
+                        No fields to preview
+                      </div>
+                    ) : (
+                      <>
+                        <div className="grid grid-cols-12 gap-4 max-w-2xl">
+                          {(stepsForPreview[previewStep] || []).map((field) => (
+                            <div
+                              key={field.id}
+                              className={`space-y-2 ${getGridCols(
+                                field.fieldWidth || "100%"
+                              )}`}
                             >
-                              <label className="block text-sm font-medium text-gray-800">
-                                {field.label}
-                                {field.isRequired && <span className="text-red-500 ml-1">*</span>}
-                              </label>
+                              {field.fieldType !== "PAGE_BREAK" && (
+                                <label className="block text-sm font-medium text-gray-800">
+                                  {field.label}
+                                  {field.isRequired && (
+                                    <span className="text-red-500 ml-1">*</span>
+                                  )}
+                                </label>
+                              )}
                               {renderField(field)}
                             </div>
-                          )
-                        })}
-                      </div>
-                      {fields.length === 0 && (
-                        <div className="text-center py-12">
-                          <p className="text-gray-500">
-                            No fields added yet. Switch to build mode to add fields.
-                          </p>
+                          ))}
                         </div>
-                      )}
-                    </div>
+
+                        <div className="mt-8 flex items-center justify-between">
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setPreviewStep((s) => Math.max(s - 1, 0))
+                            }
+                            disabled={previewStep === 0}
+                            className="px-4 py-2 rounded-md border border-gray-300 text-gray-700 disabled:opacity-50"
+                          >
+                            Previous
+                          </button>
+
+                          {previewStep < stepsForPreview.length - 1 ? (
+                            <button
+                              type="button"
+                              onClick={() =>
+                                setPreviewStep((s) =>
+                                  Math.min(s + 1, stepsForPreview.length - 1)
+                                )
+                              }
+                              className="px-4 py-2 rounded-md bg-indigo-600 text-white hover:bg-indigo-700"
+                            >
+                              Next
+                            </button>
+                          ) : (
+                            <button
+                              type="button"
+                              className="px-4 py-2 rounded-md bg-green-600 text-white cursor-default"
+                              title="Submit button will show automatically on last step in the apply page."
+                            >
+                              Submit (demo)
+                            </button>
+                          )}
+                        </div>
+                      </>
+                    )}
                   </div>
                 ) : (
+                  
                   <div>
                     <div className="flex items-center justify-between mb-6">
-                      <h3 className="text-lg font-semibold text-gray-900">Form Builder</h3>
-                      <span className="text-sm text-gray-500">Drag field types from the left to build your form</span>
+                      <h3 className="text-lg font-semibold text-gray-900">
+                        Form Builder
+                      </h3>
+                      <span className="text-sm text-gray-500">
+                        Drag field types from the left to build your form
+                      </span>
                     </div>
-                    
-                    {/* Drop Zone */}
+
                     <div
                       className="min-h-[500px] border-2 border-dashed border-gray-300 rounded-lg p-6"
                       onDragOver={handleDragOver}
@@ -1077,7 +1282,9 @@ function FormBuilderContent() {
                             <div
                               key={field.id}
                               draggable
-                              onDragStart={(e) => handleDragStart(e, field, null)}
+                              onDragStart={(e) =>
+                                handleDragStart(e, field, null)
+                              }
                               className="bg-white border border-gray-200 rounded-lg p-4 cursor-move hover:shadow-md transition-shadow"
                               onDragOver={handleDragOver}
                               onDrop={(e) => handleDrop(e, index)}
@@ -1085,7 +1292,12 @@ function FormBuilderContent() {
                               <div className="flex justify-between items-start mb-4">
                                 <div className="flex items-center">
                                   <Move className="h-4 w-4 text-gray-400 mr-2" />
-                                  <span className="font-medium text-gray-900">{field.label}</span>
+                                  <span className="font-medium text-gray-900">
+                                    {field.label ||
+                                      (field.fieldType === "PAGE_BREAK"
+                                        ? "Page Break"
+                                        : "Untitled Field")}
+                                  </span>
                                   <span className="ml-2 px-2 py-1 text-xs bg-blue-100 text-blue-800 rounded">
                                     {field.fieldType}
                                   </span>
@@ -1103,118 +1315,190 @@ function FormBuilderContent() {
                                 </button>
                               </div>
 
-                              <div className="grid grid-cols-2 gap-4 mb-4">
-                                <div>
-                                  <label className="block text-xs font-medium text-gray-700 mb-1">
-                                    Field Label
-                                  </label>
-                                  <input
-                                    type="text"
-                                    value={field.label}
-                                    onChange={(e) => updateField(field.id, { label: e.target.value })}
-                                    className="w-full text-sm border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-1 focus:ring-indigo-500 text-gray-800 placeholder-gray-500"
-                                  />
-                                </div>
-                                <div>
-                                  <label className="block text-xs font-medium text-gray-700 mb-1">
-                                    Placeholder Text
-                                  </label>
-                                  <input
-                                    type="text"
-                                    value={field.placeholder || ''}
-                                    onChange={(e) => updateField(field.id, { placeholder: e.target.value })}
-                                    className="w-full text-sm border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-1 focus:ring-indigo-500 text-gray-800 placeholder-gray-500"
-                                  />
-                                </div>
-                              </div>
+                             
+                              {field.fieldType !== "PAGE_BREAK" ? (
+                                <>
+                                  <div className="grid grid-cols-2 gap-4 mb-4">
+                                    <div>
+                                      <label className="block text-xs font-medium text-gray-700 mb-1">
+                                        Field Label
+                                      </label>
+                                      <input
+                                        type="text"
+                                        value={field.label}
+                                        onChange={(e) =>
+                                          updateField(field.id, {
+                                            label: e.target.value,
+                                          })
+                                        }
+                                        className="w-full text-sm border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-1 focus:ring-indigo-500 text-gray-800 placeholder-gray-500"
+                                      />
+                                    </div>
+                                    <div>
+                                      <label className="block text-xs font-medium text-gray-700 mb-1">
+                                        Placeholder Text
+                                      </label>
+                                      <input
+                                        type="text"
+                                        value={field.placeholder || ""}
+                                        onChange={(e) =>
+                                          updateField(field.id, {
+                                            placeholder: e.target.value,
+                                          })
+                                        }
+                                        className="w-full text-sm border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-1 focus:ring-indigo-500 text-gray-800 placeholder-gray-500"
+                                      />
+                                    </div>
+                                  </div>
 
-                              <div className="grid grid-cols-4 gap-4 mb-4">
-                                <div>
-                                  <label className="block text-xs font-medium text-gray-700 mb-1">
-                                    CSS Class
-                                  </label>
-                                  <input
-                                    type="text"
-                                    value={field.cssClass || ''}
-                                    onChange={(e) => updateField(field.id, { cssClass: e.target.value })}
-                                    className="w-full text-sm border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-1 focus:ring-indigo-500 text-gray-800 placeholder-gray-500"
-                                    placeholder="custom-class"
-                                  />
-                                </div>
-                                <div>
-                                  <label className="block text-xs font-medium text-gray-700 mb-1">
-                                    Field ID
-                                  </label>
-                                  <input
-                                    type="text"
-                                    value={field.fieldId || ''}
-                                    onChange={(e) => updateField(field.id, { fieldId: e.target.value })}
-                                    className="w-full text-sm border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-1 focus:ring-indigo-500 text-gray-800 placeholder-gray-500"
-                                    placeholder="field-id"
-                                  />
-                                </div>
-                                <div>
-                                  <label className="block text-xs font-medium text-gray-700 mb-1">
-                                    Field Width
-                                  </label>
-                                  <select
-                                    value={field.fieldWidth || '100%'}
-                                    onChange={(e) => updateField(field.id, { fieldWidth: e.target.value })}
-                                    className="w-full text-sm border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-1 focus:ring-indigo-500 text-gray-800"
-                                  >
-                                    <option value="25%">25% (1/4 width)</option>
-                                    <option value="33%">33% (1/3 width)</option>
-                                    <option value="50%">50% (1/2 width)</option>
-                                    <option value="66%">66% (2/3 width)</option>
-                                    <option value="75%">75% (3/4 width)</option>
-                                    <option value="100%">100% (Full width)</option>
-                                  </select>
-                                </div>
-                                <div className="flex items-center pt-5">
-                                  <label className="flex items-center text-xs">
-                                    <input
-                                      type="checkbox"
-                                      checked={field.isRequired}
-                                      onChange={(e) => updateField(field.id, { isRequired: e.target.checked })}
-                                      className="mr-1 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
-                                    />
-                                    <span className="text-gray-700">Required field</span>
-                                  </label>
-                                </div>
-                              </div>
+                                  <div className="grid grid-cols-4 gap-4 mb-4">
+                                    <div>
+                                      <label className="block text-xs font-medium text-gray-700 mb-1">
+                                        CSS Class
+                                      </label>
+                                      <input
+                                        type="text"
+                                        value={field.cssClass || ""}
+                                        onChange={(e) =>
+                                          updateField(field.id, {
+                                            cssClass: e.target.value,
+                                          })
+                                        }
+                                        className="w-full text-sm border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-1 focus:ring-indigo-500 text-gray-800 placeholder-gray-500"
+                                        placeholder="custom-class"
+                                      />
+                                    </div>
+                                    <div>
+                                      <label className="block text-xs font-medium text-gray-700 mb-1">
+                                        Field ID
+                                      </label>
+                                      <input
+                                        type="text"
+                                        value={field.fieldId || ""}
+                                        onChange={(e) =>
+                                          updateField(field.id, {
+                                            fieldId: e.target.value,
+                                          })
+                                        }
+                                        className="w-full text-sm border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-1 focus:ring-indigo-500 text-gray-800 placeholder-gray-500"
+                                        placeholder="field-id"
+                                      />
+                                    </div>
+                                    <div>
+                                      <label className="block text-xs font-medium text-gray-700 mb-1">
+                                        Field Width
+                                      </label>
+                                      <select
+                                        value={field.fieldWidth || "100%"}
+                                        onChange={(e) =>
+                                          updateField(field.id, {
+                                            fieldWidth: e.target.value,
+                                          })
+                                        }
+                                        className="w-full text-sm border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-1 focus:ring-indigo-500 text-gray-800"
+                                      >
+                                        <option value="25%">
+                                          25% (1/4 width)
+                                        </option>
+                                        <option value="33%">
+                                          33% (1/3 width)
+                                        </option>
+                                        <option value="50%">
+                                          50% (1/2 width)
+                                        </option>
+                                        <option value="66%">
+                                          66% (2/3 width)
+                                        </option>
+                                        <option value="75%">
+                                          75% (3/4 width)
+                                        </option>
+                                        <option value="100%">
+                                          100% (Full width)
+                                        </option>
+                                      </select>
+                                    </div>
+                                    <div className="flex items-center pt-5">
+                                      <label className="flex items-center text-xs">
+                                        <input
+                                          type="checkbox"
+                                          checked={field.isRequired}
+                                          onChange={(e) =>
+                                            updateField(field.id, {
+                                              isRequired: e.target.checked,
+                                            })
+                                          }
+                                          className="mr-1 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                                        />
+                                        <span className="text-gray-700">
+                                          Required field
+                                        </span>
+                                      </label>
+                                    </div>
+                                  </div>
 
-                              {['SELECT', 'RADIO', 'CHECKBOX', 'TAGS', 'SKILLS'].includes(field.fieldType) && (
-                                <div>
-                                  <label className="block text-xs font-medium text-gray-700 mb-1">
-                                    Options (one per line)
-                                  </label>
-                                  <textarea
-                                    value={Array.isArray(field.options) ? field.options.join('\n') : ''}
-                                    onChange={(e) => updateField(field.id, { 
-                                      options: e.target.value.split('\n').filter(option => option.trim()) 
-                                    })}
-                                    className="w-full text-sm border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-1 focus:ring-indigo-500 text-gray-800 placeholder-gray-500"
-                                    rows={4}
-                                    placeholder="Option 1
+                                  {[
+                                    "SELECT",
+                                    "RADIO",
+                                    "CHECKBOX",
+                                    "TAGS",
+                                    "SKILLS",
+                                  ].includes(field.fieldType) && (
+                                    <div>
+                                      <label className="block text-xs font-medium text-gray-700 mb-1">
+                                        Options (one per line)
+                                      </label>
+                                      <textarea
+                                        value={
+                                          Array.isArray(field.options)
+                                            ? (field.options as string[]).join(
+                                                "\n"
+                                              )
+                                            : ""
+                                        }
+                                        onChange={(e) =>
+                                          updateField(field.id, {
+                                            options: e.target.value
+                                              .split("\n")
+                                              .map((x) => x.trim())
+                                              .filter(Boolean),
+                                          })
+                                        }
+                                        className="w-full text-sm border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-1 focus:ring-indigo-500 text-gray-800 placeholder-gray-500"
+                                        rows={4}
+                                        placeholder={`Option 1
 Option 2
-Option 3"
-                                    style={{ resize: 'vertical', lineHeight: '1.5' }}
-                                  />
-                                  <p className="text-xs text-gray-500 mt-1">
-                                    {field.fieldType === 'TAGS' ? 'These will be available as predefined tag options' : 'Add one option per line'}
-                                  </p>
+Option 3`}
+                                        style={{
+                                          resize: "vertical",
+                                          lineHeight: "1.5",
+                                        }}
+                                      />
+                                      <p className="text-xs text-gray-500 mt-1">
+                                        {field.fieldType === "TAGS"
+                                          ? "These will be available as predefined tag options"
+                                          : "Add one option per line"}
+                                      </p>
+                                    </div>
+                                  )}
+                                </>
+                              ) : (
+                                
+                                <div className="text-sm text-gray-600">
+                                  This is a <strong>Page Break</strong>. Fields
+                                  below it will appear on the next step in the
+                                  application form.
                                 </div>
                               )}
                             </div>
                           ))}
-
-                          {/* Drop zone at the end */}
                           <div
                             className="h-20 border-2 border-dashed border-gray-200 rounded-lg flex items-center justify-center text-gray-400 hover:border-gray-300 transition-colors"
                             onDragOver={handleDragOver}
                             onDrop={(e) => handleDrop(e, fields.length)}
                           >
-                            <span className="text-sm">Drop field here to add at the end</span>
+                            <span className="text-sm">
+                              Drop field here to add at the end
+                            </span>
                           </div>
                         </div>
                       )}
@@ -1224,10 +1508,11 @@ Option 3"
               </div>
             </div>
           </div>
+          
         </div>
       </div>
     </div>
-  )
+  );
 }
 
 const FormBuilderPage: React.FC = () => {
@@ -1235,7 +1520,7 @@ const FormBuilderPage: React.FC = () => {
     <Suspense fallback={<div>Loading...</div>}>
       <FormBuilderContent />
     </Suspense>
-  )
-}
+  );
+};
 
-export default FormBuilderPage
+export default FormBuilderPage;

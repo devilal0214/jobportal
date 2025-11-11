@@ -264,6 +264,7 @@ enum FieldType {
   URL
   PASSWORD
   COUNTRY_CODE
+  PAGE_BREAK
 }
 
 enum TemplateType {
