@@ -25,6 +25,8 @@ interface MenuItem {
   order: number;
 }
 
+
+
 type ShadowKey = "none" | "sm" | "md" | "lg" | "xl";
 
 interface CareersSettings {

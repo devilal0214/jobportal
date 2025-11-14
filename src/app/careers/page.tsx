@@ -228,11 +228,11 @@ export default function CareersPage() {
             {/* Logo and Company Name */}
             <div className="flex items-center space-x-3">
               {settings.logoImage && (
-                <div 
+                <div
                   className="relative"
                   style={{
                     width: settings.logoWidth,
-                    height: settings.logoHeight
+                    height: settings.logoHeight,
                   }}
                 >
                   <Image
@@ -243,7 +243,10 @@ export default function CareersPage() {
                   />
                 </div>
               )}
-              <Link href="/" className="text-xl font-bold text-gray-900 hover:text-indigo-600 transition-colors">
+              <Link
+                href="/"
+                className="text-xl font-bold text-gray-900 hover:text-indigo-600 transition-colors"
+              >
                 {settings.companyName}
               </Link>
             </div>
@@ -263,8 +266,18 @@ export default function CareersPage() {
 
             {/* Mobile Menu Button */}
             <button className="md:hidden p-2 rounded-md text-gray-700 hover:bg-gray-100">
-              <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+              <svg
+                className="h-6 w-6"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M4 6h16M4 12h16M4 18h16"
+                />
               </svg>
             </button>
           </div>
@@ -273,13 +286,13 @@ export default function CareersPage() {
 
       {/* Banner Section */}
       <div className="flex justify-center bg-gray-100">
-        <div 
+        <div
           className="relative text-white overflow-hidden"
           style={{
             height: settings.bannerHeight,
             width: settings.bannerWidth,
-            maxWidth: '100%',
-            borderRadius: settings.bannerBorderRadius
+            maxWidth: "100%",
+            borderRadius: settings.bannerBorderRadius,
           }}
         >
           {/* Background Image */}
@@ -293,15 +306,15 @@ export default function CareersPage() {
               />
             </div>
           )}
-          
+
           {/* Overlay with custom gradient/color */}
-          <div 
+          <div
             className="absolute inset-0"
             style={{
-              background: settings.bannerOverlay
+              background: settings.bannerOverlay,
             }}
           ></div>
-          
+
           <div className="relative h-full flex flex-col justify-center items-center text-center px-4 sm:px-6 lg:px-8">
             {/* Breadcrumb */}
             <div className="flex items-center space-x-2 text-sm mb-6 opacity-90">
@@ -313,11 +326,11 @@ export default function CareersPage() {
             </div>
 
             {/* Main Title */}
-            <h1 
+            <h1
               className="font-bold max-w-4xl"
               style={{
                 color: settings.titleColor,
-                fontSize: settings.titleFontSize
+                fontSize: settings.titleFontSize,
               }}
             >
               {settings.bannerTitle}
@@ -329,20 +342,26 @@ export default function CareersPage() {
       {/* Content Section - Below Banner */}
       <div className="bg-white py-12">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h2 
+          <h2
             className="font-semibold mb-4"
             style={{
-              color: settings.subtitleColor === '#ffffff' ? '#1f2937' : settings.subtitleColor,
-              fontSize: settings.subtitleFontSize
+              color:
+                settings.subtitleColor === "#ffffff"
+                  ? "#1f2937"
+                  : settings.subtitleColor,
+              fontSize: settings.subtitleFontSize,
             }}
           >
             {settings.bannerSubtitle}
           </h2>
-          <p 
+          <p
             className="leading-relaxed max-w-5xl mx-auto"
             style={{
-              color: settings.descriptionColor === '#f3f4f6' ? '#4b5563' : settings.descriptionColor,
-              fontSize: settings.descriptionFontSize
+              color:
+                settings.descriptionColor === "#f3f4f6"
+                  ? "#4b5563"
+                  : settings.descriptionColor,
+              fontSize: settings.descriptionFontSize,
             }}
           >
             {settings.bannerDescription}
@@ -373,8 +392,10 @@ export default function CareersPage() {
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-gray-900"
               >
                 <option value="all">All Departments</option>
-                {departments.map(dept => (
-                  <option key={dept} value={dept}>{dept}</option>
+                {departments.map((dept) => (
+                  <option key={dept} value={dept}>
+                    {dept}
+                  </option>
                 ))}
               </select>
             </div>
@@ -387,8 +408,10 @@ export default function CareersPage() {
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-gray-900"
               >
                 <option value="all">All Experience Levels</option>
-                {experienceLevels.map(level => (
-                  <option key={level} value={level}>{level}</option>
+                {experienceLevels.map((level) => (
+                  <option key={level} value={level}>
+                    {level}
+                  </option>
                 ))}
               </select>
             </div>
@@ -405,151 +428,183 @@ export default function CareersPage() {
         ) : filteredJobs.length === 0 ? (
           <div className="text-center py-20">
             <Briefcase className="mx-auto h-16 w-16 text-gray-400 mb-4" />
-            <h3 className="text-xl font-medium text-gray-900 mb-2">No jobs found</h3>
-            <p className="text-gray-600">Try adjusting your filters or search query</p>
+            <h3 className="text-xl font-medium text-gray-900 mb-2">
+              No jobs found
+            </h3>
+            <p className="text-gray-600">
+              Try adjusting your filters or search query
+            </p>
           </div>
         ) : (
           <>
-            <div ref={jobCardsRef} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div
+              ref={jobCardsRef}
+              className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
+            >
               {displayedJobs.map((job) => (
-                <div key={job.id} className="job-card bg-white rounded-xl shadow-md hover:shadow-xl transition-all duration-300 overflow-hidden group">
-                {/* Job Image */}
-                <div className="relative h-48 bg-gradient-to-br from-indigo-500 to-purple-600 overflow-hidden">
-                  {job.imageUrl ? (
-                    <Image
-                      src={job.imageUrl}
-                      alt={job.title}
-                      fill
-                      className="object-cover group-hover:scale-110 transition-transform duration-300"
-                    />
-                  ) : (
-                    <div className="absolute inset-0 flex items-center justify-center">
-                      <div className="text-center text-white">
-                        <Briefcase className="h-16 w-16 mx-auto mb-2 opacity-50" />
-                        <p className="text-sm font-medium opacity-75">{job.department}</p>
-                      </div>
-                    </div>
-                  )}
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent"></div>
-                </div>
-
-                {/* Job Content */}
-                <div className="p-6">
-                  <h3 className="text-xl font-bold text-gray-900 mb-2 group-hover:text-indigo-600 transition-colors">
-                    {job.title}
-                  </h3>
-                  
-                  <p className="text-gray-600 text-sm mb-4 line-clamp-2">
-                    {job.description.replace(/<[^>]*>/g, '').substring(0, 120)}...
-                  </p>
-
-                  {/* Job Details */}
-                  <div className="space-y-2 mb-4">
-                    {job.location && (
-                      <div className="flex items-center text-sm text-gray-600">
-                        <MapPin className="h-4 w-4 mr-2 text-indigo-500" />
-                        {job.location}
-                      </div>
-                    )}
-                    
-                    {job.department && (
-                      <div className="flex items-center text-sm text-gray-600">
-                        <Briefcase className="h-4 w-4 mr-2 text-indigo-500" />
-                        {job.department}
-                      </div>
-                    )}
-                    
-                    {job.experienceLevel && (
-                      <div className="flex items-center text-sm text-gray-600">
-                        <Clock className="h-4 w-4 mr-2 text-indigo-500" />
-                        {job.experienceLevel}
-                      </div>
-                    )}
-                    
-                    {job.salary && (
-                      <div className="flex items-center text-sm text-gray-600">
-                        <DollarSign className="h-4 w-4 mr-2 text-indigo-500" />
-                        {job.salary}
-                      </div>
-                    )}
-
-                    <div className="flex items-center text-sm text-gray-600">
-                      <Calendar className="h-4 w-4 mr-2 text-indigo-500" />
-                      Posted {new Date(job.createdAt).toLocaleDateString()}
-                    </div>
-                  </div>
-
-                  {/* Actions */}
-                  <div className="flex items-center justify-between pt-4 border-t border-gray-100">
-                    <Link
-                      href={`/careers/${job.id}`}
-                      className="inline-flex items-center px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700 transition-colors"
-                    >
-                      Know More
-                      <span className="ml-2">›</span>
-                    </Link>
-
-                    {/* Share Menu */}
-                    <div className="relative group/share">
-                      <button className="p-2 text-gray-500 hover:text-indigo-600 transition-colors">
-                        <Share2 className="h-5 w-5" />
-                      </button>
-                      
-                      <div className="absolute right-0 bottom-full mb-2 w-auto bg-white rounded-lg shadow-lg border border-gray-200 opacity-0 invisible group-hover/share:opacity-100 group-hover/share:visible transition-all duration-200 z-10">
-                        <div className="flex p-2 space-x-1">
-                          <button
-                            onClick={() => shareJob(job, 'facebook')}
-                            className="p-2 text-blue-600 hover:bg-blue-50 rounded transition-colors"
-                            title="Share on Facebook"
-                          >
-                            <Facebook className="h-5 w-5" />
-                          </button>
-                          <button
-                            onClick={() => shareJob(job, 'linkedin')}
-                            className="p-2 text-blue-700 hover:bg-blue-50 rounded transition-colors"
-                            title="Share on LinkedIn"
-                          >
-                            <Linkedin className="h-5 w-5" />
-                          </button>
-                          <button
-                            onClick={() => shareJob(job, 'email')}
-                            className="p-2 text-gray-600 hover:bg-gray-100 rounded transition-colors"
-                            title="Share via Email"
-                          >
-                            <Mail className="h-5 w-5" />
-                          </button>
+                <div
+                  key={job.id}
+                  className="job-card bg-white rounded-xl shadow-md hover:shadow-xl transition-all duration-300 p-2 overflow-hidden group"
+                >
+                  {/* Job Image */}
+                  <div className="relative h-[257px] bg-gradient-to-br rounded-xl from-indigo-500 to-purple-600 overflow-hidden">
+                    {job.imageUrl ? (
+                      <Image
+                        src={job.imageUrl}
+                        alt={job.title}
+                        fill
+                        className="object-cover group-hover:scale-110 transition-transform duration-300"
+                      />
+                    ) : (
+                      <div className="absolute inset-0 flex items-center justify-center">
+                        <div className="text-center text-white ">
+                          <Briefcase className="h-16 w-16 mx-auto mb-2 opacity-50" />
+                          <p className="text-sm font-medium opacity-75">
+                            {job.department}
+                          </p>
                         </div>
                       </div>
+                    )}
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent"></div>
+                  </div>
+
+                  {/* Job Content */}
+                  <div className="p-6 text-center">
+                    <div className="mb-12">
+                      <h3 className="text-[25px] font-bold text-[#56585d] mb-2 group-hover:text-indigo-600 transition-colors">
+                        {job.title}
+                      </h3>
+
+                      <p className="text-[#333] text-[16px] mb-4 line-clamp-2">
+                        {job.description
+                          .replace(/<[^>]*>/g, "")
+                          .substring(0, 120)}
+                        ...
+                      </p>
+                    </div>
+
+                    {/* Job Details */}
+                    {/* <div className="space-y-2 mb-4">
+                      {job.location && (
+                        <div className="flex items-center text-sm text-gray-600">
+                          <MapPin className="h-4 w-4 mr-2 text-indigo-500" />
+                          {job.location}
+                        </div>
+                      )}
+
+                      {job.department && (
+                        <div className="flex items-center text-sm text-gray-600">
+                          <Briefcase className="h-4 w-4 mr-2 text-indigo-500" />
+                          {job.department}
+                        </div>
+                      )}
+
+                      {job.experienceLevel && (
+                        <div className="flex items-center text-sm text-gray-600">
+                          <Clock className="h-4 w-4 mr-2 text-indigo-500" />
+                          {job.experienceLevel}
+                        </div>
+                      )}
+
+                      {job.salary && (
+                        <div className="flex items-center text-sm text-gray-600">
+                          <DollarSign className="h-4 w-4 mr-2 text-indigo-500" />
+                          {job.salary}
+                        </div>
+                      )}
+
+                      <div className="flex items-center text-sm text-gray-600">
+                        <Calendar className="h-4 w-4 mr-2 text-indigo-500" />
+                        Posted {new Date(job.createdAt).toLocaleDateString()}
+                      </div>
+                    </div> */}
+
+                    {/* Actions */}
+                    <div className="flex items-center justify-between pt-4 border-t border-gray-100">
+                      <Link
+                        href={`/careers/${job.id}`}
+                        className="btn-animated inline-flex items-center px-4 py-1 border border-solid border-[#29256a] text-[#29256a] text-[15px] font-semibold rounded-3xl bg-white transition-all duration-300"
+                      >
+                        Know More
+                        <span className="ml-2 text-2xl ">›</span>
+                      </Link>
+
+                      {/* Share Icons */}
+                      <div className="flex items-center space-x-[-5px]">
+                        <span className="text-sm text-gray-500 mr-1">
+                          Share
+                        </span>
+
+                        {/* Facebook */}
+                        <button
+                          onClick={() => shareJob(job, "facebook")}
+                          className="p-1 hover:opacity-70 transition"
+                        >
+                          <img
+                            src="https://jaiveeru.co.in/wp-content/uploads/2025/04/fb.svg"
+                            alt="Facebook"
+                            className="h-5 w-5"
+                          />
+                        </button>
+
+                        {/* LinkedIn */}
+                        <button
+                          onClick={() => shareJob(job, "linkedin")}
+                          className="p-1 hover:opacity-70 transition"
+                        >
+                          <img
+                            src="https://jaiveeru.co.in/wp-content/uploads/2025/04/linkedin-11.svg"
+                            alt="LinkedIn"
+                            className="h-5 w-5"
+                          />
+                        </button>
+
+                        {/* Email */}
+                        <button
+                          onClick={() => shareJob(job, "email")}
+                          className="p-1 hover:opacity-70 transition"
+                        >
+                          <img
+                            src="https://jaiveeru.co.in/wp-content/uploads/2022/03/004-email.svg"
+                            alt="Email"
+                            className="h-5 w-5"
+                          />
+                        </button>
+                      </div>
                     </div>
                   </div>
                 </div>
+              ))}
+            </div>
+
+            {/* Infinite Scroll Trigger */}
+            {hasMore && (
+              <div
+                ref={loadMoreRef}
+                className="flex justify-center items-center py-8 min-h-[60px]"
+              >
+                {isLoadingMore ? (
+                  <div className="flex flex-col items-center gap-2">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
+                    <p className="text-sm text-gray-600">
+                      Loading more jobs...
+                    </p>
+                  </div>
+                ) : (
+                  <div className="h-4"></div>
+                )}
               </div>
-            ))}
-          </div>
+            )}
 
-          {/* Infinite Scroll Trigger */}
-          {hasMore && (
-            <div ref={loadMoreRef} className="flex justify-center items-center py-8 min-h-[60px]">
-              {isLoadingMore ? (
-                <div className="flex flex-col items-center gap-2">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
-                  <p className="text-sm text-gray-600">Loading more jobs...</p>
-                </div>
-              ) : (
-                <div className="h-4"></div>
-              )}
-            </div>
-          )}
-
-          {/* Show total results */}
-          {!hasMore && filteredJobs.length > 9 && (
-            <div className="text-center py-8 text-gray-600">
-              Showing all {filteredJobs.length} jobs
-            </div>
-          )}
+            {/* Show total results */}
+            {!hasMore && filteredJobs.length > 9 && (
+              <div className="text-center py-8 text-gray-600">
+                Showing all {filteredJobs.length} jobs
+              </div>
+            )}
           </>
         )}
       </div>
     </div>
-  )
+  );
 }

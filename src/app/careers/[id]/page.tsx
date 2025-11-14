@@ -296,11 +296,11 @@ export default function CareerDetailPage() {
               {job.salary && (
                 <div className="mb-4 pb-4 border-b border-gray-200">
                   <div className="flex items-center text-gray-600 mb-2">
-                    <DollarSign className="h-5 w-5 mr-2 text-indigo-600" />
+                    {/* <DollarSign className="h-5 w-5 mr-2 text-indigo-600" /> */}
                     <span className="text-sm font-medium">Salary</span>
                   </div>
                   <p className="text-lg font-semibold text-gray-900">
-                    {job.salary}
+                    ₹ {job.salary}
                   </p>
                 </div>
               )}
