@@ -5,15 +5,10 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { gsap } from 'gsap'
 import { 
-  MapPin, 
-  Briefcase, 
-  DollarSign, 
-  Clock,
-  Share2,
+  Briefcase,
   Facebook,
   Linkedin,
-  Mail,
-  Calendar
+  Mail
 } from 'lucide-react'
 
 interface Job {
@@ -55,6 +50,92 @@ interface CareersSettings {
     url: string
     order: number
   }>
+  // Button styling
+  cardButtonClass?: string
+  cardButtonBg?: string
+  cardButtonText?: string
+  cardButtonBorder?: string
+  cardButtonBorderColor?: string
+  cardButtonRadius?: string
+  cardButtonFontFamily?: string
+  cardButtonFontSize?: string
+  cardButtonFontWeight?: string
+  cardButtonLabel?: string
+  // Custom CSS
+  customCss?: string
+  // Footer settings
+  footerEnabled?: boolean
+  footerBgColor?: string
+  footerTextColor?: string
+  footerPadding?: string
+  footerFontFamily?: string
+  footerFontSize?: string
+  footerFontWeight?: string
+  footerBorderTop?: string
+  footerBorderBottom?: string
+  footerBorderLeft?: string
+  footerBorderRight?: string
+  footerBorderColor?: string
+  copyrightEnabled?: boolean;
+  copyrightLeftHtml?: string;
+  copyrightRightHtml?: string;
+  copyrightBgColor?: string;
+  copyrightTextColor?: string;
+  copyrightDividerEnabled?: boolean;
+  copyrightDividerWidth?: string;
+  copyrightDividerHeight?: string;
+  copyrightDividerColor?: string;
+  copyrightDividerBorderTop?: string;
+  copyrightDividerBorderBottom?: string;
+  copyrightDividerBorderLeft?: string;
+  copyrightDividerBorderRight?: string;
+  copyrightDividerBorderStyle?: string;
+  socialLinks?: Array<{
+    id: string
+    platform: string
+    url: string
+    iconImage?: string
+    order: number
+  }>
+  // Share icons
+  shareIconsEnabled?: boolean
+  shareIcons?: {
+    facebook?: string
+    facebookImage?: string
+    twitter?: string
+    twitterImage?: string
+    linkedin?: string
+    linkedinImage?: string
+    whatsapp?: string
+    whatsappImage?: string
+    email?: string
+    emailImage?: string
+  }
+  shareIconWidth?: string
+  shareIconHeight?: string
+  shareIconBorderRadius?: string
+  // Filter visibility
+  showFilters?: boolean
+  showSearchFilter?: boolean
+  showDepartmentFilter?: boolean
+  showExperienceFilter?: boolean
+  // Footer widgets
+  footerColumns?: number
+  footerWidth?: string
+  footerWidgets?: Array<{
+    id: string
+    type: 'logo' | 'text' | 'menu' | 'html' | 'social'
+    title?: string
+    content: string
+    menuItems?: Array<{ label: string; url: string }>
+    logoImage?: string
+    logoWidth?: string
+    logoHeight?: string
+    twoColumns?: boolean
+    customClass?: string
+    order: number
+    columnIndex: number
+  }>
 }
 
 export default function CareersPage() {
@@ -92,13 +173,25 @@ export default function CareersPage() {
     fetchSettings()
   }, [])
 
+  useEffect(() => {
+    console.log('🔄 Settings state changed:', settings)
+    console.log('🖼️ Share Icons in state:', settings.shareIcons)
+  }, [settings])
+
   const fetchSettings = async () => {
     try {
       const response = await fetch('/api/careers-settings/public')
       if (response.ok) {
         const data = await response.json()
+        console.log('📋 Careers Page - Fetched settings:', data.settings)
+        console.log('🎨 Share Icons from API:', data.settings?.shareIcons)
+        console.log('🔍 Checking icon paths:')
+        console.log('  - FB:', data.settings?.shareIcons?.facebookImage)
+        console.log('  - LinkedIn:', data.settings?.shareIcons?.linkedinImage)
+        console.log('  - Email:', data.settings?.shareIcons?.emailImage)
         if (data.settings) {
           setSettings(data.settings)
+          console.log('✅ Settings state updated')
         }
       }
     } catch (error) {
@@ -370,54 +463,62 @@ export default function CareersPage() {
       </div>
 
       {/* Filters Section */}
-      <div className="bg-white border-b sticky top-16 z-40 shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {/* Search */}
-            <div>
-              <input
-                type="text"
-                placeholder="Search jobs..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-gray-900"
-              />
-            </div>
+      {settings.showFilters !== false && (
+        <div className="bg-white border-b sticky top-16 z-40 shadow-sm">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+            <div className={`grid grid-cols-1 gap-4 ${
+              [settings.showSearchFilter, settings.showDepartmentFilter, settings.showExperienceFilter].filter(Boolean).length === 3 ? 'md:grid-cols-3' :
+              [settings.showSearchFilter, settings.showDepartmentFilter, settings.showExperienceFilter].filter(Boolean).length === 2 ? 'md:grid-cols-2' :
+              'md:grid-cols-1'
+            }`}>
+              {/* Search */}
+              {settings.showSearchFilter !== false && (
+                <div>
+                  <input
+                    type="text"
+                    placeholder="Search jobs..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-gray-900"
+                  />
+                </div>
+              )}
 
-            {/* Department Filter */}
-            <div>
-              <select
-                value={selectedDepartment}
-                onChange={(e) => setSelectedDepartment(e.target.value)}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-gray-900"
-              >
-                <option value="all">All Departments</option>
-                {departments.map((dept) => (
-                  <option key={dept} value={dept}>
-                    {dept}
-                  </option>
-                ))}
-              </select>
-            </div>
+              {/* Department Filter */}
+              {settings.showDepartmentFilter !== false && (
+                <div>
+                  <select
+                    value={selectedDepartment}
+                    onChange={(e) => setSelectedDepartment(e.target.value)}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-gray-900"
+                  >
+                    <option value="all">All Departments</option>
+                    {departments.map(dept => (
+                      <option key={dept} value={dept}>{dept}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
 
-            {/* Experience Filter */}
-            <div>
-              <select
-                value={selectedExperience}
-                onChange={(e) => setSelectedExperience(e.target.value)}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-gray-900"
-              >
-                <option value="all">All Experience Levels</option>
-                {experienceLevels.map((level) => (
-                  <option key={level} value={level}>
-                    {level}
-                  </option>
-                ))}
-              </select>
+              {/* Experience Filter */}
+              {settings.showExperienceFilter !== false && (
+                <div>
+                  <select
+                    value={selectedExperience}
+                    onChange={(e) => setSelectedExperience(e.target.value)}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-gray-900"
+                  >
+                    <option value="all">All Experience Levels</option>
+                    {experienceLevels.map(level => (
+                      <option key={level} value={level}>{level}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
             </div>
           </div>
         </div>
-      </div>
+      )}
 
       {/* Jobs Grid */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
@@ -482,42 +583,6 @@ export default function CareersPage() {
                         ...
                       </p>
                     </div>
-
-                    {/* Job Details */}
-                    {/* <div className="space-y-2 mb-4">
-                      {job.location && (
-                        <div className="flex items-center text-sm text-gray-600">
-                          <MapPin className="h-4 w-4 mr-2 text-indigo-500" />
-                          {job.location}
-                        </div>
-                      )}
-
-                      {job.department && (
-                        <div className="flex items-center text-sm text-gray-600">
-                          <Briefcase className="h-4 w-4 mr-2 text-indigo-500" />
-                          {job.department}
-                        </div>
-                      )}
-
-                      {job.experienceLevel && (
-                        <div className="flex items-center text-sm text-gray-600">
-                          <Clock className="h-4 w-4 mr-2 text-indigo-500" />
-                          {job.experienceLevel}
-                        </div>
-                      )}
-
-                      {job.salary && (
-                        <div className="flex items-center text-sm text-gray-600">
-                          <DollarSign className="h-4 w-4 mr-2 text-indigo-500" />
-                          {job.salary}
-                        </div>
-                      )}
-
-                      <div className="flex items-center text-sm text-gray-600">
-                        <Calendar className="h-4 w-4 mr-2 text-indigo-500" />
-                        Posted {new Date(job.createdAt).toLocaleDateString()}
-                      </div>
-                    </div> */}
 
                     {/* Actions */}
                     <div className="flex items-center justify-between pt-4 border-t border-gray-100">
@@ -605,6 +670,208 @@ export default function CareersPage() {
           </>
         )}
       </div>
+
+      {/* Custom CSS Injection */}
+      {settings.customCss && (
+        <style dangerouslySetInnerHTML={{ __html: settings.customCss }} />
+      )}
+
+      {/* Footer with Widgets */}
+      {settings.footerEnabled && (
+        <footer
+          style={{
+            backgroundColor: settings.footerBgColor || '#1f2937',
+            color: settings.footerTextColor || '#f3f4f6',
+            padding: settings.footerPadding || '48px',
+            fontFamily: settings.footerFontFamily && settings.footerFontFamily !== 'System Default' ? settings.footerFontFamily : 'inherit',
+            fontSize: settings.footerFontSize || '14px',
+            fontWeight: settings.footerFontWeight || '400',
+            borderTopWidth: settings.footerBorderTop || '0px',
+            borderBottomWidth: settings.footerBorderBottom || '0px',
+            borderLeftWidth: settings.footerBorderLeft || '0px',
+            borderRightWidth: settings.footerBorderRight || '0px',
+            borderStyle: 'solid',
+            borderColor: settings.footerBorderColor || '#374151',
+          }}
+        >
+          <div 
+            className="mx-auto px-4 sm:px-6 lg:px-8"
+            style={{ maxWidth: settings.footerWidth || '1280px' }}
+          >
+            {/* Footer Widgets */}
+            {settings.footerWidgets && settings.footerWidgets.length > 0 ? (
+              <div 
+                className="grid gap-8"
+                style={{ 
+                  gridTemplateColumns: `repeat(${settings.footerColumns || 4}, 1fr)`,
+                }}
+              >
+                {Array.from({ length: settings.footerColumns || 4 }, (_, columnIndex) => {
+                  const columnWidgets = settings.footerWidgets!
+                    .filter(w => w.columnIndex === columnIndex)
+                    .sort((a, b) => a.order - b.order)
+
+                  return (
+                    <div key={columnIndex} className="space-y-6">
+                      {columnWidgets.map(widget => (
+                        <div key={widget.id} className={widget.customClass || ''}>
+                          {/* Logo Widget */}
+                          {widget.type === 'logo' && widget.logoImage && (
+                            <div>
+                              <img
+                                src={widget.logoImage}
+                                alt="Logo"
+                                style={{
+                                  width: widget.logoWidth || '150px',
+                                  height: widget.logoHeight || '50px',
+                                  objectFit: 'contain',
+                                }}
+                              />
+                            </div>
+                          )}
+
+                          {/* Text Widget */}
+                          {widget.type === 'text' && (
+                            <div>
+                              {widget.title && (
+                                <h3 className="text-lg font-semibold mb-3" style={{ color: settings.footerTextColor || '#f3f4f6' }}>{widget.title}</h3>
+                              )}
+                              <p className="text-sm opacity-90 whitespace-pre-line" style={{ color: settings.footerTextColor || '#f3f4f6' }}>{widget.content}</p>
+                            </div>
+                          )}
+
+                          {/* Menu Widget */}
+                          {widget.type === 'menu' && widget.menuItems && (
+                            <div>
+                              {widget.title && (
+                                <h3 className="text-lg font-semibold mb-3" style={{ color: settings.footerTextColor || '#f3f4f6' }}>{widget.title}</h3>
+                              )}
+                              <ul 
+                                className={`space-y-2 text-sm ${widget.twoColumns ? 'grid grid-cols-2 gap-x-4' : ''}`}
+                              >
+                                {widget.menuItems.map((item, index) => (
+                                  <li key={index}>
+                                    <Link
+                                      href={item.url}
+                                      className="opacity-90 hover:opacity-100 hover:underline transition-opacity"
+                                      style={{ color: settings.footerTextColor || '#f3f4f6' }}
+                                    >
+                                      {item.label}
+                                    </Link>
+                                  </li>
+                                ))}
+                              </ul>
+                            </div>
+                          )}
+
+                          {/* HTML Widget */}
+                          {widget.type === 'html' && (
+                            <div>
+                              {widget.title && (
+                                <h3 className="text-lg font-semibold mb-3" style={{ color: settings.footerTextColor || '#f3f4f6' }}>{widget.title}</h3>
+                              )}
+                              <div 
+                                className="text-sm opacity-90"
+                                style={{ color: settings.footerTextColor || '#f3f4f6' }}
+                                dangerouslySetInnerHTML={{ __html: widget.content }}
+                              />
+                            </div>
+                          )}
+
+                          {/* Social Widget */}
+                          {widget.type === 'social' && settings.socialLinks && settings.socialLinks.length > 0 && (
+                            <div>
+                              {widget.title && (
+                                <h3 className="text-lg font-semibold mb-3" style={{ color: settings.footerTextColor || '#f3f4f6' }}>{widget.title}</h3>
+                              )}
+                              <div className="flex gap-4">
+                                {settings.socialLinks.map((link) => (
+                                  <a
+                                    key={link.id}
+                                    href={link.url}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="hover:opacity-70 transition-opacity"
+                                    title={link.platform}
+                                  >
+                                    {link.iconImage ? (
+                                      <img src={link.iconImage} alt={link.platform} className="w-6 h-6" />
+                                    ) : (
+                                      <span className="text-sm font-medium">{link.platform}</span>
+                                    )}
+                                  </a>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  )
+                })}
+              </div>
+            ) : (
+              /* Fallback: Show social links if no widgets configured */
+              settings.socialLinks && settings.socialLinks.length > 0 && (
+                <div className="flex justify-center gap-6">
+                  {settings.socialLinks.map((link) => (
+                    <a
+                      key={link.id}
+                      href={link.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="hover:opacity-70 transition-opacity"
+                      title={link.platform}
+                    >
+                      {link.iconImage ? (
+                        <img src={link.iconImage} alt={link.platform} className="w-6 h-6" />
+                      ) : (
+                        <span className="text-sm font-medium">{link.platform}</span>
+                      )}
+                    </a>
+                  ))}
+                </div>
+              )
+            )}
+          </div>
+        </footer>
+      )}
+
+      {/* Copyright Footer */}
+      {settings.copyrightEnabled && (
+        <>
+          {/* Divider Above Copyright */}
+          {settings.copyrightDividerEnabled && (
+            <div
+              className="mx-auto"
+              style={{
+                width: settings.copyrightDividerWidth || '100%',
+                height: settings.copyrightDividerHeight || '1px',
+                backgroundColor: settings.copyrightDividerColor || '#374151',
+                borderTopWidth: settings.copyrightDividerBorderTop || '1px',
+                borderBottomWidth: settings.copyrightDividerBorderBottom || '0px',
+                borderLeftWidth: settings.copyrightDividerBorderLeft || '0px',
+                borderRightWidth: settings.copyrightDividerBorderRight || '0px',
+                borderStyle: settings.copyrightDividerBorderStyle || 'solid',
+                borderColor: settings.copyrightDividerColor || '#374151',
+              }}
+            />
+          )}
+          
+          <div
+            style={{
+              backgroundColor: settings.copyrightBgColor || '#111827',
+              color: settings.copyrightTextColor || '#9ca3af',
+              padding: '16px',
+            }}
+          >
+            <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-4 text-sm">
+              <div dangerouslySetInnerHTML={{ __html: settings.copyrightLeftHtml || '' }} />
+              <div dangerouslySetInnerHTML={{ __html: settings.copyrightRightHtml || '' }} />
+            </div>
+          </div>
+        </>
+      )}
     </div>
   );
 }

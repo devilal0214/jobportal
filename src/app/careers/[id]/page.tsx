@@ -49,6 +49,94 @@ interface CareersSettings {
   logoHeight: string;
   logoWidth: string;
   companyName: string;
+  // Button styling
+  jobDetailsButtonClass?: string;
+  jobDetailsButtonBg?: string;
+  jobDetailsButtonText?: string;
+  jobDetailsButtonBorder?: string;
+  jobDetailsButtonBorderColor?: string;
+  jobDetailsButtonRadius?: string;
+  jobDetailsButtonFontFamily?: string;
+  jobDetailsButtonFontSize?: string;
+  jobDetailsButtonFontWeight?: string;
+  applyButtonClass?: string;
+  applyButtonBg?: string;
+  applyButtonText?: string;
+  applyButtonBorder?: string;
+  applyButtonBorderColor?: string;
+  applyButtonRadius?: string;
+  applyButtonFontFamily?: string;
+  applyButtonFontSize?: string;
+  applyButtonFontWeight?: string;
+  // Share icons
+  shareIconsEnabled?: boolean;
+  shareIcons?: {
+    facebook?: string;
+    facebookImage?: string;
+    twitter?: string;
+    twitterImage?: string;
+    linkedin?: string;
+    linkedinImage?: string;
+    whatsapp?: string;
+    whatsappImage?: string;
+    email?: string;
+    emailImage?: string;
+  };
+  shareIconWidth?: string;
+  shareIconHeight?: string;
+  shareIconBorderRadius?: string;
+  // Custom CSS
+  customCss?: string;
+  // Footer settings
+  footerEnabled?: boolean;
+  footerColumns?: number;
+  footerWidth?: string;
+  footerWidgets?: Array<{
+    id: string;
+    type: 'logo' | 'text' | 'menu' | 'html' | 'social';
+    title?: string;
+    content: string;
+    menuItems?: Array<{ label: string; url: string }>;
+    logoImage?: string;
+    logoWidth?: string;
+    logoHeight?: string;
+    twoColumns?: boolean;
+    customClass?: string;
+    order: number;
+    columnIndex: number;
+  }>;
+  footerBgColor?: string;
+  footerTextColor?: string;
+  footerPadding?: string;
+  footerFontFamily?: string;
+  footerFontSize?: string;
+  footerFontWeight?: string;
+  footerBorderTop?: string;
+  footerBorderBottom?: string;
+  footerBorderLeft?: string;
+  footerBorderRight?: string;
+  footerBorderColor?: string;
+  copyrightEnabled?: boolean;
+  copyrightLeftHtml?: string;
+  copyrightRightHtml?: string;
+  copyrightBgColor?: string;
+  copyrightTextColor?: string;
+  copyrightDividerEnabled?: boolean;
+  copyrightDividerWidth?: string;
+  copyrightDividerHeight?: string;
+  copyrightDividerColor?: string;
+  copyrightDividerBorderTop?: string;
+  copyrightDividerBorderBottom?: string;
+  copyrightDividerBorderLeft?: string;
+  copyrightDividerBorderRight?: string;
+  copyrightDividerBorderStyle?: string;
+  socialLinks?: Array<{
+    id: string;
+    platform: string;
+    url: string;
+    iconImage?: string;
+    order: number;
+  }>;
 }
 
 /* ---------- Component ---------- */
@@ -100,7 +188,11 @@ export default function CareerDetailPage() {
         const response = await fetch("/api/careers-settings/public");
         if (response.ok) {
           const data = await response.json();
-          if (data.settings) setSettings(data.settings);
+          if (data.settings) {
+            console.log("Fetched settings:", data.settings);
+            console.log("Share Icons:", data.settings.shareIcons);
+            setSettings(data.settings);
+          }
         }
       } catch (error) {
         console.error("Failed to fetch settings:", error);
@@ -308,7 +400,17 @@ export default function CareerDetailPage() {
               {hasForm ? (
                 <Link
                   href={`/careers/${job.id}/apply`}
-                  className="block w-full bg-indigo-600 text-white text-center font-semibold py-3 px-6 rounded-lg hover:bg-indigo-700 transition-colors mb-3"
+                  className={`block w-full text-center font-semibold py-3 px-6 transition-colors mb-3 ${settings.applyButtonClass || ''}`}
+                  style={{
+                    backgroundColor: settings.applyButtonBg || '#10b981',
+                    color: settings.applyButtonText || '#ffffff',
+                    border: settings.applyButtonBorder ? `solid ${settings.applyButtonBorderColor || '#10b981'}` : 'none',
+                    borderWidth: settings.applyButtonBorder || '0px',
+                    borderRadius: settings.applyButtonRadius || '8px',
+                    fontFamily: settings.applyButtonFontFamily && settings.applyButtonFontFamily !== 'System Default' ? settings.applyButtonFontFamily : 'inherit',
+                    fontSize: settings.applyButtonFontSize || '14px',
+                    fontWeight: settings.applyButtonFontWeight || '500',
+                  }}
                 >
                   Apply Now
                 </Link>
@@ -336,37 +438,128 @@ export default function CareerDetailPage() {
                 <p className="text-sm font-medium text-gray-700 mb-3">
                   Share this job
                 </p>
-                <div className="flex space-x-2">
+                <div className="flex space-x-2 justify-center">
+                  {/* Facebook - Always visible */}
                   <button
-                    onClick={() => shareJob("facebook")}
-                    className="flex-1 p-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                    onClick={() => {
+                      console.log("Facebook icon path:", settings.shareIcons?.facebookImage);
+                      shareJob("facebook");
+                    }}
+                    className="p-2 hover:opacity-70 transition-opacity"
                     title="Share on Facebook"
                   >
-                    <Facebook className="h-5 w-5 mx-auto text-blue-600" />
+                    {settings.shareIcons?.facebookImage ? (
+                      <img
+                        src={settings.shareIcons.facebookImage}
+                        alt="Facebook"
+                        style={{
+                          width: settings.shareIconWidth || '32px',
+                          height: settings.shareIconHeight || '32px',
+                          borderRadius: settings.shareIconBorderRadius || '6px',
+                          objectFit: 'contain',
+                        }}
+                        onLoad={() => console.log("FB image loaded successfully")}
+                        onError={(e) => console.error("FB image failed to load:", e)}
+                      />
+                    ) : (
+                      <Facebook className="h-6 w-6 text-blue-600" />
+                    )}
                   </button>
+
+                  {/* LinkedIn - Always visible */}
                   <button
-                    onClick={() => shareJob("linkedin")}
-                    className="flex-1 p-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                    onClick={() => {
+                      console.log("LinkedIn icon path:", settings.shareIcons?.linkedinImage);
+                      shareJob("linkedin");
+                    }}
+                    className="p-2 hover:opacity-70 transition-opacity"
                     title="Share on LinkedIn"
                   >
-                    <Linkedin className="h-5 w-5 mx-auto text-blue-700" />
+                    {settings.shareIcons?.linkedinImage ? (
+                      <img
+                        src={settings.shareIcons.linkedinImage}
+                        alt="LinkedIn"
+                        style={{
+                          width: settings.shareIconWidth || '32px',
+                          height: settings.shareIconHeight || '32px',
+                          borderRadius: settings.shareIconBorderRadius || '6px',
+                          objectFit: 'contain',
+                        }}
+                        onLoad={() => console.log("LinkedIn image loaded successfully")}
+                        onError={(e) => console.error("LinkedIn image failed to load:", e)}
+                      />
+                    ) : (
+                      <Linkedin className="h-6 w-6 text-blue-700" />
+                    )}
                   </button>
+
+                  {/* Email - Always visible */}
                   <button
-                    onClick={() => shareJob("email")}
-                    className="flex-1 p-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                    onClick={() => {
+                      console.log("Email icon path:", settings.shareIcons?.emailImage);
+                      shareJob("email");
+                    }}
+                    className="p-2 hover:opacity-70 transition-opacity"
                     title="Share via Email"
                   >
-                    <Mail className="h-5 w-5 mx-auto text-gray-600" />
-                  </button>
-                  <button
-                    onClick={() => shareJob("copy")}
-                    className="flex-1 p-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
-                    title="Copy Link"
-                  >
-                    <Share2 className="h-5 w-5 mx-auto text-gray-600" />
+                    {settings.shareIcons?.emailImage ? (
+                      <img
+                        src={settings.shareIcons.emailImage}
+                        alt="Email"
+                        style={{
+                          width: settings.shareIconWidth || '32px',
+                          height: settings.shareIconHeight || '32px',
+                          borderRadius: settings.shareIconBorderRadius || '6px',
+                          objectFit: 'contain',
+                        }}
+                        onLoad={() => console.log("Email image loaded successfully")}
+                        onError={(e) => console.error("Email image failed to load:", e)}
+                      />
+                    ) : (
+                      <Mail className="h-6 w-6 text-gray-600" />
+                    )}
                   </button>
                 </div>
               </div>
+
+              {/* Remove the default share section as we always show now */}
+              {false && (
+                <div className="border-t border-gray-200 pt-4 mt-2">
+                  <p className="text-sm font-medium text-gray-700 mb-3">
+                    Share this job
+                  </p>
+                  <div className="flex space-x-2">
+                    <button
+                      onClick={() => shareJob("facebook")}
+                      className="flex-1 p-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                      title="Share on Facebook"
+                    >
+                      <Facebook className="h-5 w-5 mx-auto text-blue-600" />
+                    </button>
+                    <button
+                      onClick={() => shareJob("linkedin")}
+                      className="flex-1 p-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                      title="Share on LinkedIn"
+                    >
+                      <Linkedin className="h-5 w-5 mx-auto text-blue-700" />
+                    </button>
+                    <button
+                      onClick={() => shareJob("email")}
+                      className="flex-1 p-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                      title="Share via Email"
+                    >
+                      <Mail className="h-5 w-5 mx-auto text-gray-600" />
+                    </button>
+                    <button
+                      onClick={() => shareJob("copy")}
+                      className="flex-1 p-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                      title="Copy Link"
+                    >
+                      <Share2 className="h-5 w-5 mx-auto text-gray-600" />
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Job Details Card */}
@@ -421,6 +614,247 @@ export default function CareerDetailPage() {
           </div>
         </div>
       </div>
+
+      {/* Footer */}
+      {settings.footerEnabled !== false && (
+        <footer
+          style={{
+            backgroundColor: settings.footerBgColor || "#1f2937",
+            color: settings.footerTextColor || "#ffffff",
+            padding: settings.footerPadding || "48px 0",
+            fontFamily: settings.footerFontFamily || "inherit",
+            fontSize: settings.footerFontSize || "14px",
+            fontWeight: settings.footerFontWeight || "normal",
+            borderTop: settings.footerBorderTop
+              ? `${settings.footerBorderTop} ${
+                  settings.footerBorderColor || "#374151"
+                }`
+              : "none",
+            borderBottom: settings.footerBorderBottom
+              ? `${settings.footerBorderBottom} ${
+                  settings.footerBorderColor || "#374151"
+                }`
+              : "none",
+            borderLeft: settings.footerBorderLeft
+              ? `${settings.footerBorderLeft} ${
+                  settings.footerBorderColor || "#374151"
+                }`
+              : "none",
+            borderRight: settings.footerBorderRight
+              ? `${settings.footerBorderRight} ${
+                  settings.footerBorderColor || "#374151"
+                }`
+              : "none",
+          }}
+        >
+          <div
+            className="mx-auto px-4"
+            style={{ maxWidth: settings.footerWidth || "1280px" }}
+          >
+            {settings.footerWidgets && settings.footerWidgets.length > 0 ? (
+              <div
+                className="grid gap-8"
+                style={{
+                  gridTemplateColumns: `repeat(${
+                    settings.footerColumns || 4
+                  }, 1fr)`,
+                }}
+              >
+                {Array.from(
+                  { length: settings.footerColumns || 4 },
+                  (_, columnIndex) => {
+                    const columnWidgets = settings.footerWidgets!
+                      .filter((w) => w.columnIndex === columnIndex)
+                      .sort((a, b) => a.order - b.order);
+
+                    return (
+                      <div key={columnIndex} className="space-y-6">
+                        {columnWidgets.map((widget) => (
+                          <div key={widget.id} className={widget.customClass || ''}>
+                            {widget.type === "logo" && widget.logoImage && (
+                              <div>
+                                <img
+                                  src={widget.logoImage}
+                                  alt="Logo"
+                                  style={{
+                                    width: widget.logoWidth || "auto",
+                                    height: widget.logoHeight || "auto",
+                                    maxWidth: "100%",
+                                  }}
+                                />
+                              </div>
+                            )}
+
+                            {widget.type === "text" && (
+                              <div>
+                                {widget.title && (
+                                  <h3 className="font-bold text-lg mb-3" style={{ color: settings.footerTextColor || '#ffffff' }}>
+                                    {widget.title}
+                                  </h3>
+                                )}
+                                <p
+                                  className="text-sm opacity-90"
+                                  style={{ whiteSpace: "pre-line", color: settings.footerTextColor || '#ffffff' }}
+                                >
+                                  {widget.content}
+                                </p>
+                              </div>
+                            )}
+
+                            {widget.type === "menu" && (
+                              <div>
+                                {widget.title && (
+                                  <h3 className="font-bold text-lg mb-3" style={{ color: settings.footerTextColor || '#ffffff' }}>
+                                    {widget.title}
+                                  </h3>
+                                )}
+                                <ul
+                                  className={
+                                    widget.twoColumns ? "grid grid-cols-2" : ""
+                                  }
+                                >
+                                  {widget.menuItems?.map((item, idx) => (
+                                    <li key={idx} className="mb-2">
+                                      <a
+                                        href={item.url}
+                                        className="text-sm opacity-90 hover:opacity-100 transition-opacity"
+                                        style={{ color: settings.footerTextColor || '#ffffff' }}
+                                      >
+                                        {item.label}
+                                      </a>
+                                    </li>
+                                  ))}
+                                </ul>
+                              </div>
+                            )}
+
+                            {widget.type === "html" && (
+                              <div>
+                                {widget.title && (
+                                  <h3 className="font-bold text-lg mb-3" style={{ color: settings.footerTextColor || '#ffffff' }}>
+                                    {widget.title}
+                                  </h3>
+                                )}
+                                <div
+                                  className="text-sm opacity-90"
+                                  style={{ color: settings.footerTextColor || '#ffffff' }}
+                                  dangerouslySetInnerHTML={{
+                                    __html: widget.content,
+                                  }}
+                                />
+                              </div>
+                            )}
+
+                            {widget.type === "social" && (
+                              <div>
+                                {widget.title && (
+                                  <h3 className="font-bold text-lg mb-3" style={{ color: settings.footerTextColor || '#ffffff' }}>
+                                    {widget.title}
+                                  </h3>
+                                )}
+                                <div className="flex gap-4">
+                                  {settings.socialLinks?.map((link) => (
+                                    <a
+                                      key={link.id}
+                                      href={link.url}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="opacity-90 hover:opacity-100 transition-opacity"
+                                    >
+                                      {link.iconImage && (
+                                        <img
+                                          src={link.iconImage}
+                                          alt={link.platform}
+                                          className="h-6 w-6"
+                                        />
+                                      )}
+                                    </a>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    );
+                  }
+                )}
+              </div>
+            ) : (
+              <div className="flex justify-center gap-6">
+                {settings.socialLinks?.map((link) => (
+                  <a
+                    key={link.id}
+                    href={link.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="opacity-90 hover:opacity-100 transition-opacity"
+                  >
+                    {link.iconImage && (
+                      <img
+                        src={link.iconImage}
+                        alt={link.platform}
+                        className="h-6 w-6"
+                      />
+                    )}
+                  </a>
+                ))}
+              </div>
+            )}
+          </div>
+        </footer>
+      )}
+
+      {/* Copyright Section */}
+      {settings.copyrightEnabled && (
+        <>
+          {/* Divider Above Copyright */}
+          {settings.copyrightDividerEnabled && (
+            <div
+              className="mx-auto"
+              style={{
+                width: settings.copyrightDividerWidth || "100%",
+                height: settings.copyrightDividerHeight || "1px",
+                backgroundColor: settings.copyrightDividerColor || "#374151",
+                borderTopWidth: settings.copyrightDividerBorderTop || "1px",
+                borderBottomWidth: settings.copyrightDividerBorderBottom || "0px",
+                borderLeftWidth: settings.copyrightDividerBorderLeft || "0px",
+                borderRightWidth: settings.copyrightDividerBorderRight || "0px",
+                borderStyle: settings.copyrightDividerBorderStyle || "solid",
+                borderColor: settings.copyrightDividerColor || "#374151",
+              }}
+            />
+          )}
+          
+          <div
+            style={{
+              backgroundColor: settings.copyrightBgColor || "#111827",
+              color: settings.copyrightTextColor || "#9ca3af",
+              padding: "16px 0",
+            }}
+          >
+            <div className="max-w-7xl mx-auto px-4 flex justify-between items-center text-sm">
+              <div
+                dangerouslySetInnerHTML={{
+                  __html:
+                    settings.copyrightLeftHtml ||
+                    `© ${new Date().getFullYear()} Your Company. All rights reserved.`,
+                }}
+              />
+              {settings.copyrightRightHtml && (
+                <div
+                  dangerouslySetInnerHTML={{ __html: settings.copyrightRightHtml }}
+                />
+              )}
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* Custom CSS Injection */}
+      {settings.customCss && (
+        <style dangerouslySetInnerHTML={{ __html: settings.customCss }} />
+      )}
     </div>
   );
 }

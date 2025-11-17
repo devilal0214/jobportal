@@ -26,7 +26,80 @@ export async function GET() {
             'careers_logo_height',
             'careers_logo_width',
             'careers_company_name',
-            'careers_menu_items'
+            'careers_menu_items',
+            // Button styling
+            'careers_card_button_class',
+            'careers_card_button_bg',
+            'careers_card_button_text',
+            'careers_card_button_border',
+            'careers_card_button_border_color',
+            'careers_card_button_radius',
+            'careers_card_button_font_family',
+            'careers_card_button_font_size',
+            'careers_card_button_font_weight',
+            'careers_card_button_label',
+            'careers_job_details_button_class',
+            'careers_job_details_button_bg',
+            'careers_job_details_button_text',
+            'careers_job_details_button_border',
+            'careers_job_details_button_border_color',
+            'careers_job_details_button_radius',
+            'careers_job_details_button_font_family',
+            'careers_job_details_button_font_size',
+            'careers_job_details_button_font_weight',
+            'careers_apply_button_class',
+            'careers_apply_button_bg',
+            'careers_apply_button_text',
+            'careers_apply_button_border',
+            'careers_apply_button_border_color',
+            'careers_apply_button_radius',
+            'careers_apply_button_font_family',
+            'careers_apply_button_font_size',
+            'careers_apply_button_font_weight',
+            // Custom CSS
+            'careers_custom_css',
+            // Footer settings
+            'careers_footer_enabled',
+            'careers_footer_columns',
+            'careers_footer_width',
+            'careers_footer_widgets',
+            'careers_footer_bg_color',
+            'careers_footer_text_color',
+            'careers_footer_padding',
+            'careers_footer_font_family',
+            'careers_footer_font_size',
+            'careers_footer_font_weight',
+            'careers_footer_border_top',
+            'careers_footer_border_bottom',
+            'careers_footer_border_left',
+            'careers_footer_border_right',
+            'careers_footer_border_color',
+            'careers_copyright_enabled',
+            'careers_copyright_left_html',
+            'careers_copyright_right_html',
+            'careers_copyright_bg_color',
+            'careers_copyright_text_color',
+            'careers_copyright_divider_enabled',
+            'careers_copyright_divider_width',
+            'careers_copyright_divider_height',
+            'careers_copyright_divider_color',
+            'careers_copyright_divider_border_top',
+            'careers_copyright_divider_border_bottom',
+            'careers_copyright_divider_border_left',
+            'careers_copyright_divider_border_right',
+            'careers_copyright_divider_border_style',
+            'careers_social_links',
+            // Share icons
+            'careers_share_icons_enabled',
+            'careers_share_icons',
+            'careers_share_icon_width',
+            'careers_share_icon_height',
+            'careers_share_icon_border_radius',
+            // Filter visibility
+            'careers_show_filters',
+            'careers_show_search_filter',
+            'careers_show_department_filter',
+            'careers_show_experience_filter'
           ]
         }
       }
@@ -115,6 +188,229 @@ export async function GET() {
           } catch {
             careersSettings.menuItems = []
           }
+          break
+        // Button styling - Card button
+        case 'careers_card_button_class':
+          careersSettings.cardButtonClass = setting.value
+          break
+        case 'careers_card_button_bg':
+          careersSettings.cardButtonBg = setting.value
+          break
+        case 'careers_card_button_text':
+          careersSettings.cardButtonText = setting.value
+          break
+        case 'careers_card_button_border':
+          careersSettings.cardButtonBorder = setting.value
+          break
+        case 'careers_card_button_border_color':
+          careersSettings.cardButtonBorderColor = setting.value
+          break
+        case 'careers_card_button_radius':
+          careersSettings.cardButtonRadius = setting.value
+          break
+        case 'careers_card_button_font_family':
+          careersSettings.cardButtonFontFamily = setting.value
+          break
+        case 'careers_card_button_font_size':
+          careersSettings.cardButtonFontSize = setting.value
+          break
+        case 'careers_card_button_font_weight':
+          careersSettings.cardButtonFontWeight = setting.value
+          break
+        case 'careers_card_button_label':
+          careersSettings.cardButtonLabel = setting.value
+          break
+        // Job Details button
+        case 'careers_job_details_button_class':
+          careersSettings.jobDetailsButtonClass = setting.value
+          break
+        case 'careers_job_details_button_bg':
+          careersSettings.jobDetailsButtonBg = setting.value
+          break
+        case 'careers_job_details_button_text':
+          careersSettings.jobDetailsButtonText = setting.value
+          break
+        case 'careers_job_details_button_border':
+          careersSettings.jobDetailsButtonBorder = setting.value
+          break
+        case 'careers_job_details_button_border_color':
+          careersSettings.jobDetailsButtonBorderColor = setting.value
+          break
+        case 'careers_job_details_button_radius':
+          careersSettings.jobDetailsButtonRadius = setting.value
+          break
+        case 'careers_job_details_button_font_family':
+          careersSettings.jobDetailsButtonFontFamily = setting.value
+          break
+        case 'careers_job_details_button_font_size':
+          careersSettings.jobDetailsButtonFontSize = setting.value
+          break
+        case 'careers_job_details_button_font_weight':
+          careersSettings.jobDetailsButtonFontWeight = setting.value
+          break
+        // Apply button
+        case 'careers_apply_button_class':
+          careersSettings.applyButtonClass = setting.value
+          break
+        case 'careers_apply_button_bg':
+          careersSettings.applyButtonBg = setting.value
+          break
+        case 'careers_apply_button_text':
+          careersSettings.applyButtonText = setting.value
+          break
+        case 'careers_apply_button_border':
+          careersSettings.applyButtonBorder = setting.value
+          break
+        case 'careers_apply_button_border_color':
+          careersSettings.applyButtonBorderColor = setting.value
+          break
+        case 'careers_apply_button_radius':
+          careersSettings.applyButtonRadius = setting.value
+          break
+        case 'careers_apply_button_font_family':
+          careersSettings.applyButtonFontFamily = setting.value
+          break
+        case 'careers_apply_button_font_size':
+          careersSettings.applyButtonFontSize = setting.value
+          break
+        case 'careers_apply_button_font_weight':
+          careersSettings.applyButtonFontWeight = setting.value
+          break
+        // Custom CSS
+        case 'careers_custom_css':
+          careersSettings.customCss = setting.value
+          break
+        // Footer settings
+        case 'careers_footer_enabled':
+          careersSettings.footerEnabled = setting.value === 'true'
+          break
+        case 'careers_footer_columns':
+          careersSettings.footerColumns = parseInt(setting.value) || 4
+          break
+        case 'careers_footer_width':
+          careersSettings.footerWidth = setting.value
+          break
+        case 'careers_footer_widgets':
+          try {
+            careersSettings.footerWidgets = JSON.parse(setting.value)
+          } catch {
+            careersSettings.footerWidgets = []
+          }
+          break
+        case 'careers_footer_bg_color':
+          careersSettings.footerBgColor = setting.value
+          break
+        case 'careers_footer_text_color':
+          careersSettings.footerTextColor = setting.value
+          break
+        case 'careers_footer_padding':
+          careersSettings.footerPadding = setting.value
+          break
+        case 'careers_footer_font_family':
+          careersSettings.footerFontFamily = setting.value
+          break
+        case 'careers_footer_font_size':
+          careersSettings.footerFontSize = setting.value
+          break
+        case 'careers_footer_font_weight':
+          careersSettings.footerFontWeight = setting.value
+          break
+        case 'careers_footer_border_top':
+          careersSettings.footerBorderTop = setting.value
+          break
+        case 'careers_footer_border_bottom':
+          careersSettings.footerBorderBottom = setting.value
+          break
+        case 'careers_footer_border_left':
+          careersSettings.footerBorderLeft = setting.value
+          break
+        case 'careers_footer_border_right':
+          careersSettings.footerBorderRight = setting.value
+          break
+        case 'careers_footer_border_color':
+          careersSettings.footerBorderColor = setting.value
+          break
+        case 'careers_copyright_enabled':
+          careersSettings.copyrightEnabled = setting.value === 'true'
+          break
+        case 'careers_copyright_left_html':
+          careersSettings.copyrightLeftHtml = setting.value
+          break
+        case 'careers_copyright_right_html':
+          careersSettings.copyrightRightHtml = setting.value
+          break
+        case 'careers_copyright_bg_color':
+          careersSettings.copyrightBgColor = setting.value
+          break
+        case 'careers_copyright_text_color':
+          careersSettings.copyrightTextColor = setting.value
+          break
+        case 'careers_copyright_divider_enabled':
+          careersSettings.copyrightDividerEnabled = setting.value === 'true'
+          break
+        case 'careers_copyright_divider_width':
+          careersSettings.copyrightDividerWidth = setting.value
+          break
+        case 'careers_copyright_divider_height':
+          careersSettings.copyrightDividerHeight = setting.value
+          break
+        case 'careers_copyright_divider_color':
+          careersSettings.copyrightDividerColor = setting.value
+          break
+        case 'careers_copyright_divider_border_top':
+          careersSettings.copyrightDividerBorderTop = setting.value
+          break
+        case 'careers_copyright_divider_border_bottom':
+          careersSettings.copyrightDividerBorderBottom = setting.value
+          break
+        case 'careers_copyright_divider_border_left':
+          careersSettings.copyrightDividerBorderLeft = setting.value
+          break
+        case 'careers_copyright_divider_border_right':
+          careersSettings.copyrightDividerBorderRight = setting.value
+          break
+        case 'careers_copyright_divider_border_style':
+          careersSettings.copyrightDividerBorderStyle = setting.value
+          break
+        case 'careers_social_links':
+          try {
+            careersSettings.socialLinks = JSON.parse(setting.value)
+          } catch {
+            careersSettings.socialLinks = []
+          }
+          break
+        // Share icons
+        case 'careers_share_icons_enabled':
+          careersSettings.shareIconsEnabled = setting.value === 'true'
+          break
+        case 'careers_share_icons':
+          try {
+            careersSettings.shareIcons = JSON.parse(setting.value)
+          } catch {
+            careersSettings.shareIcons = {}
+          }
+          break
+        case 'careers_share_icon_width':
+          careersSettings.shareIconWidth = setting.value
+          break
+        case 'careers_share_icon_height':
+          careersSettings.shareIconHeight = setting.value
+          break
+        case 'careers_share_icon_border_radius':
+          careersSettings.shareIconBorderRadius = setting.value
+          break
+        // Filter visibility
+        case 'careers_show_filters':
+          careersSettings.showFilters = setting.value === 'true'
+          break
+        case 'careers_show_search_filter':
+          careersSettings.showSearchFilter = setting.value === 'true'
+          break
+        case 'careers_show_department_filter':
+          careersSettings.showDepartmentFilter = setting.value === 'true'
+          break
+        case 'careers_show_experience_filter':
+          careersSettings.showExperienceFilter = setting.value === 'true'
           break
       }
     })
