@@ -589,16 +589,18 @@ export default function CareersPage() {
               }`}
             >
               {displayedJobs.map((job) => {
-                const cardContainerRadius = settings.cardContainerRadius || '12px';
+                const radius = settings.cardContainerRadius || '12px';
                 
                 return (
                 <div
                   key={job.id}
                   className={`job-card bg-white transition-all duration-300 group ${settings.cardHoverLift !== false ? 'hover:shadow-xl hover:-translate-y-1' : ''}`}
                   style={{
-                    borderRadius: cardContainerRadius,
-                    WebkitBorderRadius: cardContainerRadius,
-                    MozBorderRadius: cardContainerRadius,
+                    borderRadius: radius,
+                    borderTopLeftRadius: radius,
+                    borderTopRightRadius: radius,
+                    borderBottomLeftRadius: radius,
+                    borderBottomRightRadius: radius,
                     padding: settings.cardPadding || '20px',
                     boxShadow: settings.cardShadow === 'none' ? 'none' : 
                                settings.cardShadow === 'sm' ? '0 1px 2px rgba(0,0,0,0.05)' :
@@ -606,7 +608,7 @@ export default function CareersPage() {
                                settings.cardShadow === 'xl' ? '0 20px 25px rgba(0,0,0,0.12)' :
                                '0 4px 6px rgba(0,0,0,0.08)', // default md
                     overflow: 'hidden'
-                  } as React.CSSProperties}
+                  }}
                 >
                   {/* Job Image */}
                   <div 
