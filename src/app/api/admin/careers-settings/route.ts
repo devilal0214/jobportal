@@ -43,6 +43,26 @@ export async function GET(request: NextRequest) {
             'careers_logo_width',
             'careers_company_name',
             'careers_menu_items',
+            'careers_nav_font_family',
+            'careers_nav_font_size',
+            'careers_nav_font_url',
+            'careers_global_font_family',
+            'careers_global_font_url',
+            // Card settings
+            'careers_card_container_radius',
+            'careers_card_image_radius',
+            'careers_card_padding',
+            'careers_card_shadow',
+            'careers_card_hover_lift',
+            'careers_card_image_height',
+            'careers_card_title_size',
+            'careers_card_title_color',
+            'careers_card_title_font_family',
+            'careers_card_description_size',
+            'careers_card_description_color',
+            'careers_card_description_font_family',
+            'careers_card_show_icons',
+            'careers_card_grid_columns',
             // Footer settings
             'careers_footer_enabled',
             'careers_footer_columns',
@@ -205,6 +225,64 @@ export async function GET(request: NextRequest) {
           } catch {
             careersSettings.menuItems = []
           }
+          break
+        case 'careers_nav_font_family':
+          careersSettings.navFontFamily = setting.value
+          break
+        case 'careers_nav_font_size':
+          careersSettings.navFontSize = setting.value
+          break
+        case 'careers_nav_font_url':
+          careersSettings.navFontUrl = setting.value
+          break
+        case 'careers_global_font_family':
+          careersSettings.globalFontFamily = setting.value
+          break
+        case 'careers_global_font_url':
+          careersSettings.globalFontUrl = setting.value
+          break
+        // Card settings
+        case 'careers_card_container_radius':
+          careersSettings.cardContainerRadius = setting.value
+          break
+        case 'careers_card_image_radius':
+          careersSettings.cardImageRadius = setting.value
+          break
+        case 'careers_card_padding':
+          careersSettings.cardPadding = setting.value
+          break
+        case 'careers_card_shadow':
+          careersSettings.cardShadow = setting.value
+          break
+        case 'careers_card_hover_lift':
+          careersSettings.cardHoverLift = setting.value === 'true'
+          break
+        case 'careers_card_image_height':
+          careersSettings.cardImageHeight = setting.value
+          break
+        case 'careers_card_title_size':
+          careersSettings.cardTitleSize = setting.value
+          break
+        case 'careers_card_title_color':
+          careersSettings.cardTitleColor = setting.value
+          break
+        case 'careers_card_title_font_family':
+          careersSettings.cardTitleFontFamily = setting.value
+          break
+        case 'careers_card_description_size':
+          careersSettings.cardDescriptionSize = setting.value
+          break
+        case 'careers_card_description_color':
+          careersSettings.cardDescriptionColor = setting.value
+          break
+        case 'careers_card_description_font_family':
+          careersSettings.cardDescriptionFontFamily = setting.value
+          break
+        case 'careers_card_show_icons':
+          careersSettings.cardShowIcons = setting.value === 'true'
+          break
+        case 'careers_card_grid_columns':
+          careersSettings.cardGridColumns = parseInt(setting.value) || 3
           break
         // Footer settings
         case 'careers_footer_enabled':
@@ -475,6 +553,28 @@ export async function POST(request: NextRequest) {
     const logoWidth = formData.get('logoWidth') as string
     const companyName = formData.get('companyName') as string
     const menuItems = formData.get('menuItems') as string
+    const navFontFamily = formData.get('navFontFamily') as string
+    const navFontSize = formData.get('navFontSize') as string
+    const navFontUrl = formData.get('navFontUrl') as string
+    const globalFontFamily = formData.get('globalFontFamily') as string
+    const globalFontUrl = formData.get('globalFontUrl') as string
+    
+    // Card settings
+    const cardContainerRadius = formData.get('cardContainerRadius') as string
+    const cardImageRadius = formData.get('cardImageRadius') as string
+    console.log('API received border radius:', { cardContainerRadius, cardImageRadius })
+    const cardPadding = formData.get('cardPadding') as string
+    const cardShadow = formData.get('cardShadow') as string
+    const cardHoverLift = formData.get('cardHoverLift') as string
+    const cardImageHeight = formData.get('cardImageHeight') as string
+    const cardTitleSize = formData.get('cardTitleSize') as string
+    const cardTitleColor = formData.get('cardTitleColor') as string
+    const cardTitleFontFamily = formData.get('cardTitleFontFamily') as string
+    const cardDescriptionSize = formData.get('cardDescriptionSize') as string
+    const cardDescriptionColor = formData.get('cardDescriptionColor') as string
+    const cardDescriptionFontFamily = formData.get('cardDescriptionFontFamily') as string
+    const cardShowIcons = formData.get('cardShowIcons') as string
+    const cardGridColumns = formData.get('cardGridColumns') as string
     
     // Footer settings
     const footerEnabled = formData.get('footerEnabled') as string
@@ -668,6 +768,26 @@ export async function POST(request: NextRequest) {
       { key: 'careers_logo_width', value: logoWidth || '' },
       { key: 'careers_company_name', value: companyName || '' },
       { key: 'careers_menu_items', value: menuItems || '[]' },
+      { key: 'careers_nav_font_family', value: navFontFamily || 'System Default' },
+      { key: 'careers_nav_font_size', value: navFontSize || '16px' },
+      { key: 'careers_nav_font_url', value: navFontUrl || '' },
+      { key: 'careers_global_font_family', value: globalFontFamily || 'System Default' },
+      { key: 'careers_global_font_url', value: globalFontUrl || '' },
+      // Card settings
+      { key: 'careers_card_container_radius', value: cardContainerRadius || '12px' },
+      { key: 'careers_card_image_radius', value: cardImageRadius || '12px' },
+      { key: 'careers_card_padding', value: cardPadding || '16px' },
+      { key: 'careers_card_shadow', value: cardShadow || 'md' },
+      { key: 'careers_card_hover_lift', value: cardHoverLift || 'true' },
+      { key: 'careers_card_image_height', value: cardImageHeight || '180px' },
+      { key: 'careers_card_title_size', value: cardTitleSize || '25px' },
+      { key: 'careers_card_title_color', value: cardTitleColor || '#56585d' },
+      { key: 'careers_card_title_font_family', value: cardTitleFontFamily || 'System Default' },
+      { key: 'careers_card_description_size', value: cardDescriptionSize || '16px' },
+      { key: 'careers_card_description_color', value: cardDescriptionColor || '#333333' },
+      { key: 'careers_card_description_font_family', value: cardDescriptionFontFamily || 'System Default' },
+      { key: 'careers_card_show_icons', value: cardShowIcons || 'true' },
+      { key: 'careers_card_grid_columns', value: cardGridColumns || '3' },
       // Footer settings
       { key: 'careers_footer_enabled', value: footerEnabled || 'false' },
       { key: 'careers_footer_columns', value: footerColumns || '4' },

@@ -82,13 +82,18 @@ interface CareersSettings {
   globalFontUrl?: string | null;
 
   /* tab 3: job cards & page layout */
-  cardRadius?: string;
+  cardContainerRadius?: string;
+  cardImageRadius?: string;
   cardPadding?: string;
   cardShadow?: ShadowKey;
   cardHoverLift?: boolean;
   cardImageHeight?: string;
   cardTitleSize?: string;
+  cardTitleColor?: string;
+  cardTitleFontFamily?: string;
   cardDescriptionSize?: string;
+  cardDescriptionColor?: string;
+  cardDescriptionFontFamily?: string;
   cardShowIcons?: boolean;
   cardButtonBg?: string;
   cardButtonText?: string;
@@ -184,6 +189,7 @@ interface CareersSettings {
 
 const FONT_OPTIONS = [
   "System Default",
+  "Archivo",
   "Inter",
   "Poppins",
   "Montserrat",
@@ -200,15 +206,16 @@ const fontStack = (family?: string) => {
   if (!family || family === "System Default") return "inherit";
   if (family === "Custom Uploaded") return `'__AdminCustom'`;
   const map: Record<string, string> = {
-    Inter: `'Inter', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial`,
-    Poppins: `'Poppins', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial`,
-    Montserrat: `'Montserrat', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial`,
-    Roboto: `'Roboto', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Arial`,
-    Lato: `'Lato', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Arial`,
-    Nunito: `'Nunito', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto`,
-    "Work Sans": `'Work Sans', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto`,
-    "Playfair Display": `'Playfair Display', ui-serif, Georgia, Cambria, 'Times New Roman', Times, serif`,
-    Merriweather: `'Merriweather', ui-serif, Georgia, Cambria, 'Times New Roman', Times, serif`,
+    Archivo: `'Archivo', sans-serif`,
+    Inter: `'Inter', sans-serif`,
+    Poppins: `'Poppins', sans-serif`,
+    Montserrat: `'Montserrat', sans-serif`,
+    Roboto: `'Roboto', sans-serif`,
+    Lato: `'Lato', sans-serif`,
+    Nunito: `'Nunito', sans-serif`,
+    "Work Sans": `'Work Sans', sans-serif`,
+    "Playfair Display": `'Playfair Display', serif`,
+    Merriweather: `'Merriweather', serif`,
   };
   return map[family] || "inherit";
 };
@@ -263,8 +270,12 @@ export default function CareersSettingsPage() {
     cardShadow: "md",
     cardHoverLift: true,
     cardImageHeight: "180px",
-    cardTitleSize: "18px",
-    cardDescriptionSize: "14px",
+    cardTitleSize: "25px",
+    cardTitleColor: "#56585d",
+    cardTitleFontFamily: "System Default",
+    cardDescriptionSize: "16px",
+    cardDescriptionColor: "#333333",
+    cardDescriptionFontFamily: "System Default",
     cardShowIcons: true,
     cardButtonBg: "#4f46e5",
     cardButtonText: "#ffffff",
@@ -307,11 +318,15 @@ export default function CareersSettingsPage() {
     copyrightRightHtml: "",
     copyrightBgColor: "#111827",
     copyrightTextColor: "#9ca3af",
-    copyrightBorderTop: "1px",
-    copyrightBorderBottom: "0px",
-    copyrightBorderLeft: "0px",
-    copyrightBorderRight: "0px",
-    copyrightBorderColor: "#374151",
+    copyrightDividerEnabled: false,
+    copyrightDividerWidth: "100%",
+    copyrightDividerHeight: "1px",
+    copyrightDividerColor: "#374151",
+    copyrightDividerBorderTop: "1px",
+    copyrightDividerBorderBottom: "0px",
+    copyrightDividerBorderLeft: "0px",
+    copyrightDividerBorderRight: "0px",
+    copyrightDividerBorderStyle: "solid",
     socialLinks: [],
     
     /* custom styling defaults */
@@ -530,6 +545,16 @@ export default function CareersSettingsPage() {
       if (shareIconFiles.whatsapp) formData.append("shareIconWhatsapp", shareIconFiles.whatsapp);
       if (shareIconFiles.email) formData.append("shareIconEmail", shareIconFiles.email);
 
+      // Debug: Log border radius values being sent
+      console.log('Saving border radius values:', {
+        cardContainerRadius: settings.cardContainerRadius,
+        cardImageRadius: settings.cardImageRadius,
+        fromFormData: {
+          cardContainerRadius: formData.get('cardContainerRadius'),
+          cardImageRadius: formData.get('cardImageRadius')
+        }
+      });
+
       const res = await fetch("/api/admin/careers-settings", {
         method: "POST",
         headers: { Authorization: `Bearer ${token}` },
@@ -589,7 +614,7 @@ export default function CareersSettingsPage() {
     <div
       className="transition-all"
       style={{
-        borderRadius: settings.cardRadius,
+        borderRadius: settings.cardContainerRadius,
         padding: settings.cardPadding,
         boxShadow: shadowMap[settings.cardShadow || "md"],
         background: "#fff",
@@ -598,7 +623,10 @@ export default function CareersSettingsPage() {
     >
       <div
         className="relative w-full overflow-hidden mb-4"
-        style={{ height: settings.cardImageHeight }}
+        style={{ 
+          height: settings.cardImageHeight,
+          borderRadius: settings.cardImageRadius
+        }}
       >
         <div className="absolute inset-0 bg-gray-200" />
       </div>
@@ -1309,13 +1337,33 @@ export default function CareersSettingsPage() {
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Corner Radius
+                    Card Container Border Radius
                   </label>
                   <input
                     type="text"
-                    value={settings.cardRadius}
+                    value={settings.cardContainerRadius}
                     onChange={(e) =>
-                      setSettings((s) => ({ ...s, cardRadius: e.target.value }))
+                      setSettings((s) => ({
+                        ...s,
+                        cardContainerRadius: e.target.value,
+                      }))
+                    }
+                    className="w-full px-3 py-2 border rounded text-gray-900"
+                    placeholder="12px"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Card Image Border Radius
+                  </label>
+                  <input
+                    type="text"
+                    value={settings.cardImageRadius}
+                    onChange={(e) =>
+                      setSettings((s) => ({
+                        ...s,
+                        cardImageRadius: e.target.value,
+                      }))
                     }
                     className="w-full px-3 py-2 border rounded text-gray-900"
                     placeholder="12px"
@@ -1338,6 +1386,9 @@ export default function CareersSettingsPage() {
                     placeholder="16px"
                   />
                 </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Shadow
@@ -1432,8 +1483,45 @@ export default function CareersSettingsPage() {
                       }))
                     }
                     className="w-full px-3 py-2 border rounded text-gray-900"
-                    placeholder="18px"
+                    placeholder="25px"
                   />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Title Color
+                  </label>
+                  <input
+                    type="color"
+                    value={settings.cardTitleColor}
+                    onChange={(e) =>
+                      setSettings((s) => ({
+                        ...s,
+                        cardTitleColor: e.target.value,
+                      }))
+                    }
+                    className="w-full h-10 border rounded"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Title Font Family
+                  </label>
+                  <select
+                    value={settings.cardTitleFontFamily}
+                    onChange={(e) =>
+                      setSettings((s) => ({
+                        ...s,
+                        cardTitleFontFamily: e.target.value,
+                      }))
+                    }
+                    className="w-full px-3 py-2 border rounded text-gray-900"
+                  >
+                    {FONT_OPTIONS.map((font) => (
+                      <option key={font} value={font}>
+                        {font}
+                      </option>
+                    ))}
+                  </select>
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -1449,8 +1537,45 @@ export default function CareersSettingsPage() {
                       }))
                     }
                     className="w-full px-3 py-2 border rounded text-gray-900"
-                    placeholder="14px"
+                    placeholder="16px"
                   />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Description Color
+                  </label>
+                  <input
+                    type="color"
+                    value={settings.cardDescriptionColor}
+                    onChange={(e) =>
+                      setSettings((s) => ({
+                        ...s,
+                        cardDescriptionColor: e.target.value,
+                      }))
+                    }
+                    className="w-full h-10 border rounded"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Description Font Family
+                  </label>
+                  <select
+                    value={settings.cardDescriptionFontFamily}
+                    onChange={(e) =>
+                      setSettings((s) => ({
+                        ...s,
+                        cardDescriptionFontFamily: e.target.value,
+                      }))
+                    }
+                    className="w-full px-3 py-2 border rounded text-gray-900"
+                  >
+                    {FONT_OPTIONS.map((font) => (
+                      <option key={font} value={font}>
+                        {font}
+                      </option>
+                    ))}
+                  </select>
                 </div>
                 <div className="flex items-center gap-2">
                   <input

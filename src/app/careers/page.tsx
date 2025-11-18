@@ -25,6 +25,24 @@ interface Job {
   imageUrl?: string
 }
 
+// Helper function to format font family
+const getFontFamily = (fontFamily?: string) => {
+  if (!fontFamily || fontFamily === 'System Default') return 'inherit';
+  const fontMap: Record<string, string> = {
+    'Archivo': `'Archivo', sans-serif`,
+    'Inter': `'Inter', sans-serif`,
+    'Poppins': `'Poppins', sans-serif`,
+    'Montserrat': `'Montserrat', sans-serif`,
+    'Roboto': `'Roboto', sans-serif`,
+    'Lato': `'Lato', sans-serif`,
+    'Nunito': `'Nunito', sans-serif`,
+    'Work Sans': `'Work Sans', sans-serif`,
+    'Playfair Display': `'Playfair Display', serif`,
+    'Merriweather': `'Merriweather', serif`,
+  };
+  return fontMap[fontFamily] || fontFamily;
+};
+
 interface CareersSettings {
   bannerImage?: string
   bannerTitle: string
@@ -50,6 +68,26 @@ interface CareersSettings {
     url: string
     order: number
   }>
+  navFontFamily?: string
+  navFontSize?: string
+  navFontUrl?: string
+  globalFontFamily?: string
+  globalFontUrl?: string
+  // Card settings
+  cardContainerRadius?: string
+  cardImageRadius?: string
+  cardPadding?: string
+  cardShadow?: string
+  cardHoverLift?: boolean
+  cardImageHeight?: string
+  cardTitleSize?: string
+  cardTitleColor?: string
+  cardTitleFontFamily?: string
+  cardDescriptionSize?: string
+  cardDescriptionColor?: string
+  cardDescriptionFontFamily?: string
+  cardShowIcons?: boolean
+  cardGridColumns?: number
   // Button styling
   cardButtonClass?: string
   cardButtonBg?: string
@@ -351,6 +389,10 @@ export default function CareersPage() {
                   key={item.id}
                   href={item.url}
                   className="text-gray-700 hover:text-indigo-600 font-medium transition-colors"
+                  style={{
+                    fontFamily: getFontFamily(settings.navFontFamily),
+                    fontSize: settings.navFontSize || '16px',
+                  }}
                 >
                   {item.label}
                 </Link>
@@ -540,15 +582,40 @@ export default function CareersPage() {
           <>
             <div
               ref={jobCardsRef}
-              className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
+              className={`grid gap-6 ${
+                settings.cardGridColumns === 1 ? 'grid-cols-1' :
+                settings.cardGridColumns === 2 ? 'grid-cols-1 md:grid-cols-2' :
+                'grid-cols-1 md:grid-cols-2 lg:grid-cols-3'
+              }`}
             >
-              {displayedJobs.map((job) => (
+              {displayedJobs.map((job) => {
+                const cardContainerRadius = settings.cardContainerRadius || '12px';
+                
+                return (
                 <div
                   key={job.id}
-                  className="job-card bg-white rounded-xl shadow-md hover:shadow-xl transition-all duration-300 p-2 overflow-hidden group"
+                  className={`job-card bg-white transition-all duration-300 group ${settings.cardHoverLift !== false ? 'hover:shadow-xl hover:-translate-y-1' : ''}`}
+                  style={{
+                    borderRadius: cardContainerRadius,
+                    WebkitBorderRadius: cardContainerRadius,
+                    MozBorderRadius: cardContainerRadius,
+                    padding: settings.cardPadding || '20px',
+                    boxShadow: settings.cardShadow === 'none' ? 'none' : 
+                               settings.cardShadow === 'sm' ? '0 1px 2px rgba(0,0,0,0.05)' :
+                               settings.cardShadow === 'lg' ? '0 10px 15px rgba(0,0,0,0.10)' :
+                               settings.cardShadow === 'xl' ? '0 20px 25px rgba(0,0,0,0.12)' :
+                               '0 4px 6px rgba(0,0,0,0.08)', // default md
+                    overflow: 'hidden'
+                  } as React.CSSProperties}
                 >
                   {/* Job Image */}
-                  <div className="relative h-[257px] bg-gradient-to-br rounded-xl from-indigo-500 to-purple-600 overflow-hidden">
+                  <div 
+                    className="relative bg-gradient-to-br rounded-xl from-indigo-500 to-purple-600 overflow-hidden"
+                    style={{
+                      height: settings.cardImageHeight || '257px',
+                      borderRadius: settings.cardImageRadius || '12px',
+                    }}
+                  >
                     {job.imageUrl ? (
                       <Image
                         src={job.imageUrl}
@@ -572,11 +639,25 @@ export default function CareersPage() {
                   {/* Job Content */}
                   <div className="p-6 text-center">
                     <div className="mb-12">
-                      <h3 className="text-[25px] font-bold text-[#56585d] mb-2 group-hover:text-indigo-600 transition-colors">
+                      <h3 
+                        className="font-bold mb-2 group-hover:text-indigo-600 transition-colors"
+                        style={{
+                          fontSize: settings.cardTitleSize || '25px',
+                          color: settings.cardTitleColor || '#56585d',
+                          fontFamily: getFontFamily(settings.cardTitleFontFamily),
+                        }}
+                      >
                         {job.title}
                       </h3>
 
-                      <p className="text-[#333] text-[16px] mb-4 line-clamp-2">
+                      <p 
+                        className="mb-4 line-clamp-2"
+                        style={{
+                          fontSize: settings.cardDescriptionSize || '16px',
+                          color: settings.cardDescriptionColor || '#333333',
+                          fontFamily: getFontFamily(settings.cardDescriptionFontFamily),
+                        }}
+                      >
                         {job.description
                           .replace(/<[^>]*>/g, "")
                           .substring(0, 120)}
@@ -639,7 +720,8 @@ export default function CareersPage() {
                     </div>
                   </div>
                 </div>
-              ))}
+                );
+              })}
             </div>
 
             {/* Infinite Scroll Trigger */}

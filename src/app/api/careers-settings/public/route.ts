@@ -27,6 +27,26 @@ export async function GET() {
             'careers_logo_width',
             'careers_company_name',
             'careers_menu_items',
+            'careers_nav_font_family',
+            'careers_nav_font_size',
+            'careers_nav_font_url',
+            'careers_global_font_family',
+            'careers_global_font_url',
+            // Card settings
+            'careers_card_container_radius',
+            'careers_card_image_radius',
+            'careers_card_padding',
+            'careers_card_shadow',
+            'careers_card_hover_lift',
+            'careers_card_image_height',
+            'careers_card_title_size',
+            'careers_card_title_color',
+            'careers_card_title_font_family',
+            'careers_card_description_size',
+            'careers_card_description_color',
+            'careers_card_description_font_family',
+            'careers_card_show_icons',
+            'careers_card_grid_columns',
             // Button styling
             'careers_card_button_class',
             'careers_card_button_bg',
@@ -188,6 +208,64 @@ export async function GET() {
           } catch {
             careersSettings.menuItems = []
           }
+          break
+        case 'careers_nav_font_family':
+          careersSettings.navFontFamily = setting.value
+          break
+        case 'careers_nav_font_size':
+          careersSettings.navFontSize = setting.value
+          break
+        case 'careers_nav_font_url':
+          careersSettings.navFontUrl = setting.value
+          break
+        case 'careers_global_font_family':
+          careersSettings.globalFontFamily = setting.value
+          break
+        case 'careers_global_font_url':
+          careersSettings.globalFontUrl = setting.value
+          break
+        // Card settings
+        case 'careers_card_container_radius':
+          careersSettings.cardContainerRadius = setting.value
+          break
+        case 'careers_card_image_radius':
+          careersSettings.cardImageRadius = setting.value
+          break
+        case 'careers_card_padding':
+          careersSettings.cardPadding = setting.value
+          break
+        case 'careers_card_shadow':
+          careersSettings.cardShadow = setting.value
+          break
+        case 'careers_card_hover_lift':
+          careersSettings.cardHoverLift = setting.value === 'true'
+          break
+        case 'careers_card_image_height':
+          careersSettings.cardImageHeight = setting.value
+          break
+        case 'careers_card_title_size':
+          careersSettings.cardTitleSize = setting.value
+          break
+        case 'careers_card_title_color':
+          careersSettings.cardTitleColor = setting.value
+          break
+        case 'careers_card_title_font_family':
+          careersSettings.cardTitleFontFamily = setting.value
+          break
+        case 'careers_card_description_size':
+          careersSettings.cardDescriptionSize = setting.value
+          break
+        case 'careers_card_description_color':
+          careersSettings.cardDescriptionColor = setting.value
+          break
+        case 'careers_card_description_font_family':
+          careersSettings.cardDescriptionFontFamily = setting.value
+          break
+        case 'careers_card_show_icons':
+          careersSettings.cardShowIcons = setting.value === 'true'
+          break
+        case 'careers_card_grid_columns':
+          careersSettings.cardGridColumns = parseInt(setting.value) || 3
           break
         // Button styling - Card button
         case 'careers_card_button_class':
