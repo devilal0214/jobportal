@@ -672,7 +672,7 @@ export default function CareersPage() {
                       <Link
                         href={`/careers/${job.id}`}
                         className="btn-animated inline-flex items-center px-4 py-1 border border-solid border-[#29256a] text-[#29256a] text-[15px] font-semibold rounded-3xl bg-white transition-all duration-300"
-                      >
+                      > 
                         Know More
                         <span className="ml-2 text-2xl ">›</span>
                       </Link>

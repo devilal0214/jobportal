@@ -400,7 +400,7 @@ export default function CareerDetailPage() {
               {hasForm ? (
                 <Link
                   href={`/careers/${job.id}/apply`}
-                  className={`block w-full text-center font-semibold py-3 px-6 transition-colors mb-3 ${settings.applyButtonClass || ''}`}
+                  className={`block w-full text-center font-semibold py-[10px] px-6 transition-colors mb-3 ${settings.applyButtonClass || ''}`}
                   style={{
                     backgroundColor: settings.applyButtonBg || '#10b981',
                     color: settings.applyButtonText || '#ffffff',
@@ -438,7 +438,7 @@ export default function CareerDetailPage() {
                 <p className="text-sm font-medium text-gray-700 mb-3">
                   Share this job
                 </p>
-                <div className="flex space-x-2 justify-center">
+                <div className="flex space-x-[-10px] justify-start">
                   {/* Facebook - Always visible */}
                   <button
                     onClick={() => {

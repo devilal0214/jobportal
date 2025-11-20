@@ -84,6 +84,7 @@ interface CareersSettings {
   /* tab 3: job cards & page layout */
   cardContainerRadius?: string;
   cardImageRadius?: string;
+  cardRadius?:string;
   cardPadding?: string;
   cardShadow?: ShadowKey;
   cardHoverLift?: boolean;
@@ -106,15 +107,15 @@ interface CareersSettings {
   cardButtonFontSize?: string;
   cardButtonFontWeight?: string;
   cardGridColumns?: 1 | 2 | 3;
-  pageLayout?: 'grid' | 'list' | 'masonry';
+  pageLayout?: "grid" | "list" | "masonry";
   pageMaxWidth?: string;
-  
+
   /* Filters visibility */
   showFilters?: boolean;
   showSearchFilter?: boolean;
   showDepartmentFilter?: boolean;
   showExperienceFilter?: boolean;
-  
+
   /* tab 4: footer */
   footerEnabled?: boolean;
   footerColumns?: 2 | 3 | 4 | 5 | 6;
@@ -146,7 +147,7 @@ interface CareersSettings {
   copyrightDividerBorderRight?: string;
   copyrightDividerBorderStyle?: string;
   socialLinks?: SocialLink[];
-  
+
   /* tab 5: custom styling */
   customCss?: string;
   jobDetailsButtonClass?: string;
