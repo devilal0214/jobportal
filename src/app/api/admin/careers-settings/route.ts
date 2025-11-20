@@ -5,6 +5,10 @@ import { writeFile, mkdir } from 'fs/promises'
 import { join } from 'path'
 import { existsSync } from 'fs'
 
+// Increase timeout for file uploads
+export const maxDuration = 60 // 60 seconds
+export const dynamic = 'force-dynamic'
+
 export async function GET(request: NextRequest) {
   try {
     const authHeader = request.headers.get('authorization')
@@ -872,18 +876,26 @@ export async function POST(request: NextRequest) {
       settingsToUpdate.push({ key: 'careers_logo_image', value: logoImagePath })
     }
 
-    // Upsert each setting
-    for (const setting of settingsToUpdate) {
-      await prisma.settings.upsert({
-        where: { key: setting.key },
-        update: { value: setting.value },
-        create: {
-          key: setting.key,
-          value: setting.value,
-          type: 'text'
-        }
-      })
-    }
+    // Upsert settings in parallel for better performance
+    console.log(`💾 Saving ${settingsToUpdate.length} settings in parallel...`)
+    const startTime = Date.now()
+    
+    await Promise.all(
+      settingsToUpdate.map(setting =>
+        prisma.settings.upsert({
+          where: { key: setting.key },
+          update: { value: setting.value },
+          create: {
+            key: setting.key,
+            value: setting.value,
+            type: 'text'
+          }
+        })
+      )
+    )
+    
+    const endTime = Date.now()
+    console.log(`✅ Settings saved successfully in ${endTime - startTime}ms`)
 
     return NextResponse.json({ 
       success: true,
