@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { verifyToken } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
-import { writeFile, mkdir } from 'fs/promises'
+import { writeFile, mkdir, chmod } from 'fs/promises'
 import { join } from 'path'
 import { existsSync } from 'fs'
 
-// Increase timeout for file uploads
-export const maxDuration = 60 // 60 seconds
+// Increase timeout for file uploads and database operations
+export const maxDuration = 120 // 120 seconds for VPS
 export const dynamic = 'force-dynamic'
 
 export async function GET(request: NextRequest) {
@@ -666,10 +666,35 @@ export async function POST(request: NextRequest) {
     const shareIconWhatsappFile = formData.get('shareIconWhatsapp') as File | null
     const shareIconEmailFile = formData.get('shareIconEmail') as File | null
 
-    // Create uploads directory if it doesn't exist
-    const uploadsDir = join(process.cwd(), 'public', 'uploads', 'careers')
-    if (!existsSync(uploadsDir)) {
-      await mkdir(uploadsDir, { recursive: true })
+    // Detect correct public folder path (public for local, htdocs for VPS)
+    const publicFolderName = existsSync(join(process.cwd(), 'htdocs')) ? 'htdocs' : 'public'
+    const uploadsDir = join(process.cwd(), publicFolderName, 'uploads', 'careers')
+    console.log('📁 Current working directory:', process.cwd())
+    console.log('📁 Public folder name:', publicFolderName)
+    console.log('📁 Uploads directory path:', uploadsDir)
+    
+    try {
+      if (!existsSync(uploadsDir)) {
+        console.log('📁 Creating uploads directory...')
+        await mkdir(uploadsDir, { recursive: true })
+        console.log('✅ Uploads directory created successfully')
+      } else {
+        console.log('✅ Uploads directory already exists')
+      }
+      
+      // Verify write permissions by checking directory stats
+      const { statSync } = await import('fs')
+      const stats = statSync(uploadsDir)
+      console.log('📊 Directory stats:', {
+        mode: stats.mode.toString(8),
+        uid: stats.uid,
+        gid: stats.gid
+      })
+    } catch (error) {
+      console.error('❌ Failed to create/access uploads directory:', error)
+      return NextResponse.json({ 
+        error: `Failed to access uploads directory. Path: ${uploadsDir}. Check server permissions.` 
+      }, { status: 500 })
     }
 
     let bannerImagePath = null
@@ -677,22 +702,37 @@ export async function POST(request: NextRequest) {
 
     // Handle banner image upload
     if (bannerImageFile && bannerImageFile.size > 0) {
-      const bytes = await bannerImageFile.arrayBuffer()
-      const buffer = Buffer.from(bytes)
-      const fileName = `banner-${Date.now()}-${bannerImageFile.name}`
-      const filePath = join(uploadsDir, fileName)
-      await writeFile(filePath, buffer)
-      bannerImagePath = `/uploads/careers/${fileName}`
+      try {
+        console.log('📤 Uploading banner image:', bannerImageFile.name)
+        const bytes = await bannerImageFile.arrayBuffer()
+        const buffer = Buffer.from(bytes)
+        const fileName = `banner-${Date.now()}-${bannerImageFile.name}`
+        const filePath = join(uploadsDir, fileName)
+        await writeFile(filePath, buffer)
+        await chmod(filePath, 0o644) // Set readable permissions
+        bannerImagePath = `/uploads/careers/${fileName}`
+        console.log('✅ Banner image saved:', bannerImagePath)
+      } catch (error) {
+        console.error('❌ Failed to save banner image:', error)
+      }
     }
 
     // Handle logo image upload
     if (logoImageFile && logoImageFile.size > 0) {
-      const bytes = await logoImageFile.arrayBuffer()
-      const buffer = Buffer.from(bytes)
-      const fileName = `logo-${Date.now()}-${logoImageFile.name}`
-      const filePath = join(uploadsDir, fileName)
-      await writeFile(filePath, buffer)
-      logoImagePath = `/uploads/careers/${fileName}`
+      try {
+        console.log('📤 Uploading logo image:', logoImageFile.name)
+        const bytes = await logoImageFile.arrayBuffer()
+        const buffer = Buffer.from(bytes)
+        const fileName = `logo-${Date.now()}-${logoImageFile.name}`
+        const filePath = join(uploadsDir, fileName)
+        await writeFile(filePath, buffer)
+        await chmod(filePath, 0o644) // Set readable permissions
+        logoImagePath = `/uploads/careers/${fileName}`
+        console.log('✅ Logo image saved:', logoImagePath)
+        console.log('📍 Full file path:', filePath)
+      } catch (error) {
+        console.error('❌ Failed to save logo image:', error)
+      }
     }
 
     // Handle share icon uploads and update shareIcons object
@@ -876,30 +916,56 @@ export async function POST(request: NextRequest) {
       settingsToUpdate.push({ key: 'careers_logo_image', value: logoImagePath })
     }
 
-    // Upsert settings in parallel for better performance
-    console.log(`💾 Saving ${settingsToUpdate.length} settings in parallel...`)
+    // Use transaction for faster bulk operations
+    console.log(`💾 Saving ${settingsToUpdate.length} settings using transaction...`)
     const startTime = Date.now()
     
-    await Promise.all(
-      settingsToUpdate.map(setting =>
-        prisma.settings.upsert({
-          where: { key: setting.key },
-          update: { value: setting.value },
-          create: {
+    await prisma.$transaction(async (tx) => {
+      // First, fetch existing keys
+      const existingKeys = await tx.settings.findMany({
+        where: {
+          key: {
+            in: settingsToUpdate.map(s => s.key)
+          }
+        },
+        select: { key: true }
+      })
+      
+      const existingKeySet = new Set(existingKeys.map(s => s.key))
+      const toUpdate = settingsToUpdate.filter(s => existingKeySet.has(s.key))
+      const toCreate = settingsToUpdate.filter(s => !existingKeySet.has(s.key))
+      
+      // Batch update existing settings
+      if (toUpdate.length > 0) {
+        await Promise.all(
+          toUpdate.map(setting =>
+            tx.settings.update({
+              where: { key: setting.key },
+              data: { value: setting.value }
+            })
+          )
+        )
+      }
+      
+      // Batch create new settings
+      if (toCreate.length > 0) {
+        await tx.settings.createMany({
+          data: toCreate.map(setting => ({
             key: setting.key,
             value: setting.value,
             type: 'text'
-          }
+          }))
         })
-      )
-    )
+      }
+    })
     
     const endTime = Date.now()
     console.log(`✅ Settings saved successfully in ${endTime - startTime}ms`)
 
     return NextResponse.json({ 
       success: true,
-      message: 'Settings updated successfully' 
+      message: 'Settings updated successfully',
+      savedCount: settingsToUpdate.length
     })
   } catch (error) {
     console.error('Careers settings update error:', error)
