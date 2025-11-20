@@ -362,15 +362,23 @@ export default function CareersPage() {
                 <div
                   className="relative"
                   style={{
-                    width: settings.logoWidth,
-                    height: settings.logoHeight,
+                    width: settings.logoWidth || '40px',
+                    height: settings.logoHeight || '40px',
                   }}
                 >
                   <Image
                     src={settings.logoImage}
-                    alt={settings.companyName}
+                    alt={settings.companyName || 'Logo'}
                     fill
                     className="object-contain"
+                    unoptimized
+                    onError={(e) => {
+                      console.error('❌ Logo failed to load:', settings.logoImage);
+                      console.error('Error details:', e);
+                    }}
+                    onLoad={() => {
+                      console.log('✅ Logo loaded successfully:', settings.logoImage);
+                    }}
                   />
                 </div>
               )}

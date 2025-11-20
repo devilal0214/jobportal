@@ -18,6 +18,11 @@ const nextConfig: NextConfig = {
         hostname: 'images.unsplash.com',
         pathname: '/**',
       },
+      {
+        protocol: 'https',
+        hostname: 'jobs.jaiveeru.site',
+        pathname: '/uploads/**',
+      },
     ],
   },
   // Suppress hydration warnings caused by browser extensions
