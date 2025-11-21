@@ -554,14 +554,15 @@ export async function POST(request: NextRequest) {
       formData = await Promise.race([
         request.formData(),
         new Promise<never>((_, reject) => 
-          setTimeout(() => reject(new Error('FormData parsing timeout after 60s')), 60000)
+          setTimeout(() => reject(new Error('FormData parsing timeout after 90s')), 90000)
         )
       ])
       console.log(`⏱️ [SAVE] FormData parsing took: ${Date.now() - formDataStartTime}ms`)
+      console.log(`📊 [SAVE] FormData has ${Array.from(formData.keys()).length} fields`)
     } catch (error) {
       console.error('❌ [SAVE] FormData parsing failed:', error)
       return NextResponse.json({ 
-        error: 'Request timeout during file upload. Try with smaller files or without uploading images.' 
+        error: 'Request timeout during file upload. Files may be too large. Try compressing images before upload.' 
       }, { status: 408 })
     }
     
