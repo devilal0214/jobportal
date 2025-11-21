@@ -366,6 +366,7 @@ export default function CareersPage() {
                     height: settings.logoHeight || '40px',
                   }}
                 >
+                  
                   <Image
                     src={settings.logoImage}
                     alt={settings.companyName || 'Logo'}

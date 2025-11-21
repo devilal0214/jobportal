@@ -525,6 +525,9 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
+  const requestStartTime = Date.now()
+  console.log('🚀 [SAVE] Request started at:', new Date().toISOString())
+  
   try {
     const authHeader = request.headers.get('authorization')
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
@@ -538,7 +541,10 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid token' }, { status: 401 })
     }
 
+    console.log(`⏱️ [SAVE] Auth check took: ${Date.now() - requestStartTime}ms`)
+    const formDataStartTime = Date.now()
     const formData = await request.formData()
+    console.log(`⏱️ [SAVE] FormData parsing took: ${Date.now() - formDataStartTime}ms`)
     
     const bannerTitle = formData.get('bannerTitle') as string
     const bannerSubtitle = formData.get('bannerSubtitle') as string
@@ -667,11 +673,13 @@ export async function POST(request: NextRequest) {
     const shareIconEmailFile = formData.get('shareIconEmail') as File | null
 
     // Detect correct public folder path (public for local, htdocs for VPS)
+    const fileOpsStartTime = Date.now()
     const publicFolderName = existsSync(join(process.cwd(), 'htdocs')) ? 'htdocs' : 'public'
     const uploadsDir = join(process.cwd(), publicFolderName, 'uploads', 'careers')
     console.log('📁 Current working directory:', process.cwd())
     console.log('📁 Public folder name:', publicFolderName)
     console.log('📁 Uploads directory path:', uploadsDir)
+    console.log(`⏱️ [SAVE] Folder detection took: ${Date.now() - fileOpsStartTime}ms`)
     
     try {
       if (!existsSync(uploadsDir)) {
@@ -917,10 +925,11 @@ export async function POST(request: NextRequest) {
     }
 
     // Use transaction for faster bulk operations
-    console.log(`💾 Saving ${settingsToUpdate.length} settings using transaction...`)
-    const startTime = Date.now()
+    console.log(`💾 [SAVE] Saving ${settingsToUpdate.length} settings using transaction...`)
+    const dbStartTime = Date.now()
     
     await prisma.$transaction(async (tx) => {
+      const fetchStartTime = Date.now()
       // First, fetch existing keys
       const existingKeys = await tx.settings.findMany({
         where: {
@@ -930,13 +939,16 @@ export async function POST(request: NextRequest) {
         },
         select: { key: true }
       })
+      console.log(`⏱️ [SAVE] Fetch existing keys took: ${Date.now() - fetchStartTime}ms`)
       
       const existingKeySet = new Set(existingKeys.map(s => s.key))
       const toUpdate = settingsToUpdate.filter(s => existingKeySet.has(s.key))
       const toCreate = settingsToUpdate.filter(s => !existingKeySet.has(s.key))
+      console.log(`📊 [SAVE] To update: ${toUpdate.length}, To create: ${toCreate.length}`)
       
       // Batch update existing settings
       if (toUpdate.length > 0) {
+        const updateStartTime = Date.now()
         await Promise.all(
           toUpdate.map(setting =>
             tx.settings.update({
@@ -945,10 +957,12 @@ export async function POST(request: NextRequest) {
             })
           )
         )
+        console.log(`⏱️ [SAVE] Batch update took: ${Date.now() - updateStartTime}ms`)
       }
       
       // Batch create new settings
       if (toCreate.length > 0) {
+        const createStartTime = Date.now()
         await tx.settings.createMany({
           data: toCreate.map(setting => ({
             key: setting.key,
@@ -956,16 +970,20 @@ export async function POST(request: NextRequest) {
             type: 'text'
           }))
         })
+        console.log(`⏱️ [SAVE] Batch create took: ${Date.now() - createStartTime}ms`)
       }
     })
     
-    const endTime = Date.now()
-    console.log(`✅ Settings saved successfully in ${endTime - startTime}ms`)
+    const dbEndTime = Date.now()
+    const totalTime = Date.now() - requestStartTime
+    console.log(`✅ [SAVE] Database operations took: ${dbEndTime - dbStartTime}ms`)
+    console.log(`✅ [SAVE] Total request time: ${totalTime}ms`)
 
     return NextResponse.json({ 
       success: true,
       message: 'Settings updated successfully',
-      savedCount: settingsToUpdate.length
+      savedCount: settingsToUpdate.length,
+      executionTime: totalTime
     })
   } catch (error) {
     console.error('Careers settings update error:', error)
