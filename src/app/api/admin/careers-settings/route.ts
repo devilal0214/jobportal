@@ -545,25 +545,24 @@ export async function POST(request: NextRequest) {
 
     console.log(`⏱️ [SAVE] Auth check took: ${Date.now() - requestStartTime}ms`)
     
-    // Parse FormData with timeout protection
+    // Parse FormData - removed timeout to debug actual issue
     const formDataStartTime = Date.now()
     console.log('📥 [SAVE] Starting FormData parsing...')
+    console.log('📊 [SAVE] Request method:', request.method)
+    console.log('📊 [SAVE] Request headers:', Object.fromEntries(request.headers.entries()))
     
     let formData: FormData
     try {
-      formData = await Promise.race([
-        request.formData(),
-        new Promise<never>((_, reject) => 
-          setTimeout(() => reject(new Error('FormData parsing timeout after 90s')), 90000)
-        )
-      ])
+      formData = await request.formData()
       console.log(`⏱️ [SAVE] FormData parsing took: ${Date.now() - formDataStartTime}ms`)
       console.log(`📊 [SAVE] FormData has ${Array.from(formData.keys()).length} fields`)
+      console.log(`📋 [SAVE] FormData keys:`, Array.from(formData.keys()).slice(0, 20))
     } catch (error) {
-      console.error('❌ [SAVE] FormData parsing failed:', error)
+      console.error('❌ [SAVE] FormData parsing ERROR:', error)
+      console.error('❌ [SAVE] Error stack:', error instanceof Error ? error.stack : 'No stack')
       return NextResponse.json({ 
-        error: 'Request timeout during file upload. Files may be too large. Try compressing images before upload.' 
-      }, { status: 408 })
+        error: `FormData parsing failed: ${error instanceof Error ? error.message : 'Unknown error'}` 
+      }, { status: 400 })
     }
     
     const bannerTitle = formData.get('bannerTitle') as string
