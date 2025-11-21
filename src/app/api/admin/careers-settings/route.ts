@@ -527,6 +527,8 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   const requestStartTime = Date.now()
   console.log('🚀 [SAVE] Request started at:', new Date().toISOString())
+  console.log('📊 [SAVE] Content-Type:', request.headers.get('content-type'))
+  console.log('📊 [SAVE] Content-Length:', request.headers.get('content-length'), 'bytes')
   
   try {
     const authHeader = request.headers.get('authorization')
@@ -542,9 +544,26 @@ export async function POST(request: NextRequest) {
     }
 
     console.log(`⏱️ [SAVE] Auth check took: ${Date.now() - requestStartTime}ms`)
+    
+    // Parse FormData with timeout protection
     const formDataStartTime = Date.now()
-    const formData = await request.formData()
-    console.log(`⏱️ [SAVE] FormData parsing took: ${Date.now() - formDataStartTime}ms`)
+    console.log('📥 [SAVE] Starting FormData parsing...')
+    
+    let formData: FormData
+    try {
+      formData = await Promise.race([
+        request.formData(),
+        new Promise<never>((_, reject) => 
+          setTimeout(() => reject(new Error('FormData parsing timeout after 60s')), 60000)
+        )
+      ])
+      console.log(`⏱️ [SAVE] FormData parsing took: ${Date.now() - formDataStartTime}ms`)
+    } catch (error) {
+      console.error('❌ [SAVE] FormData parsing failed:', error)
+      return NextResponse.json({ 
+        error: 'Request timeout during file upload. Try with smaller files or without uploading images.' 
+      }, { status: 408 })
+    }
     
     const bannerTitle = formData.get('bannerTitle') as string
     const bannerSubtitle = formData.get('bannerSubtitle') as string
