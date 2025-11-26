@@ -698,7 +698,37 @@ export default function CareersSettingsPage() {
         }
       });
 
-      formData.append('footerWidgets', JSON.stringify(settings.footerWidgets || []));
+      // Extract widget logo images and send as separate files to avoid huge JSON payload
+      const widgetLogoPromises: Promise<void>[] = [];
+      const cleanedWidgets = (settings.footerWidgets || []).map(widget => {
+        const cleanWidget = { ...widget };
+        
+        // If widget has a base64 logo, extract it
+        if (widget.logoImage && widget.logoImage.startsWith('data:')) {
+          cleanWidget.logoImage = `WIDGET_LOGO_${widget.id}`; // Placeholder
+          
+          // Convert data URL to blob asynchronously
+          const promise = fetch(widget.logoImage)
+            .then(res => res.blob())
+            .then(blob => {
+              // Validate size (1MB limit)
+              if (blob.size > 1024 * 1024) {
+                throw new Error(`Widget logo for ${widget.title || widget.id} is too large (${(blob.size / 1024 / 1024).toFixed(2)}MB). Max 1MB.`);
+              }
+              const file = new File([blob], `widget-${widget.id}.png`, { type: blob.type });
+              formData.append(`widgetLogo_${widget.id}`, file);
+            });
+          
+          widgetLogoPromises.push(promise);
+        }
+        
+        return cleanWidget;
+      });
+
+      // Wait for all logo conversions to complete
+      await Promise.all(widgetLogoPromises);
+
+      formData.append('footerWidgets', JSON.stringify(cleanedWidgets));
       formData.append('socialLinks', JSON.stringify(settings.socialLinks || []));
 
       const res = await fetch("/api/admin/careers-settings/footer", {

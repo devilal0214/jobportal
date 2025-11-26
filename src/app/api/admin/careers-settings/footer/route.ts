@@ -1,9 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { verifyToken } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { writeFile, mkdir, chmod } from 'fs/promises'
+import { join } from 'path'
+import { existsSync } from 'fs'
 
 export const maxDuration = 60
 export const dynamic = 'force-dynamic'
+
+const MAX_FILE_SIZE = 1 * 1024 * 1024 // 1MB
 
 export async function POST(request: NextRequest) {
   console.log('🚀 [FOOTER] Request started')
@@ -22,6 +27,14 @@ export async function POST(request: NextRequest) {
     }
 
     const formData = await request.formData()
+    
+    // Setup upload directory
+    const publicFolderName = existsSync(join(process.cwd(), 'htdocs')) ? 'htdocs' : 'public'
+    const uploadsDir = join(process.cwd(), publicFolderName, 'uploads', 'careers')
+    
+    if (!existsSync(uploadsDir)) {
+      await mkdir(uploadsDir, { recursive: true })
+    }
     
     const settingsToSave: Record<string, string> = {}
 
@@ -45,10 +58,53 @@ export async function POST(request: NextRequest) {
       }
     })
 
-    // Handle JSON arrays
-    const footerWidgets = formData.get('footerWidgets')
-    if (footerWidgets) {
-      settingsToSave['careers_footer_widgets'] = String(footerWidgets)
+    // Handle widget logo uploads first
+    const widgetLogoMap: Record<string, string> = {}
+    
+    for (const [key, value] of formData.entries()) {
+      if (key.startsWith('widgetLogo_')) {
+        const widgetId = key.replace('widgetLogo_', '')
+        const file = value as File
+        
+        if (file && file.size > 0) {
+          // Validate size
+          if (file.size > MAX_FILE_SIZE) {
+            return NextResponse.json({ 
+              error: `Widget logo is too large (${(file.size / 1024 / 1024).toFixed(2)}MB). Maximum size is 1MB.` 
+            }, { status: 400 })
+          }
+
+          const bytes = await file.arrayBuffer()
+          const buffer = Buffer.from(bytes)
+          const filename = `widget-logo-${widgetId}-${Date.now()}.png`
+          const filepath = join(uploadsDir, filename)
+          
+          await writeFile(filepath, buffer)
+          await chmod(filepath, 0o644)
+          
+          widgetLogoMap[widgetId] = `/uploads/careers/${filename}`
+        }
+      }
+    }
+
+    // Handle footer widgets JSON and replace placeholders with uploaded file paths
+    const footerWidgetsStr = formData.get('footerWidgets')
+    if (footerWidgetsStr) {
+      const widgets = JSON.parse(String(footerWidgetsStr))
+      
+      // Replace placeholder paths with actual uploaded file paths
+      const updatedWidgets = widgets.map((widget: any) => {
+        if (widget.logoImage && widget.logoImage.startsWith('WIDGET_LOGO_')) {
+          const widgetId = widget.logoImage.replace('WIDGET_LOGO_', '')
+          if (widgetLogoMap[widgetId]) {
+            return { ...widget, logoImage: widgetLogoMap[widgetId] }
+          }
+        }
+        return widget
+      })
+      
+      settingsToSave['careers_footer_widgets'] = JSON.stringify(updatedWidgets)
+      console.log(`✅ [FOOTER] Processed ${Object.keys(widgetLogoMap).length} widget logos`)
     }
 
     const socialLinks = formData.get('socialLinks')
