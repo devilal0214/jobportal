@@ -30,10 +30,8 @@ export async function POST(request: NextRequest) {
     // Parse FormData
     const formData = await request.formData()
     
-    // Detect public folder
-    const isVPS = existsSync(join(process.cwd(), 'htdocs'))
-    const publicFolderName = isVPS ? 'htdocs' : 'public'
-    const uploadsDir = join(process.cwd(), publicFolderName, 'uploads', 'careers')
+    // Always use public folder for uploads (VPS uses parent htdocs but app uses public subfolder)
+    const uploadsDir = join(process.cwd(), 'public', 'uploads', 'careers')
     
     if (!existsSync(uploadsDir)) {
       await mkdir(uploadsDir, { recursive: true })

@@ -28,10 +28,8 @@ export async function POST(request: NextRequest) {
 
     const formData = await request.formData()
     
-    // Setup upload directory
-    const isVPS = existsSync(join(process.cwd(), 'htdocs'))
-    const publicFolderName = isVPS ? 'htdocs' : 'public'
-    const uploadsDir = join(process.cwd(), publicFolderName, 'uploads', 'careers')
+    // Setup upload directory - always use public folder
+    const uploadsDir = join(process.cwd(), 'public', 'uploads', 'careers')
     
     if (!existsSync(uploadsDir)) {
       await mkdir(uploadsDir, { recursive: true })
