@@ -24,6 +24,8 @@ const nextConfig: NextConfig = {
         pathname: '/uploads/**',
       },
     ],
+    // Allow Next.js to optimize local uploads
+    domains: ['jobs.jaiveeru.site'],
   },
   // Suppress hydration warnings caused by browser extensions
   webpack: (config, { dev }) => {

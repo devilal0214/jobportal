@@ -447,6 +447,8 @@ export default function CareersPage() {
                 alt="Banner"
                 fill
                 className="object-cover"
+                unoptimized
+                priority
               />
             </div>
           )}
