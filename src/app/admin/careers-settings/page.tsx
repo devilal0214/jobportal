@@ -699,36 +699,61 @@ export default function CareersSettingsPage() {
       });
 
       // Extract widget logo images and send as separate files to avoid huge JSON payload
+      console.log('🔍 [FRONTEND] Starting widget logo extraction...');
+      console.log(`   Total widgets: ${(settings.footerWidgets || []).length}`);
+      
       const widgetLogoPromises: Promise<void>[] = [];
-      const cleanedWidgets = (settings.footerWidgets || []).map(widget => {
+      const cleanedWidgets = (settings.footerWidgets || []).map((widget, index) => {
+        console.log(`   Widget ${index + 1}: type="${widget.type}", id="${widget.id}"`);
         const cleanWidget = { ...widget };
         
         // If widget has a base64 logo, extract it
-        if (widget.logoImage && widget.logoImage.startsWith('data:')) {
-          cleanWidget.logoImage = `WIDGET_LOGO_${widget.id}`; // Placeholder
+        if (widget.logoImage) {
+          const preview = widget.logoImage.substring(0, 50);
+          console.log(`      logoImage: "${preview}${widget.logoImage.length > 50 ? '...' : ''}"`);
           
-          // Convert data URL to blob asynchronously
-          const promise = fetch(widget.logoImage)
-            .then(res => res.blob())
-            .then(blob => {
-              // Validate size (1MB limit)
-              if (blob.size > 1024 * 1024) {
-                throw new Error(`Widget logo for ${widget.title || widget.id} is too large (${(blob.size / 1024 / 1024).toFixed(2)}MB). Max 1MB.`);
-              }
-              const file = new File([blob], `widget-${widget.id}.png`, { type: blob.type });
-              formData.append(`widgetLogo_${widget.id}`, file);
-            });
-          
-          widgetLogoPromises.push(promise);
+          if (widget.logoImage.startsWith('data:')) {
+            console.log(`      ✅ Base64 detected, will extract`);
+            cleanWidget.logoImage = `WIDGET_LOGO_${widget.id}`; // Placeholder
+            console.log(`      📝 Set placeholder: ${cleanWidget.logoImage}`);
+            
+            // Convert data URL to blob asynchronously
+            const promise = fetch(widget.logoImage)
+              .then(res => res.blob())
+              .then(blob => {
+                console.log(`      💾 Blob created: size=${blob.size} bytes, type=${blob.type}`);
+                
+                // Validate size (1MB limit)
+                if (blob.size > 1024 * 1024) {
+                  throw new Error(`Widget logo for ${widget.title || widget.id} is too large (${(blob.size / 1024 / 1024).toFixed(2)}MB). Max 1MB.`);
+                }
+                const file = new File([blob], `widget-${widget.id}.png`, { type: blob.type });
+                console.log(`      📤 Appending to FormData: widgetLogo_${widget.id}`);
+                formData.append(`widgetLogo_${widget.id}`, file);
+              })
+              .catch(err => {
+                console.error(`      ❌ Error extracting widget logo:`, err);
+                throw err;
+              });
+            
+            widgetLogoPromises.push(promise);
+          } else {
+            console.log(`      ✓ Already a path, keeping as-is`);
+          }
+        } else {
+          console.log(`      ℹ️  No logoImage`);
         }
         
         return cleanWidget;
       });
 
       // Wait for all logo conversions to complete
+      console.log(`⏳ Waiting for ${widgetLogoPromises.length} logo extraction(s) to complete...`);
       await Promise.all(widgetLogoPromises);
+      console.log(`✅ All ${widgetLogoPromises.length} logo extractions completed`);
 
       formData.append('footerWidgets', JSON.stringify(cleanedWidgets));
+      console.log('📝 Appended footerWidgets JSON (first 200 chars):', JSON.stringify(cleanedWidgets).substring(0, 200));
       formData.append('socialLinks', JSON.stringify(settings.socialLinks || []));
 
       const res = await fetch("/api/admin/careers-settings/footer", {
@@ -1293,6 +1318,7 @@ export default function CareersSettingsPage() {
                         alt="Banner"
                         fill
                         className="object-cover"
+                        unoptimized
                       />
                       <button
                         onClick={() => {

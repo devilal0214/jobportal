@@ -62,14 +62,22 @@ export async function POST(request: NextRequest) {
     // Handle widget logo uploads first
     const widgetLogoMap: Record<string, string> = {}
     
+    console.log('🔍 [FOOTER] Checking FormData for widget logos...')
+    let widgetLogoCount = 0
+    
     for (const [key, value] of formData.entries()) {
       if (key.startsWith('widgetLogo_')) {
+        widgetLogoCount++
         const widgetId = key.replace('widgetLogo_', '')
+        console.log(`   📷 [FOOTER] Found widget logo: key="${key}", widgetId="${widgetId}"`)
+        
         const file = value as File
+        console.log(`   📦 [FOOTER] File details: size=${file?.size || 0}, type=${file?.type || 'unknown'}`)
         
         if (file && file.size > 0) {
           // Validate size
           if (file.size > MAX_FILE_SIZE) {
+            console.log(`   ❌ [FOOTER] File too large: ${(file.size / 1024 / 1024).toFixed(2)}MB`)
             return NextResponse.json({ 
               error: `Widget logo is too large (${(file.size / 1024 / 1024).toFixed(2)}MB). Maximum size is 1MB.` 
             }, { status: 400 })
@@ -80,34 +88,64 @@ export async function POST(request: NextRequest) {
           const filename = `widget-logo-${widgetId}-${Date.now()}.png`
           const filepath = join(uploadsDir, filename)
           
+          console.log(`   💾 [FOOTER] Writing file: ${filepath}`)
           await writeFile(filepath, buffer)
           await chmod(filepath, 0o644)
           
           const publicPath = `/uploads/careers/${filename}`
           widgetLogoMap[widgetId] = publicPath
-          console.log(`✅ [FOOTER] Widget logo uploaded: ${filepath} -> ${publicPath}`)
+          console.log(`   ✅ [FOOTER] Widget logo uploaded: ${filepath} -> ${publicPath}`)
+        } else {
+          console.log(`   ⚠️  [FOOTER] File is empty or invalid`)
         }
       }
+    }
+    
+    console.log(`📊 [FOOTER] Total widget logo files found: ${widgetLogoCount}`)
+    console.log(`📊 [FOOTER] Successfully uploaded: ${Object.keys(widgetLogoMap).length}`)
+    if (Object.keys(widgetLogoMap).length > 0) {
+      console.log(`📂 [FOOTER] Widget logo map:`, widgetLogoMap)
     }
 
     // Handle footer widgets JSON and replace placeholders with uploaded file paths
     const footerWidgetsStr = formData.get('footerWidgets')
     if (footerWidgetsStr) {
       const widgets = JSON.parse(String(footerWidgetsStr))
+      console.log(`🔍 [FOOTER] Processing ${widgets.length} widgets...`)
       
       // Replace placeholder paths with actual uploaded file paths
-      const updatedWidgets = widgets.map((widget: any) => {
-        if (widget.logoImage && widget.logoImage.startsWith('WIDGET_LOGO_')) {
-          const widgetId = widget.logoImage.replace('WIDGET_LOGO_', '')
-          if (widgetLogoMap[widgetId]) {
-            return { ...widget, logoImage: widgetLogoMap[widgetId] }
+      const updatedWidgets = widgets.map((widget: any, index: number) => {
+        console.log(`   Widget ${index + 1}: type="${widget.type}", id="${widget.id}"`)
+        
+        if (widget.logoImage) {
+          console.log(`      logoImage: "${widget.logoImage.substring(0, 50)}${widget.logoImage.length > 50 ? '...' : ''}"`)
+          
+          if (widget.logoImage.startsWith('WIDGET_LOGO_')) {
+            const widgetId = widget.logoImage.replace('WIDGET_LOGO_', '')
+            console.log(`      🔑 Found placeholder! Widget ID: "${widgetId}"`)
+            
+            if (widgetLogoMap[widgetId]) {
+              console.log(`      ✅ Replacing with: "${widgetLogoMap[widgetId]}"`)
+              return { ...widget, logoImage: widgetLogoMap[widgetId] }
+            } else {
+              console.log(`      ❌ No uploaded file found for widget ID: "${widgetId}"`)
+              console.log(`      Available IDs in map:`, Object.keys(widgetLogoMap))
+            }
+          } else if (widget.logoImage.startsWith('data:')) {
+            console.log(`      ⚠️  Widget still has base64 data! This should have been extracted by frontend.`)
+          } else {
+            console.log(`      ✓ Already has valid path, keeping as-is`)
           }
+        } else {
+          console.log(`      ℹ️  No logoImage field`)
         }
+        
         return widget
       })
       
       settingsToSave['careers_footer_widgets'] = JSON.stringify(updatedWidgets)
       console.log(`✅ [FOOTER] Processed ${Object.keys(widgetLogoMap).length} widget logos`)
+      console.log(`📝 [FOOTER] Final widget data (first 200 chars):`, JSON.stringify(updatedWidgets).substring(0, 200))
     }
 
     const socialLinks = formData.get('socialLinks')
