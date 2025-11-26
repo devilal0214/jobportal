@@ -31,12 +31,15 @@ export async function POST(request: NextRequest) {
     const formData = await request.formData()
     
     // Detect public folder
-    const publicFolderName = existsSync(join(process.cwd(), 'htdocs')) ? 'htdocs' : 'public'
+    const isVPS = existsSync(join(process.cwd(), 'htdocs'))
+    const publicFolderName = isVPS ? 'htdocs' : 'public'
     const uploadsDir = join(process.cwd(), publicFolderName, 'uploads', 'careers')
     
     if (!existsSync(uploadsDir)) {
       await mkdir(uploadsDir, { recursive: true })
     }
+
+    console.log(`📁 [BANNER] Upload directory: ${uploadsDir}`)
 
     const settingsToSave: Record<string, string> = {}
 
@@ -58,7 +61,9 @@ export async function POST(request: NextRequest) {
       await writeFile(filepath, buffer)
       await chmod(filepath, 0o644)
       
-      settingsToSave['careers_banner_image'] = `/uploads/careers/${filename}`
+      const publicPath = `/uploads/careers/${filename}`
+      settingsToSave['careers_banner_image'] = publicPath
+      console.log(`✅ [BANNER] Banner uploaded: ${filepath} -> ${publicPath}`)
     }
 
     // Add banner text settings

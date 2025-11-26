@@ -31,12 +31,15 @@ export async function POST(request: NextRequest) {
     const formData = await request.formData()
     
     // Detect public folder (htdocs for VPS, public for local)
-    const publicFolderName = existsSync(join(process.cwd(), 'htdocs')) ? 'htdocs' : 'public'
+    const isVPS = existsSync(join(process.cwd(), 'htdocs'))
+    const publicFolderName = isVPS ? 'htdocs' : 'public'
     const uploadsDir = join(process.cwd(), publicFolderName, 'uploads', 'careers')
     
     if (!existsSync(uploadsDir)) {
       await mkdir(uploadsDir, { recursive: true })
     }
+
+    console.log(`📁 [LOGO] Upload directory: ${uploadsDir}`)
 
     const settingsToSave: Record<string, string> = {}
 
@@ -58,7 +61,9 @@ export async function POST(request: NextRequest) {
       await writeFile(filepath, buffer)
       await chmod(filepath, 0o644)
       
-      settingsToSave['careers_logo_image'] = `/uploads/careers/${filename}`
+      const publicPath = `/uploads/careers/${filename}`
+      settingsToSave['careers_logo_image'] = publicPath
+      console.log(`✅ [LOGO] Logo uploaded: ${filepath} -> ${publicPath}`)
     }
 
     // Handle nav font upload

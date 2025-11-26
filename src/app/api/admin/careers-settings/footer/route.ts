@@ -29,12 +29,15 @@ export async function POST(request: NextRequest) {
     const formData = await request.formData()
     
     // Setup upload directory
-    const publicFolderName = existsSync(join(process.cwd(), 'htdocs')) ? 'htdocs' : 'public'
+    const isVPS = existsSync(join(process.cwd(), 'htdocs'))
+    const publicFolderName = isVPS ? 'htdocs' : 'public'
     const uploadsDir = join(process.cwd(), publicFolderName, 'uploads', 'careers')
     
     if (!existsSync(uploadsDir)) {
       await mkdir(uploadsDir, { recursive: true })
     }
+    
+    console.log(`📁 [FOOTER] Upload directory: ${uploadsDir}`)
     
     const settingsToSave: Record<string, string> = {}
 
@@ -82,7 +85,9 @@ export async function POST(request: NextRequest) {
           await writeFile(filepath, buffer)
           await chmod(filepath, 0o644)
           
-          widgetLogoMap[widgetId] = `/uploads/careers/${filename}`
+          const publicPath = `/uploads/careers/${filename}`
+          widgetLogoMap[widgetId] = publicPath
+          console.log(`✅ [FOOTER] Widget logo uploaded: ${filepath} -> ${publicPath}`)
         }
       }
     }

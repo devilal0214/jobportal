@@ -28,12 +28,15 @@ export async function POST(request: NextRequest) {
 
     const formData = await request.formData()
     
-    const publicFolderName = existsSync(join(process.cwd(), 'htdocs')) ? 'htdocs' : 'public'
+    const isVPS = existsSync(join(process.cwd(), 'htdocs'))
+    const publicFolderName = isVPS ? 'htdocs' : 'public'
     const uploadsDir = join(process.cwd(), publicFolderName, 'uploads', 'careers')
     
     if (!existsSync(uploadsDir)) {
       await mkdir(uploadsDir, { recursive: true })
     }
+
+    console.log(`📁 [STYLING] Upload directory: ${uploadsDir}`)
 
     const settingsToSave: Record<string, string> = {}
 
