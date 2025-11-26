@@ -458,6 +458,15 @@ export default function CareersSettingsPage() {
   const handleBannerImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    
+    // Validate file size (1MB)
+    const maxSize = 1 * 1024 * 1024;
+    if (file.size > maxSize) {
+      alert(`Banner file is too large (${(file.size / 1024 / 1024).toFixed(2)}MB). Maximum size is 1MB. Please compress the image before uploading.`);
+      e.target.value = '';
+      return;
+    }
+    
     setBannerImageFile(file);
     const reader = new FileReader();
     reader.onloadend = () => setBannerPreview(reader.result as string);
@@ -466,6 +475,15 @@ export default function CareersSettingsPage() {
   const handleLogoImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    
+    // Validate file size (1MB = 1024 * 1024 bytes)
+    const maxSize = 1 * 1024 * 1024;
+    if (file.size > maxSize) {
+      alert(`Logo file is too large (${(file.size / 1024 / 1024).toFixed(2)}MB). Maximum size is 1MB. Please compress the image before uploading.`);
+      e.target.value = ''; // Reset input
+      return;
+    }
+    
     setLogoImageFile(file);
     const reader = new FileReader();
     reader.onloadend = () => setLogoPreview(reader.result as string);
@@ -505,74 +523,255 @@ export default function CareersSettingsPage() {
     reader.readAsDataURL(f);
   };
 
-  /* SAVE */
+  /* TAB-SPECIFIC SAVE FUNCTIONS */
   const handleSave = async () => {
+    switch (activeTab) {
+      case 'logo':
+        return handleSaveLogo();
+      case 'banner':
+        return handleSaveBanner();
+      case 'cards':
+        return handleSaveCards();
+      case 'footer':
+        return handleSaveFooter();
+      case 'styling':
+        return handleSaveStyling();
+      default:
+        alert('Please select a tab to save');
+    }
+  };
+
+  const handleSaveLogo = async () => {
     setSaving(true);
     try {
       const token = localStorage.getItem("token");
       const formData = new FormData();
 
-      // tab1 + tab2 base fields
-      Object.entries(settings).forEach(([k, v]) => {
-        // we will append special cases below too; this keeps simple types covered
-        if (
-          typeof v === "string" ||
-          typeof v === "number" ||
-          typeof v === "boolean"
-        )
-          formData.append(k, String(v));
-      });
-      
-      // Serialize complex objects as JSON
-      formData.set("menuItems", JSON.stringify(settings.menuItems || []));
-      formData.set("footerWidgets", JSON.stringify(settings.footerWidgets || []));
-      formData.set("socialLinks", JSON.stringify(settings.socialLinks || []));
-      formData.set("shareIcons", JSON.stringify(settings.shareIcons || {}));
+      // Logo & Nav settings
+      formData.append('logoHeight', settings.logoHeight);
+      formData.append('logoWidth', settings.logoWidth);
+      formData.append('companyName', settings.companyName);
+      formData.append('navFontFamily', settings.navFontFamily || '');
+      formData.append('navFontSize', settings.navFontSize || '');
+      formData.append('globalFontFamily', settings.globalFontFamily || '');
+      formData.append('menuItems', JSON.stringify(settings.menuItems || []));
 
-      // keep font URLs if no upload this time
-      formData.append("navFontUrl", settings.navFontUrl || "");
-      formData.append("globalFontUrl", settings.globalFontUrl || "");
+      // Files
+      if (logoImageFile) formData.append('logoImage', logoImageFile);
+      if (navFontFile) formData.append('navFontFile', navFontFile);
+      if (globalFontFile) formData.append('globalFontFile', globalFontFile);
 
-      // append images/fonts if newly uploaded
-      if (bannerImageFile) formData.append("bannerImage", bannerImageFile);
-      if (logoImageFile) formData.append("logoImage", logoImageFile);
-      if (navFontFile) formData.append("navFontFile", navFontFile);
-      if (globalFontFile) formData.append("globalFontFile", globalFontFile);
-      
-      // append share icon files if uploaded
-      if (shareIconFiles.facebook) formData.append("shareIconFacebook", shareIconFiles.facebook);
-      if (shareIconFiles.twitter) formData.append("shareIconTwitter", shareIconFiles.twitter);
-      if (shareIconFiles.linkedin) formData.append("shareIconLinkedin", shareIconFiles.linkedin);
-      if (shareIconFiles.whatsapp) formData.append("shareIconWhatsapp", shareIconFiles.whatsapp);
-      if (shareIconFiles.email) formData.append("shareIconEmail", shareIconFiles.email);
-
-      // Debug: Log border radius values being sent
-      console.log('Saving border radius values:', {
-        cardContainerRadius: settings.cardContainerRadius,
-        cardImageRadius: settings.cardImageRadius,
-        fromFormData: {
-          cardContainerRadius: formData.get('cardContainerRadius'),
-          cardImageRadius: formData.get('cardImageRadius')
-        }
-      });
-
-      const res = await fetch("/api/admin/careers-settings", {
+      const res = await fetch("/api/admin/careers-settings/logo", {
         method: "POST",
         headers: { Authorization: `Bearer ${token}` },
         body: formData,
       });
 
+      const data = await res.json();
       if (!res.ok) {
-        const err = await res.json().catch(() => ({}));
-        alert(`Failed to save: ${err.error || "Unknown error"}`);
+        alert(`Failed to save: ${data.error || "Unknown error"}`);
         return;
       }
-      alert("Settings saved!");
-      // OPTIONAL refresh
+      alert(data.message || "Logo settings saved!");
       window.location.reload();
     } catch (err) {
       console.error('Save error:', err);
-      alert("Failed to save settings");
+      alert("Failed to save logo settings");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleSaveBanner = async () => {
+    setSaving(true);
+    try {
+      const token = localStorage.getItem("token");
+      const formData = new FormData();
+
+      // Banner settings
+      formData.append('bannerTitle', settings.bannerTitle);
+      formData.append('bannerSubtitle', settings.bannerSubtitle);
+      formData.append('bannerDescription', settings.bannerDescription);
+      formData.append('bannerOverlay', settings.bannerOverlay);
+      formData.append('bannerHeight', settings.bannerHeight);
+      formData.append('bannerWidth', settings.bannerWidth);
+      formData.append('bannerBorderRadius', settings.bannerBorderRadius);
+      formData.append('titleColor', settings.titleColor);
+      formData.append('titleFontSize', settings.titleFontSize);
+      formData.append('subtitleColor', settings.subtitleColor);
+      formData.append('subtitleFontSize', settings.subtitleFontSize);
+      formData.append('descriptionColor', settings.descriptionColor);
+      formData.append('descriptionFontSize', settings.descriptionFontSize);
+
+      if (bannerImageFile) formData.append('bannerImage', bannerImageFile);
+
+      const res = await fetch("/api/admin/careers-settings/banner", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+        body: formData,
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        alert(`Failed to save: ${data.error || "Unknown error"}`);
+        return;
+      }
+      alert(data.message || "Banner settings saved!");
+      window.location.reload();
+    } catch (err) {
+      console.error('Save error:', err);
+      alert("Failed to save banner settings");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleSaveCards = async () => {
+    setSaving(true);
+    try {
+      const token = localStorage.getItem("token");
+      const formData = new FormData();
+
+      // Card settings
+      const cardFields = [
+        'cardContainerRadius', 'cardImageRadius', 'cardPadding', 'cardShadow',
+        'cardHoverLift', 'cardImageHeight', 'cardTitleSize', 'cardTitleColor',
+        'cardTitleFontFamily', 'cardDescriptionSize', 'cardDescriptionColor',
+        'cardDescriptionFontFamily', 'cardShowIcons', 'cardButtonBg',
+        'cardButtonText', 'cardButtonLabel', 'cardButtonClass', 'cardButtonBorder',
+        'cardButtonBorderColor', 'cardButtonRadius', 'cardButtonFontFamily',
+        'cardButtonFontSize', 'cardButtonFontWeight', 'cardGridColumns',
+        'pageLayout', 'pageMaxWidth', 'showFilters', 'showSearchFilter',
+        'showDepartmentFilter', 'showExperienceFilter'
+      ];
+
+      cardFields.forEach(key => {
+        const value = settings[key as keyof CareersSettings];
+        if (value !== undefined) {
+          formData.append(key, String(value));
+        }
+      });
+
+      const res = await fetch("/api/admin/careers-settings/cards", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+        body: formData,
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        alert(`Failed to save: ${data.error || "Unknown error"}`);
+        return;
+      }
+      alert(data.message || "Card settings saved!");
+      window.location.reload();
+    } catch (err) {
+      console.error('Save error:', err);
+      alert("Failed to save card settings");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleSaveFooter = async () => {
+    setSaving(true);
+    try {
+      const token = localStorage.getItem("token");
+      const formData = new FormData();
+
+      // Footer settings
+      const footerFields = [
+        'footerEnabled', 'footerColumns', 'footerWidth', 'footerBgColor',
+        'footerTextColor', 'footerPadding', 'footerFontFamily', 'footerFontSize',
+        'footerFontWeight', 'footerBorderTop', 'footerBorderBottom', 'footerBorderLeft',
+        'footerBorderRight', 'footerBorderColor', 'copyrightEnabled', 'copyrightLeftHtml',
+        'copyrightRightHtml', 'copyrightBgColor', 'copyrightTextColor',
+        'copyrightDividerEnabled', 'copyrightDividerWidth', 'copyrightDividerHeight',
+        'copyrightDividerColor', 'copyrightDividerBorderTop', 'copyrightDividerBorderBottom',
+        'copyrightDividerBorderLeft', 'copyrightDividerBorderRight', 'copyrightDividerBorderStyle'
+      ];
+
+      footerFields.forEach(key => {
+        const value = settings[key as keyof CareersSettings];
+        if (value !== undefined) {
+          formData.append(key, String(value));
+        }
+      });
+
+      formData.append('footerWidgets', JSON.stringify(settings.footerWidgets || []));
+      formData.append('socialLinks', JSON.stringify(settings.socialLinks || []));
+
+      const res = await fetch("/api/admin/careers-settings/footer", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+        body: formData,
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        alert(`Failed to save: ${data.error || "Unknown error"}`);
+        return;
+      }
+      alert(data.message || "Footer settings saved!");
+      window.location.reload();
+    } catch (err) {
+      console.error('Save error:', err);
+      alert("Failed to save footer settings");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleSaveStyling = async () => {
+    setSaving(true);
+    try {
+      const token = localStorage.getItem("token");
+      const formData = new FormData();
+
+      // Custom styling settings
+      const stylingFields = [
+        'customCss', 'jobDetailsButtonClass', 'jobDetailsButtonBg',
+        'jobDetailsButtonText', 'jobDetailsButtonBorder', 'jobDetailsButtonBorderColor',
+        'jobDetailsButtonRadius', 'jobDetailsButtonFontFamily', 'jobDetailsButtonFontSize',
+        'jobDetailsButtonFontWeight', 'applyButtonClass', 'applyButtonBg',
+        'applyButtonText', 'applyButtonBorder', 'applyButtonBorderColor',
+        'applyButtonRadius', 'applyButtonFontFamily', 'applyButtonFontSize',
+        'applyButtonFontWeight', 'shareIconsEnabled', 'shareIconWidth',
+        'shareIconHeight', 'shareIconBorderRadius'
+      ];
+
+      stylingFields.forEach(key => {
+        const value = settings[key as keyof CareersSettings];
+        if (value !== undefined) {
+          formData.append(key, String(value));
+        }
+      });
+
+      formData.append('shareIcons', JSON.stringify(settings.shareIcons || {}));
+
+      // Share icon files
+      if (shareIconFiles.facebook) formData.append('shareIconFacebook', shareIconFiles.facebook);
+      if (shareIconFiles.twitter) formData.append('shareIconTwitter', shareIconFiles.twitter);
+      if (shareIconFiles.linkedin) formData.append('shareIconLinkedin', shareIconFiles.linkedin);
+      if (shareIconFiles.whatsapp) formData.append('shareIconWhatsapp', shareIconFiles.whatsapp);
+      if (shareIconFiles.email) formData.append('shareIconEmail', shareIconFiles.email);
+
+      const res = await fetch("/api/admin/careers-settings/styling", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+        body: formData,
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        alert(`Failed to save: ${data.error || "Unknown error"}`);
+        return;
+      }
+      alert(data.message || "Custom styling saved!");
+      window.location.reload();
+    } catch (err) {
+      console.error('Save error:', err);
+      alert("Failed to save styling settings");
     } finally {
       setSaving(false);
     }
@@ -3274,7 +3473,11 @@ export default function CareersSettingsPage() {
               ) : (
                 <>
                   <Save className="h-4 w-4 mr-2" />
-                  Save Settings
+                  Save {activeTab === 'logo' ? 'Logo & Navigation' : 
+                        activeTab === 'banner' ? 'Banner' : 
+                        activeTab === 'cards' ? 'Card' : 
+                        activeTab === 'footer' ? 'Footer' : 
+                        activeTab === 'styling' ? 'Styling' : ''} Settings
                 </>
               )}
             </button>

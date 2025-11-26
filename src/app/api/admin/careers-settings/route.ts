@@ -545,24 +545,39 @@ export async function POST(request: NextRequest) {
 
     console.log(`⏱️ [SAVE] Auth check took: ${Date.now() - requestStartTime}ms`)
     
-    // Parse FormData - removed timeout to debug actual issue
+    // Parse FormData with progress logging
     const formDataStartTime = Date.now()
+    const contentLength = request.headers.get('content-length')
     console.log('📥 [SAVE] Starting FormData parsing...')
-    console.log('📊 [SAVE] Request method:', request.method)
-    console.log('📊 [SAVE] Request headers:', Object.fromEntries(request.headers.entries()))
+    console.log('📊 [SAVE] Expected body size:', contentLength, 'bytes')
     
     let formData: FormData
     try {
-      formData = await request.formData()
-      console.log(`⏱️ [SAVE] FormData parsing took: ${Date.now() - formDataStartTime}ms`)
+      // Set a reasonable timeout for the body size
+      const timeoutMs = 30000 // 30 seconds should be MORE than enough for 39KB
+      const formDataPromise = request.formData()
+      const timeoutPromise = new Promise<never>((_, reject) => 
+        setTimeout(() => {
+          console.error('❌ [SAVE] FormData timeout - body may not be arriving from Nginx')
+          reject(new Error(`FormData parsing timeout after ${timeoutMs}ms. Body size: ${contentLength} bytes. Check Nginx proxy_request_buffering setting.`))
+        }, timeoutMs)
+      )
+      
+      formData = await Promise.race([formDataPromise, timeoutPromise])
+      
+      const parseTime = Date.now() - formDataStartTime
+      console.log(`✅ [SAVE] FormData parsing took: ${parseTime}ms`)
       console.log(`📊 [SAVE] FormData has ${Array.from(formData.keys()).length} fields`)
-      console.log(`📋 [SAVE] FormData keys:`, Array.from(formData.keys()).slice(0, 20))
+      
+      if (parseTime > 5000) {
+        console.warn(`⚠️ [SAVE] WARNING: FormData parsing took ${parseTime}ms for ${contentLength} bytes. This indicates Nginx buffering issues.`)
+      }
     } catch (error) {
       console.error('❌ [SAVE] FormData parsing ERROR:', error)
-      console.error('❌ [SAVE] Error stack:', error instanceof Error ? error.stack : 'No stack')
+      console.error('❌ [SAVE] Error details:', error instanceof Error ? error.message : 'Unknown')
       return NextResponse.json({ 
-        error: `FormData parsing failed: ${error instanceof Error ? error.message : 'Unknown error'}` 
-      }, { status: 400 })
+        error: `FormData parsing failed: ${error instanceof Error ? error.message : 'Unknown error'}. Try restarting Nginx: sudo systemctl restart nginx` 
+      }, { status: 408 })
     }
     
     const bannerTitle = formData.get('bannerTitle') as string
