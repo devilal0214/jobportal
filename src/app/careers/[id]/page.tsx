@@ -309,6 +309,7 @@ export default function CareerDetailPage() {
                 alt={job.title}
                 fill
                 className="object-cover"
+                unoptimized
               />
             </div>
           )}

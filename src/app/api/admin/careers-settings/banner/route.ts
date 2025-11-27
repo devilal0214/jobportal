@@ -51,6 +51,14 @@ export async function POST(request: NextRequest) {
         }, { status: 400 })
       }
 
+      // Validate file type - only allow png, jpg, jpeg, svg
+      const allowedTypes = ['image/png', 'image/jpeg', 'image/jpg', 'image/svg+xml']
+      if (!allowedTypes.includes(bannerFile.type)) {
+        return NextResponse.json({ 
+          error: `Invalid file type. Only PNG, JPG, JPEG, and SVG images are allowed.` 
+        }, { status: 400 })
+      }
+
       const bytes = await bannerFile.arrayBuffer()
       const buffer = Buffer.from(bytes)
       const filename = `banner-${Date.now()}-${bannerFile.name}`

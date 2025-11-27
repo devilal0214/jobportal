@@ -616,7 +616,7 @@ export default function CareersPage() {
                 return (
                 <div
                   key={job.id}
-                  className={`job-card bg-white transition-all duration-300 group ${settings.cardHoverLift !== false ? 'hover:shadow-xl hover:-translate-y-1' : ''}`}
+                  className={`job-card bg-white holayam transition-all duration-300 group ${settings.cardHoverLift !== false ? 'hover:shadow-xl hover:-translate-y-1' : ''}`}
                   style={{
                     borderRadius: radius,
                     borderTopLeftRadius: radius,
@@ -646,6 +646,7 @@ export default function CareersPage() {
                         alt={job.title}
                         fill
                         className="object-cover group-hover:scale-110 transition-transform duration-300"
+                        unoptimized
                       />
                     ) : (
                       <div className="absolute inset-0 flex items-center justify-center">

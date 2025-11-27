@@ -83,6 +83,15 @@ export async function POST(request: NextRequest) {
             }, { status: 400 })
           }
 
+          // Validate file type - only allow png, jpg, jpeg, svg
+          const allowedTypes = ['image/png', 'image/jpeg', 'image/jpg', 'image/svg+xml']
+          if (!allowedTypes.includes(file.type)) {
+            console.log(`   ❌ [FOOTER] Invalid file type: ${file.type}`)
+            return NextResponse.json({ 
+              error: `Invalid file type. Only PNG, JPG, JPEG, and SVG images are allowed.` 
+            }, { status: 400 })
+          }
+
           const bytes = await file.arrayBuffer()
           const buffer = Buffer.from(bytes)
           

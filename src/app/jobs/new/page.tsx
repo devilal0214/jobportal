@@ -88,6 +88,14 @@ interface Form {
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (file) {
+      // Validate file type
+      const allowedTypes = ['image/png', 'image/jpeg', 'image/jpg', 'image/svg+xml']
+      if (!allowedTypes.includes(file.type)) {
+        alert('Invalid file type. Only PNG, JPG, JPEG, and SVG images are allowed.')
+        e.target.value = ''
+        return
+      }
+      
       setImageFile(file)
       const reader = new FileReader()
       reader.onloadend = () => {
@@ -100,6 +108,14 @@ interface Form {
   const handleBannerImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (file) {
+      // Validate file type
+      const allowedTypes = ['image/png', 'image/jpeg', 'image/jpg', 'image/svg+xml']
+      if (!allowedTypes.includes(file.type)) {
+        alert('Invalid file type. Only PNG, JPG, JPEG, and SVG images are allowed.')
+        e.target.value = ''
+        return
+      }
+      
       setBannerImageFile(file)
       const reader = new FileReader()
       reader.onloadend = () => {

@@ -25,6 +25,14 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'No image provided' }, { status: 400 })
     }
 
+    // Validate file type - only allow png, jpg, jpeg, svg
+    const allowedTypes = ['image/png', 'image/jpeg', 'image/jpg', 'image/svg+xml']
+    if (!allowedTypes.includes(image.type)) {
+      return NextResponse.json({ 
+        error: 'Invalid file type. Only PNG, JPG, JPEG, and SVG images are allowed.' 
+      }, { status: 400 })
+    }
+
     // Create uploads directory if it doesn't exist
     const uploadsDir = path.join(process.cwd(), 'public', 'uploads', 'jobs')
     try {

@@ -459,6 +459,14 @@ export default function CareersSettingsPage() {
     const file = e.target.files?.[0];
     if (!file) return;
     
+    // Validate file type
+    const allowedTypes = ['image/png', 'image/jpeg', 'image/jpg', 'image/svg+xml'];
+    if (!allowedTypes.includes(file.type)) {
+      alert('Invalid file type. Only PNG, JPG, JPEG, and SVG images are allowed.');
+      e.target.value = '';
+      return;
+    }
+    
     // Validate file size (1MB)
     const maxSize = 1 * 1024 * 1024;
     if (file.size > maxSize) {
@@ -728,12 +736,16 @@ export default function CareersSettingsPage() {
                   throw new Error(`Widget logo for ${widget.title || widget.id} is too large (${(blob.size / 1024 / 1024).toFixed(2)}MB). Max 1MB.`);
                 }
                 
+                // Validate file type - only allow png, jpg, jpeg, svg
+                const allowedTypes = ['image/png', 'image/jpeg', 'image/jpg', 'image/svg+xml'];
+                if (!allowedTypes.includes(blob.type)) {
+                  throw new Error(`Invalid image type for ${widget.title || widget.id}. Only PNG, JPG, JPEG, and SVG are allowed.`);
+                }
+                
                 // Determine correct file extension from MIME type
                 let ext = 'png';
                 if (blob.type === 'image/svg+xml') ext = 'svg';
                 else if (blob.type === 'image/jpeg') ext = 'jpg';
-                else if (blob.type === 'image/webp') ext = 'webp';
-                else if (blob.type === 'image/gif') ext = 'gif';
                 
                 const file = new File([blob], `widget-${widget.id}.${ext}`, { type: blob.type });
                 console.log(`      📤 Appending to FormData: widgetLogo_${widget.id} (${ext})`);

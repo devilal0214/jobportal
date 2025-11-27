@@ -26,6 +26,8 @@ const nextConfig: NextConfig = {
     ],
     // Allow Next.js to optimize local uploads
     domains: ['jobs.jaiveeru.site'],
+    // Support additional image formats including AVIF
+    formats: ['image/avif', 'image/webp'],
   },
   // Suppress hydration warnings caused by browser extensions
   webpack: (config, { dev }) => {
