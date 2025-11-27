@@ -85,8 +85,17 @@ export async function POST(request: NextRequest) {
 
           const bytes = await file.arrayBuffer()
           const buffer = Buffer.from(bytes)
-          const filename = `widget-logo-${widgetId}-${Date.now()}.png`
+          
+          // Determine file extension based on actual MIME type
+          let ext = 'png'
+          if (file.type === 'image/svg+xml') ext = 'svg'
+          else if (file.type === 'image/jpeg' || file.type === 'image/jpg') ext = 'jpg'
+          else if (file.type === 'image/webp') ext = 'webp'
+          else if (file.type === 'image/gif') ext = 'gif'
+          
+          const filename = `widget-logo-${widgetId}-${Date.now()}.${ext}`
           const filepath = join(uploadsDir, filename)
+          console.log(`   📝 [FOOTER] Using extension: .${ext} for MIME type: ${file.type}`)
           
           console.log(`   💾 [FOOTER] Writing file: ${filepath}`)
           await writeFile(filepath, buffer)
