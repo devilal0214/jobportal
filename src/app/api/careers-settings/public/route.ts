@@ -82,6 +82,7 @@ export async function GET() {
             'careers_footer_enabled',
             'careers_footer_columns',
             'careers_footer_width',
+            'careers_column_custom_classes',
             'careers_footer_widgets',
             'careers_footer_bg_color',
             'careers_footer_text_color',
@@ -367,6 +368,13 @@ export async function GET() {
           break
         case 'careers_footer_width':
           careersSettings.footerWidth = setting.value
+          break
+        case 'careers_column_custom_classes':
+          try {
+            careersSettings.columnCustomClasses = JSON.parse(setting.value)
+          } catch {
+            careersSettings.columnCustomClasses = []
+          }
           break
         case 'careers_footer_widgets':
           try {

@@ -48,7 +48,8 @@ export async function POST(request: NextRequest) {
       'copyrightRightHtml', 'copyrightBgColor', 'copyrightTextColor',
       'copyrightDividerEnabled', 'copyrightDividerWidth', 'copyrightDividerHeight',
       'copyrightDividerColor', 'copyrightDividerBorderTop', 'copyrightDividerBorderBottom',
-      'copyrightDividerBorderLeft', 'copyrightDividerBorderRight', 'copyrightDividerBorderStyle'
+      'copyrightDividerBorderLeft', 'copyrightDividerBorderRight', 'copyrightDividerBorderStyle',
+      'columnCustomClasses'
     ]
 
     footerSettings.forEach(key => {

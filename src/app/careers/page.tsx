@@ -160,6 +160,7 @@ interface CareersSettings {
   // Footer widgets
   footerColumns?: number
   footerWidth?: string
+  columnCustomClasses?: string[]
   footerWidgets?: Array<{
     id: string
     type: 'logo' | 'text' | 'menu' | 'html' | 'social'
@@ -826,9 +827,10 @@ export default function CareersPage() {
                   const columnWidgets = settings.footerWidgets!
                     .filter(w => w.columnIndex === columnIndex)
                     .sort((a, b) => a.order - b.order)
+                  const columnClass = settings.columnCustomClasses?.[columnIndex] || ''
 
                   return (
-                    <div key={columnIndex} className="space-y-6">
+                    <div key={columnIndex} className={`space-y-6 ${columnClass}`}>
                       {columnWidgets.map(widget => (
                         <div key={widget.id} className={widget.customClass || ''}>
                           {/* Logo Widget */}
