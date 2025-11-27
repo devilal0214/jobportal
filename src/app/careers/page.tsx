@@ -617,6 +617,7 @@ export default function CareersPage() {
                 settings.cardGridColumns === 2 ? 'grid-cols-1 md:grid-cols-2' :
                 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3'
               }`}
+              key={`${settings.cardContainerRadius}-${settings.cardPadding}-${settings.cardShadow}`}
             >
               {displayedJobs.map((job) => {
                 const radius = settings.cardContainerRadius || '12px';
