@@ -727,8 +727,16 @@ export default function CareersSettingsPage() {
                 if (blob.size > 1024 * 1024) {
                   throw new Error(`Widget logo for ${widget.title || widget.id} is too large (${(blob.size / 1024 / 1024).toFixed(2)}MB). Max 1MB.`);
                 }
-                const file = new File([blob], `widget-${widget.id}.png`, { type: blob.type });
-                console.log(`      📤 Appending to FormData: widgetLogo_${widget.id}`);
+                
+                // Determine correct file extension from MIME type
+                let ext = 'png';
+                if (blob.type === 'image/svg+xml') ext = 'svg';
+                else if (blob.type === 'image/jpeg') ext = 'jpg';
+                else if (blob.type === 'image/webp') ext = 'webp';
+                else if (blob.type === 'image/gif') ext = 'gif';
+                
+                const file = new File([blob], `widget-${widget.id}.${ext}`, { type: blob.type });
+                console.log(`      📤 Appending to FormData: widgetLogo_${widget.id} (${ext})`);
                 formData.append(`widgetLogo_${widget.id}`, file);
               })
               .catch(err => {
