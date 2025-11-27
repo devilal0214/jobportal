@@ -214,6 +214,14 @@ export default function CareersPage() {
   useEffect(() => {
     console.log('🔄 Settings state changed:', settings)
     console.log('🖼️ Share Icons in state:', settings.shareIcons)
+    console.log('🎴 Card Settings:', {
+      cardContainerRadius: settings.cardContainerRadius,
+      cardImageRadius: settings.cardImageRadius,
+      cardPadding: settings.cardPadding,
+      cardShadow: settings.cardShadow,
+      cardHoverLift: settings.cardHoverLift,
+      cardImageHeight: settings.cardImageHeight
+    })
   }, [settings])
 
   const fetchSettings = async () => {

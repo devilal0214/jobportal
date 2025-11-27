@@ -18,6 +18,26 @@ import {
   CheckCircle,
 } from "lucide-react";
 
+/* ---------- Helper Functions ---------- */
+
+// Helper function to format font family
+const getFontFamily = (fontFamily?: string) => {
+  if (!fontFamily || fontFamily === 'System Default') return 'inherit';
+  const fontMap: Record<string, string> = {
+    'Archivo': `'Archivo', sans-serif`,
+    'Inter': `'Inter', sans-serif`,
+    'Poppins': `'Poppins', sans-serif`,
+    'Montserrat': `'Montserrat', sans-serif`,
+    'Roboto': `'Roboto', sans-serif`,
+    'Lato': `'Lato', sans-serif`,
+    'Nunito': `'Nunito', sans-serif`,
+    'Work Sans': `'Work Sans', sans-serif`,
+    'Playfair Display': `'Playfair Display', serif`,
+    'Merriweather': `'Merriweather', serif`,
+  };
+  return fontMap[fontFamily] || fontFamily;
+};
+
 /* ---------- Types ---------- */
 
 interface Job {
@@ -49,6 +69,17 @@ interface CareersSettings {
   logoHeight: string;
   logoWidth: string;
   companyName: string;
+  menuItems?: Array<{
+    id: string;
+    label: string;
+    url: string;
+    order: number;
+  }>;
+  navFontFamily?: string;
+  navFontSize?: string;
+  navFontUrl?: string;
+  globalFontFamily?: string;
+  globalFontUrl?: string;
   // Button styling
   jobDetailsButtonClass?: string;
   jobDetailsButtonBg?: string;
@@ -258,7 +289,7 @@ export default function CareerDetailPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header with Logo */}
+      {/* Header with Logo and Navigation */}
       <header className="bg-white shadow-sm border-b sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
@@ -276,6 +307,7 @@ export default function CareerDetailPage() {
                     alt={settings.companyName}
                     fill
                     className="object-contain"
+                    unoptimized
                   />
                 </div>
               )}
@@ -286,6 +318,42 @@ export default function CareerDetailPage() {
                 {settings.companyName}
               </Link>
             </div>
+
+            {/* Navigation Menu */}
+            {settings.menuItems && settings.menuItems.length > 0 && (
+              <nav className="hidden md:flex items-center space-x-8">
+                {settings.menuItems.map((item) => (
+                  <Link
+                    key={item.id}
+                    href={item.url}
+                    className="text-gray-700 hover:text-indigo-600 font-medium transition-colors"
+                    style={{
+                      fontFamily: getFontFamily(settings.navFontFamily),
+                      fontSize: settings.navFontSize || '16px',
+                    }}
+                  >
+                    {item.label}
+                  </Link>
+                ))}
+              </nav>
+            )}
+
+            {/* Mobile Menu Button */}
+            <button className="md:hidden p-2 rounded-md text-gray-700 hover:bg-gray-100">
+              <svg
+                className="h-6 w-6"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M4 6h16M4 12h16M4 18h16"
+                />
+              </svg>
+            </button>
           </div>
         </div>
       </header>
