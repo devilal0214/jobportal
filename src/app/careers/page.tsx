@@ -227,6 +227,17 @@ export default function CareersPage() {
         console.log('  - FB:', data.settings?.shareIcons?.facebookImage)
         console.log('  - LinkedIn:', data.settings?.shareIcons?.linkedinImage)
         console.log('  - Email:', data.settings?.shareIcons?.emailImage)
+        
+        console.log('🦶 Footer Widgets:', data.settings?.footerWidgets?.length || 0)
+        if (data.settings?.footerWidgets) {
+          data.settings.footerWidgets.forEach((w: any, i: number) => {
+            console.log(`   Widget ${i+1}: type="${w.type}", id="${w.id}"`)
+            if (w.type === 'logo') {
+              console.log(`      logoImage: ${w.logoImage || 'NOT SET'}`)
+            }
+          })
+        }
+        
         if (data.settings) {
           setSettings(data.settings)
           console.log('✅ Settings state updated')
