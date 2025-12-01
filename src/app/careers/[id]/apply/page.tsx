@@ -651,7 +651,7 @@ export default function CareerApplyPage() {
               type="button"
               onClick={goPrev}
               disabled={step === 0}
-              className="px-4 py-2 text-xs rounded-md border border-gray-300 text-gray-700 disabled:opacity-40"
+              className="px-4 py-2 text-xs rounded-full border border-gray-300 text-gray-700 disabled:opacity-40"
             >
               Previous
             </button>
@@ -660,7 +660,7 @@ export default function CareerApplyPage() {
               <button
                 type="button"
                 onClick={goNext}
-                className="ml-auto px-5 py-2 text-xs rounded-md bg-indigo-600 text-white hover:bg-indigo-700"
+                className="ml-auto px-5 py-2 text-xs rounded-full bg-indigo-600 text-white hover:bg-indigo-700"
               >
                 Next
               </button>
@@ -669,7 +669,7 @@ export default function CareerApplyPage() {
                 type="button"
                 onClick={handleSubmit}
                 disabled={submitting}
-                className="ml-auto px-5 py-2 text-xs rounded-md bg-green-600 text-white hover:bg-green-700 disabled:opacity-60"
+                className="ml-auto px-5 py-2 text-xs rounded-full bg-green-600 text-white hover:bg-green-700 disabled:opacity-60"
               >
                 {submitting ? "Submitting..." : "Submit Application"}
               </button>

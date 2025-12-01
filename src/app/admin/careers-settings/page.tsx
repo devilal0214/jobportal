@@ -84,7 +84,7 @@ interface CareersSettings {
   /* tab 3: job cards & page layout */
   cardContainerRadius?: string;
   cardImageRadius?: string;
-  cardRadius?:string;
+  cardRadius?: string;
   cardPadding?: string;
   cardShadow?: ShadowKey;
   cardHoverLift?: boolean;
@@ -115,6 +115,26 @@ interface CareersSettings {
   showSearchFilter?: boolean;
   showDepartmentFilter?: boolean;
   showExperienceFilter?: boolean;
+
+  // careers page seeting
+  detailsFontFamily: string;
+  detailsFontSize: string;
+  detailsFontWeight: string;
+  detailsButtonBg: string;
+  detailsButtonColor: string;
+  detailsButtonRadius: string;
+  detailsShareEnabled: boolean;
+  detailsShareWidth: string;
+  detailsShareHeight: string;
+  detailsShareRadius: string;
+  detailsShareFacebookIcon: string; // SVG or image URL
+  detailsShareFacebookUrl: string; // link to share
+  detailsShareLinkedinIcon: string;
+  detailsShareLinkedinUrl: string;
+  detailsShareWhatsappIcon: string;
+  detailsShareWhatsappUrl: string;
+  detailsShareMailIcon: string;
+  detailsShareMailUrl: string;
 
   /* tab 4: footer */
   footerEnabled?: boolean;
@@ -237,7 +257,7 @@ export default function CareersSettingsPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [activeTab, setActiveTab] = useState<
-    "logo" | "banner" | "cards" | "footer" | "styling" | "preview"
+    "logo" | "banner" | "cards" | "details" | "footer" | "styling" | "preview"
   >("logo");
 
   const [settings, setSettings] = useState<CareersSettings>({
@@ -292,13 +312,38 @@ export default function CareersSettingsPage() {
     cardGridColumns: 3,
     pageLayout: "grid",
     pageMaxWidth: "1280px",
-    
+
     /* filter visibility defaults */
     showFilters: true,
     showSearchFilter: true,
     showDepartmentFilter: true,
     showExperienceFilter: true,
-    
+
+    // careers deatils page
+    detailsFontFamily: "System Default", // make sure "System Default" exists in FONT_OPTIONS or handle separately
+    detailsFontSize: "16px",
+    detailsFontWeight: "500",
+
+    detailsButtonBg: "#4f46e5",
+    detailsButtonColor: "#ffffff",
+    detailsButtonRadius: "8px",
+
+    detailsShareEnabled: true,
+    detailsShareWidth: "32px",
+    detailsShareHeight: "32px",
+    detailsShareRadius: "6px",
+    // Icon URLs (these should exist in /public/icons)
+    detailsShareFacebookIcon: "/icons/facebook.svg",
+    detailsShareFacebookUrl:
+      "https://www.facebook.com/sharer/sharer.php?u={jobUrl}",
+    detailsShareLinkedinIcon: "/icons/linkedin.svg",
+    detailsShareLinkedinUrl:
+      "https://www.linkedin.com/sharing/share-offsite/?url={jobUrl}",
+    detailsShareWhatsappIcon: "/icons/whatsapp.svg",
+    detailsShareWhatsappUrl: "https://wa.me/?text={jobUrl}",
+    detailsShareMailIcon: "/icons/mail.svg",
+    detailsShareMailUrl: "mailto:?subject=Job%20Opportunity&body={jobUrl}",
+
     /* footer defaults */
     footerEnabled: false,
     footerColumns: 4,
@@ -330,7 +375,7 @@ export default function CareersSettingsPage() {
     copyrightDividerBorderRight: "0px",
     copyrightDividerBorderStyle: "solid",
     socialLinks: [],
-    
+
     /* custom styling defaults */
     customCss: "",
     jobDetailsButtonClass: "",
@@ -975,6 +1020,7 @@ export default function CareersSettingsPage() {
               <MenuIcon className="h-4 w-4 inline mr-2" />
               Logo & Navigation
             </button>
+
             <button
               onClick={() => setActiveTab("banner")}
               className={`px-3 text-black py-2 rounded-md text-sm font-medium ${
@@ -986,9 +1032,10 @@ export default function CareersSettingsPage() {
               <Type className="h-4 w-4 inline mr-2" />
               Banner
             </button>
+
             <button
               onClick={() => setActiveTab("cards")}
-              className={`px-3  text-black py-2 rounded-md text-sm font-medium ${
+              className={`px-3 text-black py-2 rounded-md text-sm font-medium ${
                 activeTab === "cards"
                   ? "bg-indigo-600 text-white"
                   : "bg-white border"
@@ -997,6 +1044,20 @@ export default function CareersSettingsPage() {
               <LayoutGrid className="h-4 w-4 inline mr-2" />
               Job Cards
             </button>
+
+            {/*  Careers Page Details */}
+            <button
+              onClick={() => setActiveTab("details")}
+              className={`px-3 text-black py-2 rounded-md text-sm font-medium ${
+                activeTab === "details"
+                  ? "bg-indigo-600 text-white"
+                  : "bg-white border"
+              }`}
+            >
+              <MenuIcon className="h-4 w-4 inline mr-2" />
+              Careers Page Details
+            </button>
+
             <button
               onClick={() => setActiveTab("footer")}
               className={`px-3 text-black py-2 rounded-md text-sm font-medium ${
@@ -1008,6 +1069,7 @@ export default function CareersSettingsPage() {
               <MenuIcon className="h-4 w-4 inline mr-2" />
               Footer
             </button>
+
             <button
               onClick={() => setActiveTab("styling")}
               className={`px-3 text-black py-2 rounded-md text-sm font-medium ${
@@ -1019,17 +1081,6 @@ export default function CareersSettingsPage() {
               <Code className="h-4 w-4 inline mr-2" />
               Custom Styling
             </button>
-            {/* <button
-              onClick={() => setActiveTab("preview")}
-              className={`px-3 py-2 rounded-md text-sm font-medium ${
-                activeTab === "preview"
-                  ? "bg-indigo-600 text-white"
-                  : "bg-white border"
-              }`}
-            >
-              <Eye className="h-4 w-4 inline mr-2" />
-              Live Preview
-            </button> */}
           </div>
         </div>
 
@@ -1929,8 +1980,10 @@ export default function CareersSettingsPage() {
 
               {/* Card Button Styling */}
               <div className="mt-6 p-4 bg-gray-50 rounded-lg">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">Card Button Styling</h3>
-                
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                  Card Button Styling
+                </h3>
+
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -2051,7 +2104,9 @@ export default function CareersSettingsPage() {
 
               {/* Filter Visibility Settings */}
               <div className="mt-8 p-4 bg-gray-50 rounded-lg">
-                <h3 className="text-sm font-semibold text-gray-900 mb-4">Filter Visibility</h3>
+                <h3 className="text-sm font-semibold text-gray-900 mb-4">
+                  Filter Visibility
+                </h3>
                 <div className="space-y-3">
                   <label className="flex items-center gap-2 cursor-pointer">
                     <input
@@ -2149,6 +2204,586 @@ export default function CareersSettingsPage() {
             </div>
           )}
 
+          {activeTab === "details" && (
+            <div className="bg-white rounded-lg shadow-md p-6">
+              <div className="flex items-center mb-6">
+                <MenuIcon className="h-5 w-5 text-indigo-600 mr-2" />
+                <h2 className="text-xl font-semibold text-gray-900">
+                  Careers Page Details
+                </h2>
+              </div>
+
+              {/* Typography */}
+              <div className="mb-6 p-4 bg-gray-50 rounded-md">
+                <h3 className="text-sm font-semibold text-gray-900 mb-4">
+                  Details Typography
+                </h3>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700 mb-1">
+                      Font Family
+                    </label>
+                    <select
+                      value={settings.detailsFontFamily}
+                      onChange={(e) =>
+                        setSettings({
+                          ...settings,
+                          detailsFontFamily: e.target.value,
+                        })
+                      }
+                      className="w-full px-3 py-2 border rounded text-gray-900"
+                    >
+                      {FONT_OPTIONS.map((font) => (
+                        <option key={font} value={font}>
+                          {font}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700 mb-1">
+                      Font Size
+                    </label>
+                    <input
+                      type="text"
+                      value={settings.detailsFontSize}
+                      onChange={(e) =>
+                        setSettings({
+                          ...settings,
+                          detailsFontSize: e.target.value,
+                        })
+                      }
+                      placeholder="16px"
+                      className="w-full px-3 py-2 border rounded text-gray-900"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700 mb-1">
+                      Font Weight
+                    </label>
+                    <select
+                      value={settings.detailsFontWeight}
+                      onChange={(e) =>
+                        setSettings({
+                          ...settings,
+                          detailsFontWeight: e.target.value,
+                        })
+                      }
+                      className="w-full px-3 py-2 border rounded text-gray-900"
+                    >
+                      <option value="300">Light (300)</option>
+                      <option value="400">Normal (400)</option>
+                      <option value="500">Medium (500)</option>
+                      <option value="600">Semibold (600)</option>
+                      <option value="700">Bold (700)</option>
+                      <option value="800">Extrabold (800)</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+
+              {/* Details Button Styling */}
+              <div className="mb-6 p-4 bg-gray-50 rounded-md">
+                <h3 className="text-sm font-semibold text-gray-900 mb-4">
+                  Details Button Styling
+                </h3>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700 mb-1">
+                      Background Color
+                    </label>
+                    <input
+                      type="text"
+                      value={settings.detailsButtonBg}
+                      onChange={(e) =>
+                        setSettings({
+                          ...settings,
+                          detailsButtonBg: e.target.value,
+                        })
+                      }
+                      placeholder="#10b981"
+                      className="w-full px-3 py-2 border rounded text-gray-900 font-mono text-sm"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700 mb-1">
+                      Text Color
+                    </label>
+                    <input
+                      type="text"
+                      value={settings.detailsButtonColor}
+                      onChange={(e) =>
+                        setSettings({
+                          ...settings,
+                          detailsButtonColor: e.target.value,
+                        })
+                      }
+                      placeholder="#ffffff"
+                      className="w-full px-3 py-2 border rounded text-gray-900 font-mono text-sm"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700 mb-1">
+                      Border Radius
+                    </label>
+                    <input
+                      type="text"
+                      value={settings.detailsButtonRadius}
+                      onChange={(e) =>
+                        setSettings({
+                          ...settings,
+                          detailsButtonRadius: e.target.value,
+                        })
+                      }
+                      placeholder="8px"
+                      className="w-full px-3 py-2 border rounded text-gray-900"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Share Icons */}
+              <div className="mb-6 p-4 bg-gray-50 rounded-md">
+                <h3 className="text-sm font-semibold text-gray-900 mb-4">
+                  <Share2 className="h-4 w-4 inline mr-2" />
+                  Share Icons (Careers Details Page)
+                </h3>
+
+                {/* Enable toggle */}
+                <div className="mb-4">
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={settings.detailsShareEnabled}
+                      onChange={(e) =>
+                        setSettings({
+                          ...settings,
+                          detailsShareEnabled: e.target.checked,
+                        })
+                      }
+                      className="w-4 h-4 text-indigo-600 rounded"
+                    />
+                    <span className="text-sm font-medium text-gray-700">
+                      Enable Share Icons
+                    </span>
+                  </label>
+                </div>
+
+                {settings.detailsShareEnabled && (
+                  <>
+                    {/* Icon dimensions */}
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                      <div>
+                        <label className="block text-xs font-medium text-gray-700 mb-1">
+                          Icon Width
+                        </label>
+                        <input
+                          type="text"
+                          value={settings.detailsShareWidth}
+                          onChange={(e) =>
+                            setSettings({
+                              ...settings,
+                              detailsShareWidth: e.target.value,
+                            })
+                          }
+                          placeholder="32px"
+                          className="w-full px-3 py-2 border rounded text-sm text-gray-900"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-medium text-gray-700 mb-1">
+                          Icon Height
+                        </label>
+                        <input
+                          type="text"
+                          value={settings.detailsShareHeight}
+                          onChange={(e) =>
+                            setSettings({
+                              ...settings,
+                              detailsShareHeight: e.target.value,
+                            })
+                          }
+                          placeholder="32px"
+                          className="w-full px-3 py-2 border rounded text-sm text-gray-900"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-medium text-gray-700 mb-1">
+                          Border Radius
+                        </label>
+                        <input
+                          type="text"
+                          value={settings.detailsShareRadius}
+                          onChange={(e) =>
+                            setSettings({
+                              ...settings,
+                              detailsShareRadius: e.target.value,
+                            })
+                          }
+                          placeholder="6px"
+                          className="w-full px-3 py-2 border rounded text-sm text-gray-900"
+                        />
+                      </div>
+                    </div>
+
+                    {/* FACEBOOK */}
+                    <div className="p-3 bg-white rounded border mb-3">
+                      <label className="block text-xs font-semibold text-gray-900 mb-2">
+                        Facebook Icon
+                      </label>
+
+                      {/* Preview + Upload */}
+                      <div className="flex items-center gap-3">
+                        {settings.detailsShareFacebookIcon &&
+                          settings.detailsShareFacebookIcon !== "" && (
+                            <img
+                              src={settings.detailsShareFacebookIcon}
+                              alt="Facebook"
+                              className="w-8 h-8 object-contain"
+                            />
+                          )}
+
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (!file) return;
+                            const reader = new FileReader();
+                            reader.onloadend = () => {
+                              setSettings({
+                                ...settings,
+                                detailsShareFacebookIcon:
+                                  reader.result as string,
+                              });
+                            };
+                            reader.readAsDataURL(file);
+                          }}
+                          className="flex-1 text-xs"
+                        />
+                      </div>
+
+                      {/* ICON URL INPUT */}
+                      <div className="mt-2">
+                        <label className="block text-xs text-gray-600 mb-1">
+                          Icon URL
+                        </label>
+                        <input
+                          type="text"
+                          value={settings.detailsShareFacebookIcon}
+                          onChange={(e) =>
+                            setSettings({
+                              ...settings,
+                              detailsShareFacebookIcon: e.target.value,
+                            })
+                          }
+                          placeholder="https://cdn.jsdelivr.net/npm/simple-icons@v9/icons/facebook.svg"
+                          className="w-full px-2 py-1 border rounded text-xs text-gray-900"
+                        />
+                      </div>
+
+                      {/* SHARE URL */}
+                      <div className="mt-2">
+                        <label className="block text-xs text-gray-600 mb-1">
+                          Share URL
+                        </label>
+                        <input
+                          type="text"
+                          value={settings.detailsShareFacebookUrl}
+                          onChange={(e) =>
+                            setSettings({
+                              ...settings,
+                              detailsShareFacebookUrl: e.target.value,
+                            })
+                          }
+                          placeholder="https://www.facebook.com/sharer/sharer.php?u={jobUrl}"
+                          className="w-full px-2 py-1 border rounded text-xs text-gray-900"
+                        />
+                      </div>
+
+                      {/* CLEAR BUTTON */}
+                      <button
+                        onClick={() =>
+                          setSettings({
+                            ...settings,
+                            detailsShareFacebookIcon: "",
+                            detailsShareFacebookUrl: "",
+                          })
+                        }
+                        className="mt-3 text-xs text-red-600 hover:underline"
+                      >
+                        Remove Icon
+                      </button>
+                    </div>
+
+                    {/* LINKEDIN */}
+                    <div className="p-3 bg-white rounded border mb-3">
+                      <label className="block text-xs font-semibold text-gray-900 mb-2">
+                        LinkedIn Icon
+                      </label>
+
+                      <div className="flex items-center gap-3">
+                        {settings.detailsShareLinkedinIcon &&
+                          settings.detailsShareLinkedinIcon !== "" && (
+                            <img
+                              src={settings.detailsShareLinkedinIcon}
+                              alt="LinkedIn"
+                              className="w-8 h-8 object-contain"
+                            />
+                          )}
+
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (!file) return;
+                            const reader = new FileReader();
+                            reader.onloadend = () => {
+                              setSettings({
+                                ...settings,
+                                detailsShareLinkedinIcon:
+                                  reader.result as string,
+                              });
+                            };
+                            reader.readAsDataURL(file);
+                          }}
+                          className="flex-1 text-xs"
+                        />
+                      </div>
+
+                      <div className="mt-2">
+                        <label className="block text-xs text-gray-600 mb-1">
+                          Icon URL
+                        </label>
+                        <input
+                          type="text"
+                          value={settings.detailsShareLinkedinIcon}
+                          onChange={(e) =>
+                            setSettings({
+                              ...settings,
+                              detailsShareLinkedinIcon: e.target.value,
+                            })
+                          }
+                          placeholder="https://cdn.jsdelivr.net/npm/simple-icons@v9/icons/linkedin.svg"
+                          className="w-full px-2 py-1 border rounded text-xs text-gray-900"
+                        />
+                      </div>
+
+                      <div className="mt-2">
+                        <label className="block text-xs text-gray-600 mb-1">
+                          Share URL
+                        </label>
+                        <input
+                          type="text"
+                          value={settings.detailsShareLinkedinUrl}
+                          onChange={(e) =>
+                            setSettings({
+                              ...settings,
+                              detailsShareLinkedinUrl: e.target.value,
+                            })
+                          }
+                          placeholder="https://www.linkedin.com/sharing/share-offsite/?url={jobUrl}"
+                          className="w-full px-2 py-1 border rounded text-xs text-gray-900"
+                        />
+                      </div>
+
+                      <button
+                        onClick={() =>
+                          setSettings({
+                            ...settings,
+                            detailsShareLinkedinIcon: "",
+                            detailsShareLinkedinUrl: "",
+                          })
+                        }
+                        className="mt-3 text-xs text-red-600 hover:underline"
+                      >
+                        Remove Icon
+                      </button>
+                    </div>
+
+                    {/* WHATSAPP */}
+                    <div className="p-3 bg-white rounded border mb-3">
+                      <label className="block text-xs font-semibold text-gray-900 mb-2">
+                        WhatsApp Icon
+                      </label>
+
+                      <div className="flex items-center gap-3">
+                        {settings.detailsShareWhatsappIcon &&
+                          settings.detailsShareWhatsappIcon !== "" && (
+                            <img
+                              src={settings.detailsShareWhatsappIcon}
+                              alt="WhatsApp"
+                              className="w-8 h-8 object-contain"
+                            />
+                          )}
+
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (!file) return;
+                            const reader = new FileReader();
+                            reader.onloadend = () => {
+                              setSettings({
+                                ...settings,
+                                detailsShareWhatsappIcon:
+                                  reader.result as string,
+                              });
+                            };
+                            reader.readAsDataURL(file);
+                          }}
+                          className="flex-1 text-xs"
+                        />
+                      </div>
+
+                      <div className="mt-2">
+                        <label className="block text-xs text-gray-600 mb-1">
+                          Icon URL
+                        </label>
+                        <input
+                          type="text"
+                          value={settings.detailsShareWhatsappIcon}
+                          onChange={(e) =>
+                            setSettings({
+                              ...settings,
+                              detailsShareWhatsappIcon: e.target.value,
+                            })
+                          }
+                          placeholder="https://cdn.jsdelivr.net/npm/simple-icons@v9/icons/whatsapp.svg"
+                          className="w-full px-2 py-1 border rounded text-xs text-gray-900"
+                        />
+                      </div>
+
+                      <div className="mt-2">
+                        <label className="block text-xs text-gray-600 mb-1">
+                          Share URL
+                        </label>
+                        <input
+                          type="text"
+                          value={settings.detailsShareWhatsappUrl}
+                          onChange={(e) =>
+                            setSettings({
+                              ...settings,
+                              detailsShareWhatsappUrl: e.target.value,
+                            })
+                          }
+                          placeholder="https://wa.me/?text={jobUrl}"
+                          className="w-full px-2 py-1 border rounded text-xs text-gray-900"
+                        />
+                      </div>
+
+                      <button
+                        onClick={() =>
+                          setSettings({
+                            ...settings,
+                            detailsShareWhatsappIcon: "",
+                            detailsShareWhatsappUrl: "",
+                          })
+                        }
+                        className="mt-3 text-xs text-red-600 hover:underline"
+                      >
+                        Remove Icon
+                      </button>
+                    </div>
+
+                    {/* EMAIL */}
+                    <div className="p-3 bg-white rounded border">
+                      <label className="block text-xs font-semibold text-gray-900 mb-2">
+                        Email Icon
+                      </label>
+
+                      <div className="flex items-center gap-3">
+                        {settings.detailsShareMailIcon &&
+                          settings.detailsShareMailIcon !== "" && (
+                            <img
+                              src={settings.detailsShareMailIcon}
+                              alt="Email"
+                              className="w-8 h-8 object-contain"
+                            />
+                          )}
+
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (!file) return;
+                            const reader = new FileReader();
+                            reader.onloadend = () => {
+                              setSettings({
+                                ...settings,
+                                detailsShareMailIcon: reader.result as string,
+                              });
+                            };
+                            reader.readAsDataURL(file);
+                          }}
+                          className="flex-1 text-xs"
+                        />
+                      </div>
+
+                      <div className="mt-2">
+                        <label className="block text-xs text-gray-600 mb-1">
+                          Icon URL
+                        </label>
+                        <input
+                          type="text"
+                          value={settings.detailsShareMailIcon}
+                          onChange={(e) =>
+                            setSettings({
+                              ...settings,
+                              detailsShareMailIcon: e.target.value,
+                            })
+                          }
+                          placeholder="https://cdn.jsdelivr.net/npm/simple-icons@v9/icons/maildotru.svg"
+                          className="w-full px-2 py-1 border rounded text-xs text-gray-900"
+                        />
+                      </div>
+
+                      <div className="mt-2">
+                        <label className="block text-xs text-gray-600 mb-1">
+                          Share URL
+                        </label>
+                        <input
+                          type="text"
+                          value={settings.detailsShareMailUrl}
+                          onChange={(e) =>
+                            setSettings({
+                              ...settings,
+                              detailsShareMailUrl: e.target.value,
+                            })
+                          }
+                          placeholder="mailto:?subject=Job%20Opportunity&body={jobUrl}"
+                          className="w-full px-2 py-1 border rounded text-xs text-gray-900"
+                        />
+                      </div>
+
+                      <button
+                        onClick={() =>
+                          setSettings({
+                            ...settings,
+                            detailsShareMailIcon: "",
+                            detailsShareMailUrl: "",
+                          })
+                        }
+                        className="mt-3 text-xs text-red-600 hover:underline"
+                      >
+                        Remove Icon
+                      </button>
+                    </div>
+                  </>
+                )}
+              </div>
+            </div>
+          )}
+
           {activeTab === "footer" && (
             <div className="bg-white rounded-lg shadow-md p-6">
               <div className="flex items-center mb-6">
@@ -2165,7 +2800,10 @@ export default function CareersSettingsPage() {
                     type="checkbox"
                     checked={settings.footerEnabled}
                     onChange={(e) =>
-                      setSettings({ ...settings, footerEnabled: e.target.checked })
+                      setSettings({
+                        ...settings,
+                        footerEnabled: e.target.checked,
+                      })
                     }
                     className="w-4 h-4 text-indigo-600 rounded"
                   />
@@ -2188,7 +2826,12 @@ export default function CareersSettingsPage() {
                         onChange={(e) =>
                           setSettings({
                             ...settings,
-                            footerColumns: parseInt(e.target.value) as 2 | 3 | 4 | 5 | 6,
+                            footerColumns: parseInt(e.target.value) as
+                              | 2
+                              | 3
+                              | 4
+                              | 5
+                              | 6,
                           })
                         }
                         className="w-full px-3 py-2 border border-gray-300 rounded-md text-gray-900"
@@ -2208,7 +2851,10 @@ export default function CareersSettingsPage() {
                         type="text"
                         value={settings.footerWidth}
                         onChange={(e) =>
-                          setSettings({ ...settings, footerWidth: e.target.value })
+                          setSettings({
+                            ...settings,
+                            footerWidth: e.target.value,
+                          })
                         }
                         placeholder="1280px or 100%"
                         className="w-full px-3 py-2 border border-gray-300 rounded-md text-gray-900"
@@ -2222,15 +2868,22 @@ export default function CareersSettingsPage() {
                       Column Custom CSS Classes
                     </label>
                     <p className="text-xs text-gray-500 mb-3">
-                      Add custom CSS classes for each column (comma-separated). Example: footer-col-1, footer-col-2, footer-col-3, footer-col-4
+                      Add custom CSS classes for each column (comma-separated).
+                      Example: footer-col-1, footer-col-2, footer-col-3,
+                      footer-col-4
                     </p>
                     <input
                       type="text"
-                      value={(settings.columnCustomClasses || []).join(', ')}
-                      onChange={(e) => setSettings({ 
-                        ...settings, 
-                        columnCustomClasses: e.target.value.split(',').map(c => c.trim()).filter(Boolean)
-                      })}
+                      value={(settings.columnCustomClasses || []).join(", ")}
+                      onChange={(e) =>
+                        setSettings({
+                          ...settings,
+                          columnCustomClasses: e.target.value
+                            .split(",")
+                            .map((c) => c.trim())
+                            .filter(Boolean),
+                        })
+                      }
                       placeholder="footer-col-1, footer-col-2, footer-col-3, footer-col-4"
                       className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 text-gray-900"
                     />
@@ -2242,15 +2895,22 @@ export default function CareersSettingsPage() {
                       Column Custom CSS Classes
                     </label>
                     <p className="text-xs text-gray-500 mb-3">
-                      Add custom CSS classes for each column (comma-separated). Example: footer-col-1, footer-col-2, footer-col-3, footer-col-4
+                      Add custom CSS classes for each column (comma-separated).
+                      Example: footer-col-1, footer-col-2, footer-col-3,
+                      footer-col-4
                     </p>
                     <input
                       type="text"
-                      value={(settings.columnCustomClasses || []).join(', ')}
-                      onChange={(e) => setSettings({ 
-                        ...settings, 
-                        columnCustomClasses: e.target.value.split(',').map(c => c.trim()).filter(Boolean)
-                      })}
+                      value={(settings.columnCustomClasses || []).join(", ")}
+                      onChange={(e) =>
+                        setSettings({
+                          ...settings,
+                          columnCustomClasses: e.target.value
+                            .split(",")
+                            .map((c) => c.trim())
+                            .filter(Boolean),
+                        })
+                      }
                       placeholder="footer-col-1, footer-col-2, footer-col-3, footer-col-4"
                       className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 text-gray-900"
                     />
@@ -2258,14 +2918,20 @@ export default function CareersSettingsPage() {
 
                   {/* Footer Widget Builder */}
                   <div className="mb-6 p-4 bg-gray-50 rounded-lg">
-                    <h3 className="text-sm font-semibold text-gray-900 mb-4">Footer Widgets</h3>
+                    <h3 className="text-sm font-semibold text-gray-900 mb-4">
+                      Footer Widgets
+                    </h3>
                     <p className="text-xs text-gray-600 mb-4">
-                      Drag and drop widgets between columns. Add multiple widgets per column (e.g., Logo + About text in first column, Heading + Menu in second column).
+                      Drag and drop widgets between columns. Add multiple
+                      widgets per column (e.g., Logo + About text in first
+                      column, Heading + Menu in second column).
                     </p>
                     <FooterWidgetBuilder
                       columns={settings.footerColumns || 4}
                       widgets={settings.footerWidgets || []}
-                      onChange={(widgets) => setSettings({ ...settings, footerWidgets: widgets })}
+                      onChange={(widgets) =>
+                        setSettings({ ...settings, footerWidgets: widgets })
+                      }
                       onLogoUpload={handleWidgetLogoUpload}
                     />
                   </div>
@@ -2280,7 +2946,10 @@ export default function CareersSettingsPage() {
                         type="color"
                         value={settings.footerBgColor}
                         onChange={(e) =>
-                          setSettings({ ...settings, footerBgColor: e.target.value })
+                          setSettings({
+                            ...settings,
+                            footerBgColor: e.target.value,
+                          })
                         }
                         className="w-full h-10 rounded border"
                       />
@@ -2293,7 +2962,10 @@ export default function CareersSettingsPage() {
                         type="color"
                         value={settings.footerTextColor}
                         onChange={(e) =>
-                          setSettings({ ...settings, footerTextColor: e.target.value })
+                          setSettings({
+                            ...settings,
+                            footerTextColor: e.target.value,
+                          })
                         }
                         className="w-full h-10 rounded border"
                       />
@@ -2309,7 +2981,10 @@ export default function CareersSettingsPage() {
                       type="text"
                       value={settings.footerPadding}
                       onChange={(e) =>
-                        setSettings({ ...settings, footerPadding: e.target.value })
+                        setSettings({
+                          ...settings,
+                          footerPadding: e.target.value,
+                        })
                       }
                       placeholder="48px"
                       className="w-full px-3 py-2 border border-gray-300 rounded-md text-gray-900"
@@ -2318,7 +2993,9 @@ export default function CareersSettingsPage() {
 
                   {/* Footer Typography */}
                   <div className="mb-6 p-4 bg-gray-50 rounded-lg">
-                    <h3 className="text-sm font-semibold text-gray-900 mb-4">Footer Typography</h3>
+                    <h3 className="text-sm font-semibold text-gray-900 mb-4">
+                      Footer Typography
+                    </h3>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -2327,7 +3004,10 @@ export default function CareersSettingsPage() {
                         <select
                           value={settings.footerFontFamily}
                           onChange={(e) =>
-                            setSettings({ ...settings, footerFontFamily: e.target.value })
+                            setSettings({
+                              ...settings,
+                              footerFontFamily: e.target.value,
+                            })
                           }
                           className="w-full px-3 py-2 border rounded text-gray-900"
                         >
@@ -2346,7 +3026,10 @@ export default function CareersSettingsPage() {
                           type="text"
                           value={settings.footerFontSize}
                           onChange={(e) =>
-                            setSettings({ ...settings, footerFontSize: e.target.value })
+                            setSettings({
+                              ...settings,
+                              footerFontSize: e.target.value,
+                            })
                           }
                           placeholder="14px"
                           className="w-full px-3 py-2 border rounded text-gray-900"
@@ -2359,7 +3042,10 @@ export default function CareersSettingsPage() {
                         <select
                           value={settings.footerFontWeight}
                           onChange={(e) =>
-                            setSettings({ ...settings, footerFontWeight: e.target.value })
+                            setSettings({
+                              ...settings,
+                              footerFontWeight: e.target.value,
+                            })
                           }
                           className="w-full px-3 py-2 border rounded text-gray-900"
                         >
@@ -2375,7 +3061,9 @@ export default function CareersSettingsPage() {
 
                   {/* Footer Borders */}
                   <div className="mb-6 p-4 bg-gray-50 rounded-lg">
-                    <h3 className="text-sm font-semibold text-gray-900 mb-4">Footer Borders</h3>
+                    <h3 className="text-sm font-semibold text-gray-900 mb-4">
+                      Footer Borders
+                    </h3>
                     <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -2385,7 +3073,10 @@ export default function CareersSettingsPage() {
                           type="text"
                           value={settings.footerBorderTop}
                           onChange={(e) =>
-                            setSettings({ ...settings, footerBorderTop: e.target.value })
+                            setSettings({
+                              ...settings,
+                              footerBorderTop: e.target.value,
+                            })
                           }
                           placeholder="0px"
                           className="w-full px-3 py-2 border rounded text-gray-900"
@@ -2399,7 +3090,10 @@ export default function CareersSettingsPage() {
                           type="text"
                           value={settings.footerBorderBottom}
                           onChange={(e) =>
-                            setSettings({ ...settings, footerBorderBottom: e.target.value })
+                            setSettings({
+                              ...settings,
+                              footerBorderBottom: e.target.value,
+                            })
                           }
                           placeholder="0px"
                           className="w-full px-3 py-2 border rounded text-gray-900"
@@ -2413,7 +3107,10 @@ export default function CareersSettingsPage() {
                           type="text"
                           value={settings.footerBorderLeft}
                           onChange={(e) =>
-                            setSettings({ ...settings, footerBorderLeft: e.target.value })
+                            setSettings({
+                              ...settings,
+                              footerBorderLeft: e.target.value,
+                            })
                           }
                           placeholder="0px"
                           className="w-full px-3 py-2 border rounded text-gray-900"
@@ -2427,7 +3124,10 @@ export default function CareersSettingsPage() {
                           type="text"
                           value={settings.footerBorderRight}
                           onChange={(e) =>
-                            setSettings({ ...settings, footerBorderRight: e.target.value })
+                            setSettings({
+                              ...settings,
+                              footerBorderRight: e.target.value,
+                            })
                           }
                           placeholder="0px"
                           className="w-full px-3 py-2 border rounded text-gray-900"
@@ -2441,7 +3141,10 @@ export default function CareersSettingsPage() {
                           type="color"
                           value={settings.footerBorderColor}
                           onChange={(e) =>
-                            setSettings({ ...settings, footerBorderColor: e.target.value })
+                            setSettings({
+                              ...settings,
+                              footerBorderColor: e.target.value,
+                            })
                           }
                           className="w-full h-10 rounded border"
                         />
@@ -2460,13 +3163,16 @@ export default function CareersSettingsPage() {
                         onClick={() => {
                           const newLink: SocialLink = {
                             id: `social-${Date.now()}`,
-                            platform: 'Facebook',
-                            url: '',
+                            platform: "Facebook",
+                            url: "",
                             order: (settings.socialLinks?.length || 0) + 1,
                           };
                           setSettings({
                             ...settings,
-                            socialLinks: [...(settings.socialLinks || []), newLink],
+                            socialLinks: [
+                              ...(settings.socialLinks || []),
+                              newLink,
+                            ],
                           });
                         }}
                         className="text-xs bg-indigo-600 text-white px-3 py-1 rounded hover:bg-indigo-700"
@@ -2476,62 +3182,84 @@ export default function CareersSettingsPage() {
                       </button>
                     </div>
 
-                    {settings.socialLinks && settings.socialLinks.length > 0 && (
-                      <div className="space-y-3">
-                        {settings.socialLinks.map((link, idx) => (
-                          <div key={link.id} className="flex items-start gap-2 bg-white p-3 rounded">
-                            <div className="flex-1 grid grid-cols-3 gap-2">
-                              <input
-                                type="text"
-                                value={link.platform}
-                                onChange={(e) => {
-                                  const updated = [...(settings.socialLinks || [])];
-                                  updated[idx].platform = e.target.value;
-                                  setSettings({ ...settings, socialLinks: updated });
-                                }}
-                                placeholder="Platform (e.g., Facebook)"
-                                className="px-2 py-1 border rounded text-sm text-gray-900"
-                              />
-                              <input
-                                type="url"
-                                value={link.url}
-                                onChange={(e) => {
-                                  const updated = [...(settings.socialLinks || [])];
-                                  updated[idx].url = e.target.value;
-                                  setSettings({ ...settings, socialLinks: updated });
-                                }}
-                                placeholder="URL"
-                                className="px-2 py-1 border rounded text-sm text-gray-900"
-                              />
-                              <div className="flex items-center gap-2">
+                    {settings.socialLinks &&
+                      settings.socialLinks.length > 0 && (
+                        <div className="space-y-3">
+                          {settings.socialLinks.map((link, idx) => (
+                            <div
+                              key={link.id}
+                              className="flex items-start gap-2 bg-white p-3 rounded"
+                            >
+                              <div className="flex-1 grid grid-cols-3 gap-2">
                                 <input
                                   type="text"
-                                  value={link.iconImage || ''}
+                                  value={link.platform}
                                   onChange={(e) => {
-                                    const updated = [...(settings.socialLinks || [])];
-                                    updated[idx].iconImage = e.target.value;
-                                    setSettings({ ...settings, socialLinks: updated });
-                                  }}
-                                  placeholder="Icon URL (optional)"
-                                  className="flex-1 px-2 py-1 border rounded text-sm text-gray-900"
-                                />
-                                <button
-                                  onClick={() => {
+                                    const updated = [
+                                      ...(settings.socialLinks || []),
+                                    ];
+                                    updated[idx].platform = e.target.value;
                                     setSettings({
                                       ...settings,
-                                      socialLinks: settings.socialLinks?.filter((_, i) => i !== idx),
+                                      socialLinks: updated,
                                     });
                                   }}
-                                  className="text-red-600 hover:text-red-800"
-                                >
-                                  <Trash2 className="h-4 w-4" />
-                                </button>
+                                  placeholder="Platform (e.g., Facebook)"
+                                  className="px-2 py-1 border rounded text-sm text-gray-900"
+                                />
+                                <input
+                                  type="url"
+                                  value={link.url}
+                                  onChange={(e) => {
+                                    const updated = [
+                                      ...(settings.socialLinks || []),
+                                    ];
+                                    updated[idx].url = e.target.value;
+                                    setSettings({
+                                      ...settings,
+                                      socialLinks: updated,
+                                    });
+                                  }}
+                                  placeholder="URL"
+                                  className="px-2 py-1 border rounded text-sm text-gray-900"
+                                />
+                                <div className="flex items-center gap-2">
+                                  <input
+                                    type="text"
+                                    value={link.iconImage || ""}
+                                    onChange={(e) => {
+                                      const updated = [
+                                        ...(settings.socialLinks || []),
+                                      ];
+                                      updated[idx].iconImage = e.target.value;
+                                      setSettings({
+                                        ...settings,
+                                        socialLinks: updated,
+                                      });
+                                    }}
+                                    placeholder="Icon URL (optional)"
+                                    className="flex-1 px-2 py-1 border rounded text-sm text-gray-900"
+                                  />
+                                  <button
+                                    onClick={() => {
+                                      setSettings({
+                                        ...settings,
+                                        socialLinks:
+                                          settings.socialLinks?.filter(
+                                            (_, i) => i !== idx
+                                          ),
+                                      });
+                                    }}
+                                    className="text-red-600 hover:text-red-800"
+                                  >
+                                    <Trash2 className="h-4 w-4" />
+                                  </button>
+                                </div>
                               </div>
                             </div>
-                          </div>
-                        ))}
-                      </div>
-                    )}
+                          ))}
+                        </div>
+                      )}
                   </div>
 
                   {/* Copyright Footer Section */}
@@ -2539,14 +3267,17 @@ export default function CareersSettingsPage() {
                     <h3 className="text-sm font-semibold text-gray-900 mb-4">
                       Copyright Footer
                     </h3>
-                    
+
                     <div className="mb-4">
                       <label className="flex items-center gap-2 cursor-pointer">
                         <input
                           type="checkbox"
                           checked={settings.copyrightEnabled}
                           onChange={(e) =>
-                            setSettings({ ...settings, copyrightEnabled: e.target.checked })
+                            setSettings({
+                              ...settings,
+                              copyrightEnabled: e.target.checked,
+                            })
                           }
                           className="w-4 h-4 text-indigo-600 rounded"
                         />
@@ -2566,7 +3297,10 @@ export default function CareersSettingsPage() {
                             <textarea
                               value={settings.copyrightLeftHtml}
                               onChange={(e) =>
-                                setSettings({ ...settings, copyrightLeftHtml: e.target.value })
+                                setSettings({
+                                  ...settings,
+                                  copyrightLeftHtml: e.target.value,
+                                })
                               }
                               rows={3}
                               className="w-full px-2 py-1 border rounded text-sm text-gray-900"
@@ -2580,7 +3314,10 @@ export default function CareersSettingsPage() {
                             <textarea
                               value={settings.copyrightRightHtml}
                               onChange={(e) =>
-                                setSettings({ ...settings, copyrightRightHtml: e.target.value })
+                                setSettings({
+                                  ...settings,
+                                  copyrightRightHtml: e.target.value,
+                                })
                               }
                               rows={3}
                               className="w-full px-2 py-1 border rounded text-sm text-gray-900"
@@ -2598,7 +3335,10 @@ export default function CareersSettingsPage() {
                               type="color"
                               value={settings.copyrightBgColor}
                               onChange={(e) =>
-                                setSettings({ ...settings, copyrightBgColor: e.target.value })
+                                setSettings({
+                                  ...settings,
+                                  copyrightBgColor: e.target.value,
+                                })
                               }
                               className="w-full h-8 rounded border"
                             />
@@ -2611,7 +3351,10 @@ export default function CareersSettingsPage() {
                               type="color"
                               value={settings.copyrightTextColor}
                               onChange={(e) =>
-                                setSettings({ ...settings, copyrightTextColor: e.target.value })
+                                setSettings({
+                                  ...settings,
+                                  copyrightTextColor: e.target.value,
+                                })
                               }
                               className="w-full h-8 rounded border"
                             />
@@ -2625,60 +3368,92 @@ export default function CareersSettingsPage() {
                               type="checkbox"
                               checked={settings.copyrightDividerEnabled}
                               onChange={(e) =>
-                                setSettings({ ...settings, copyrightDividerEnabled: e.target.checked })
+                                setSettings({
+                                  ...settings,
+                                  copyrightDividerEnabled: e.target.checked,
+                                })
                               }
                               className="rounded"
                             />
                             Enable Divider Above Copyright
                           </label>
-                          
+
                           {settings.copyrightDividerEnabled && (
                             <>
                               <div className="grid grid-cols-2 gap-2 mb-2">
                                 <div>
-                                  <label className="block text-xs text-gray-600 mb-1">Divider Width</label>
+                                  <label className="block text-xs text-gray-600 mb-1">
+                                    Divider Width
+                                  </label>
                                   <input
                                     type="text"
-                                    value={settings.copyrightDividerWidth || ''}
+                                    value={settings.copyrightDividerWidth || ""}
                                     onChange={(e) =>
-                                      setSettings({ ...settings, copyrightDividerWidth: e.target.value })
+                                      setSettings({
+                                        ...settings,
+                                        copyrightDividerWidth: e.target.value,
+                                      })
                                     }
                                     placeholder="100%"
                                     className="w-full px-2 py-1 border rounded text-sm text-gray-900"
                                   />
                                 </div>
                                 <div>
-                                  <label className="block text-xs text-gray-600 mb-1">Divider Height</label>
+                                  <label className="block text-xs text-gray-600 mb-1">
+                                    Divider Height
+                                  </label>
                                   <input
                                     type="text"
-                                    value={settings.copyrightDividerHeight || ''}
+                                    value={
+                                      settings.copyrightDividerHeight || ""
+                                    }
                                     onChange={(e) =>
-                                      setSettings({ ...settings, copyrightDividerHeight: e.target.value })
+                                      setSettings({
+                                        ...settings,
+                                        copyrightDividerHeight: e.target.value,
+                                      })
                                     }
                                     placeholder="1px"
                                     className="w-full px-2 py-1 border rounded text-sm text-gray-900"
                                   />
                                 </div>
                               </div>
-                              
+
                               <div className="grid grid-cols-2 gap-2 mb-2">
                                 <div>
-                                  <label className="block text-xs text-gray-600 mb-1">Divider Color</label>
+                                  <label className="block text-xs text-gray-600 mb-1">
+                                    Divider Color
+                                  </label>
                                   <input
                                     type="color"
-                                    value={settings.copyrightDividerColor || '#374151'}
+                                    value={
+                                      settings.copyrightDividerColor ||
+                                      "#374151"
+                                    }
                                     onChange={(e) =>
-                                      setSettings({ ...settings, copyrightDividerColor: e.target.value })
+                                      setSettings({
+                                        ...settings,
+                                        copyrightDividerColor: e.target.value,
+                                      })
                                     }
                                     className="w-full h-8 rounded border"
                                   />
                                 </div>
                                 <div>
-                                  <label className="block text-xs text-gray-600 mb-1">Border Style</label>
+                                  <label className="block text-xs text-gray-600 mb-1">
+                                    Border Style
+                                  </label>
                                   <select
-                                    value={settings.copyrightDividerBorderStyle || 'solid'}
+                                    value={
+                                      settings.copyrightDividerBorderStyle ||
+                                      "solid"
+                                    }
                                     onChange={(e) =>
-                                      setSettings({ ...settings, copyrightDividerBorderStyle: e.target.value })
+                                      setSettings({
+                                        ...settings,
+                                        copyrightDividerBorderStyle:
+                                          e.target.value,
+                                      })
                                     }
                                     className="w-full px-2 py-1 border rounded text-sm text-gray-900"
                                   >
@@ -2691,51 +3466,84 @@ export default function CareersSettingsPage() {
                                   </select>
                                 </div>
                               </div>
-                              
+
                               <div className="grid grid-cols-4 gap-2">
                                 <div>
-                                  <label className="block text-xs text-gray-600 mb-1">Border Top</label>
+                                  <label className="block text-xs text-gray-600 mb-1">
+                                    Border Top
+                                  </label>
                                   <input
                                     type="text"
-                                    value={settings.copyrightDividerBorderTop || ''}
+                                    value={
+                                      settings.copyrightDividerBorderTop || ""
+                                    }
                                     onChange={(e) =>
-                                      setSettings({ ...settings, copyrightDividerBorderTop: e.target.value })
+                                      setSettings({
+                                        ...settings,
+                                        copyrightDividerBorderTop:
+                                          e.target.value,
+                                      })
                                     }
                                     placeholder="1px"
                                     className="w-full px-2 py-1 border rounded text-sm text-gray-900"
                                   />
                                 </div>
                                 <div>
-                                  <label className="block text-xs text-gray-600 mb-1">Border Bottom</label>
+                                  <label className="block text-xs text-gray-600 mb-1">
+                                    Border Bottom
+                                  </label>
                                   <input
                                     type="text"
-                                    value={settings.copyrightDividerBorderBottom || ''}
+                                    value={
+                                      settings.copyrightDividerBorderBottom ||
+                                      ""
+                                    }
                                     onChange={(e) =>
-                                      setSettings({ ...settings, copyrightDividerBorderBottom: e.target.value })
+                                      setSettings({
+                                        ...settings,
+                                        copyrightDividerBorderBottom:
+                                          e.target.value,
+                                      })
                                     }
                                     placeholder="0px"
                                     className="w-full px-2 py-1 border rounded text-sm text-gray-900"
                                   />
                                 </div>
                                 <div>
-                                  <label className="block text-xs text-gray-600 mb-1">Border Left</label>
+                                  <label className="block text-xs text-gray-600 mb-1">
+                                    Border Left
+                                  </label>
                                   <input
                                     type="text"
-                                    value={settings.copyrightDividerBorderLeft || ''}
+                                    value={
+                                      settings.copyrightDividerBorderLeft || ""
+                                    }
                                     onChange={(e) =>
-                                      setSettings({ ...settings, copyrightDividerBorderLeft: e.target.value })
+                                      setSettings({
+                                        ...settings,
+                                        copyrightDividerBorderLeft:
+                                          e.target.value,
+                                      })
                                     }
                                     placeholder="0px"
                                     className="w-full px-2 py-1 border rounded text-sm text-gray-900"
                                   />
                                 </div>
                                 <div>
-                                  <label className="block text-xs text-gray-600 mb-1">Border Right</label>
+                                  <label className="block text-xs text-gray-600 mb-1">
+                                    Border Right
+                                  </label>
                                   <input
                                     type="text"
-                                    value={settings.copyrightDividerBorderRight || ''}
+                                    value={
+                                      settings.copyrightDividerBorderRight || ""
+                                    }
                                     onChange={(e) =>
-                                      setSettings({ ...settings, copyrightDividerBorderRight: e.target.value })
+                                      setSettings({
+                                        ...settings,
+                                        copyrightDividerBorderRight:
+                                          e.target.value,
+                                      })
                                     }
                                     placeholder="0px"
                                     className="w-full px-2 py-1 border rounded text-sm text-gray-900"
@@ -2752,8 +3560,9 @@ export default function CareersSettingsPage() {
                   {/* Footer Widget Builder - Placeholder for Phase 2 */}
                   <div className="p-4 bg-blue-50 border border-blue-200 rounded-md">
                     <p className="text-sm text-blue-800">
-                      <strong>Note:</strong> Advanced drag-and-drop footer widget builder coming soon!
-                      For now, you can configure footer appearance and social links above.
+                      <strong>Note:</strong> Advanced drag-and-drop footer
+                      widget builder coming soon! For now, you can configure
+                      footer appearance and social links above.
                     </p>
                   </div>
                 </>
@@ -2775,7 +3584,7 @@ export default function CareersSettingsPage() {
                 <h3 className="text-sm font-semibold text-gray-900 mb-4">
                   Button CSS Classes
                 </h3>
-                
+
                 <div className="space-y-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -2785,7 +3594,10 @@ export default function CareersSettingsPage() {
                       type="text"
                       value={settings.cardButtonClass}
                       onChange={(e) =>
-                        setSettings({ ...settings, cardButtonClass: e.target.value })
+                        setSettings({
+                          ...settings,
+                          cardButtonClass: e.target.value,
+                        })
                       }
                       placeholder="custom-card-btn"
                       className="w-full px-3 py-2 border border-gray-300 rounded-md text-gray-900"
@@ -2800,7 +3612,10 @@ export default function CareersSettingsPage() {
                       type="text"
                       value={settings.jobDetailsButtonClass}
                       onChange={(e) =>
-                        setSettings({ ...settings, jobDetailsButtonClass: e.target.value })
+                        setSettings({
+                          ...settings,
+                          jobDetailsButtonClass: e.target.value,
+                        })
                       }
                       placeholder="custom-details-btn"
                       className="w-full px-3 py-2 border border-gray-300 rounded-md text-gray-900"
@@ -2815,7 +3630,10 @@ export default function CareersSettingsPage() {
                       type="text"
                       value={settings.applyButtonClass}
                       onChange={(e) =>
-                        setSettings({ ...settings, applyButtonClass: e.target.value })
+                        setSettings({
+                          ...settings,
+                          applyButtonClass: e.target.value,
+                        })
                       }
                       placeholder="custom-apply-btn"
                       className="w-full px-3 py-2 border border-gray-300 rounded-md text-gray-900"
@@ -2829,7 +3647,7 @@ export default function CareersSettingsPage() {
                 <h3 className="text-sm font-semibold text-gray-900 mb-4">
                   Button Colors
                 </h3>
-                
+
                 <div className="space-y-4">
                   <div className="grid grid-cols-2 gap-4">
                     <div>
@@ -2840,7 +3658,10 @@ export default function CareersSettingsPage() {
                         type="color"
                         value={settings.jobDetailsButtonBg}
                         onChange={(e) =>
-                          setSettings({ ...settings, jobDetailsButtonBg: e.target.value })
+                          setSettings({
+                            ...settings,
+                            jobDetailsButtonBg: e.target.value,
+                          })
                         }
                         className="w-full h-10 rounded border"
                       />
@@ -2853,7 +3674,10 @@ export default function CareersSettingsPage() {
                         type="color"
                         value={settings.jobDetailsButtonText}
                         onChange={(e) =>
-                          setSettings({ ...settings, jobDetailsButtonText: e.target.value })
+                          setSettings({
+                            ...settings,
+                            jobDetailsButtonText: e.target.value,
+                          })
                         }
                         className="w-full h-10 rounded border"
                       />
@@ -2869,7 +3693,10 @@ export default function CareersSettingsPage() {
                         type="color"
                         value={settings.applyButtonBg}
                         onChange={(e) =>
-                          setSettings({ ...settings, applyButtonBg: e.target.value })
+                          setSettings({
+                            ...settings,
+                            applyButtonBg: e.target.value,
+                          })
                         }
                         className="w-full h-10 rounded border"
                       />
@@ -2882,7 +3709,10 @@ export default function CareersSettingsPage() {
                         type="color"
                         value={settings.applyButtonText}
                         onChange={(e) =>
-                          setSettings({ ...settings, applyButtonText: e.target.value })
+                          setSettings({
+                            ...settings,
+                            applyButtonText: e.target.value,
+                          })
                         }
                         className="w-full h-10 rounded border"
                       />
@@ -2896,7 +3726,7 @@ export default function CareersSettingsPage() {
                 <h3 className="text-sm font-semibold text-gray-900 mb-4">
                   Job Details Button Styling
                 </h3>
-                
+
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
                   <div>
                     <label className="block text-xs font-medium text-gray-700 mb-1">
@@ -2906,7 +3736,10 @@ export default function CareersSettingsPage() {
                       type="text"
                       value={settings.jobDetailsButtonBorder}
                       onChange={(e) =>
-                        setSettings({ ...settings, jobDetailsButtonBorder: e.target.value })
+                        setSettings({
+                          ...settings,
+                          jobDetailsButtonBorder: e.target.value,
+                        })
                       }
                       placeholder="0px"
                       className="w-full px-3 py-2 border rounded text-gray-900"
@@ -2920,7 +3753,10 @@ export default function CareersSettingsPage() {
                       type="text"
                       value={settings.jobDetailsButtonBorderColor}
                       onChange={(e) =>
-                        setSettings({ ...settings, jobDetailsButtonBorderColor: e.target.value })
+                        setSettings({
+                          ...settings,
+                          jobDetailsButtonBorderColor: e.target.value,
+                        })
                       }
                       placeholder="#4f46e5"
                       className="w-full px-3 py-2 border rounded text-gray-900 font-mono text-sm"
@@ -2934,7 +3770,10 @@ export default function CareersSettingsPage() {
                       type="text"
                       value={settings.jobDetailsButtonRadius}
                       onChange={(e) =>
-                        setSettings({ ...settings, jobDetailsButtonRadius: e.target.value })
+                        setSettings({
+                          ...settings,
+                          jobDetailsButtonRadius: e.target.value,
+                        })
                       }
                       placeholder="8px"
                       className="w-full px-3 py-2 border rounded text-gray-900"
@@ -2950,7 +3789,10 @@ export default function CareersSettingsPage() {
                     <select
                       value={settings.jobDetailsButtonFontFamily}
                       onChange={(e) =>
-                        setSettings({ ...settings, jobDetailsButtonFontFamily: e.target.value })
+                        setSettings({
+                          ...settings,
+                          jobDetailsButtonFontFamily: e.target.value,
+                        })
                       }
                       className="w-full px-3 py-2 border rounded text-gray-900"
                     >
@@ -2969,7 +3811,10 @@ export default function CareersSettingsPage() {
                       type="text"
                       value={settings.jobDetailsButtonFontSize}
                       onChange={(e) =>
-                        setSettings({ ...settings, jobDetailsButtonFontSize: e.target.value })
+                        setSettings({
+                          ...settings,
+                          jobDetailsButtonFontSize: e.target.value,
+                        })
                       }
                       placeholder="14px"
                       className="w-full px-3 py-2 border rounded text-gray-900"
@@ -2982,7 +3827,10 @@ export default function CareersSettingsPage() {
                     <select
                       value={settings.jobDetailsButtonFontWeight}
                       onChange={(e) =>
-                        setSettings({ ...settings, jobDetailsButtonFontWeight: e.target.value })
+                        setSettings({
+                          ...settings,
+                          jobDetailsButtonFontWeight: e.target.value,
+                        })
                       }
                       className="w-full px-3 py-2 border rounded text-gray-900"
                     >
@@ -3002,7 +3850,7 @@ export default function CareersSettingsPage() {
                 <h3 className="text-sm font-semibold text-gray-900 mb-4">
                   Apply Button Styling
                 </h3>
-                
+
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
                   <div>
                     <label className="block text-xs font-medium text-gray-700 mb-1">
@@ -3012,7 +3860,10 @@ export default function CareersSettingsPage() {
                       type="text"
                       value={settings.applyButtonBorder}
                       onChange={(e) =>
-                        setSettings({ ...settings, applyButtonBorder: e.target.value })
+                        setSettings({
+                          ...settings,
+                          applyButtonBorder: e.target.value,
+                        })
                       }
                       placeholder="0px"
                       className="w-full px-3 py-2 border rounded text-gray-900"
@@ -3026,7 +3877,10 @@ export default function CareersSettingsPage() {
                       type="text"
                       value={settings.applyButtonBorderColor}
                       onChange={(e) =>
-                        setSettings({ ...settings, applyButtonBorderColor: e.target.value })
+                        setSettings({
+                          ...settings,
+                          applyButtonBorderColor: e.target.value,
+                        })
                       }
                       placeholder="#10b981"
                       className="w-full px-3 py-2 border rounded text-gray-900 font-mono text-sm"
@@ -3040,7 +3894,10 @@ export default function CareersSettingsPage() {
                       type="text"
                       value={settings.applyButtonRadius}
                       onChange={(e) =>
-                        setSettings({ ...settings, applyButtonRadius: e.target.value })
+                        setSettings({
+                          ...settings,
+                          applyButtonRadius: e.target.value,
+                        })
                       }
                       placeholder="8px"
                       className="w-full px-3 py-2 border rounded text-gray-900"
@@ -3056,7 +3913,10 @@ export default function CareersSettingsPage() {
                     <select
                       value={settings.applyButtonFontFamily}
                       onChange={(e) =>
-                        setSettings({ ...settings, applyButtonFontFamily: e.target.value })
+                        setSettings({
+                          ...settings,
+                          applyButtonFontFamily: e.target.value,
+                        })
                       }
                       className="w-full px-3 py-2 border rounded text-gray-900"
                     >
@@ -3075,7 +3935,10 @@ export default function CareersSettingsPage() {
                       type="text"
                       value={settings.applyButtonFontSize}
                       onChange={(e) =>
-                        setSettings({ ...settings, applyButtonFontSize: e.target.value })
+                        setSettings({
+                          ...settings,
+                          applyButtonFontSize: e.target.value,
+                        })
                       }
                       placeholder="14px"
                       className="w-full px-3 py-2 border rounded text-gray-900"
@@ -3088,7 +3951,10 @@ export default function CareersSettingsPage() {
                     <select
                       value={settings.applyButtonFontWeight}
                       onChange={(e) =>
-                        setSettings({ ...settings, applyButtonFontWeight: e.target.value })
+                        setSettings({
+                          ...settings,
+                          applyButtonFontWeight: e.target.value,
+                        })
                       }
                       className="w-full px-3 py-2 border rounded text-gray-900"
                     >
@@ -3109,14 +3975,17 @@ export default function CareersSettingsPage() {
                   <Share2 className="h-4 w-4 inline mr-2" />
                   Share Icons
                 </h3>
-                
+
                 <div className="mb-4">
                   <label className="flex items-center gap-2 cursor-pointer">
                     <input
                       type="checkbox"
                       checked={settings.shareIconsEnabled}
                       onChange={(e) =>
-                        setSettings({ ...settings, shareIconsEnabled: e.target.checked })
+                        setSettings({
+                          ...settings,
+                          shareIconsEnabled: e.target.checked,
+                        })
                       }
                       className="w-4 h-4 text-indigo-600 rounded"
                     />
@@ -3138,7 +4007,10 @@ export default function CareersSettingsPage() {
                           type="text"
                           value={settings.shareIconWidth}
                           onChange={(e) =>
-                            setSettings({ ...settings, shareIconWidth: e.target.value })
+                            setSettings({
+                              ...settings,
+                              shareIconWidth: e.target.value,
+                            })
                           }
                           placeholder="32px"
                           className="w-full px-2 py-1 border rounded text-sm text-gray-900"
@@ -3152,7 +4024,10 @@ export default function CareersSettingsPage() {
                           type="text"
                           value={settings.shareIconHeight}
                           onChange={(e) =>
-                            setSettings({ ...settings, shareIconHeight: e.target.value })
+                            setSettings({
+                              ...settings,
+                              shareIconHeight: e.target.value,
+                            })
                           }
                           placeholder="32px"
                           className="w-full px-2 py-1 border rounded text-sm text-gray-900"
@@ -3166,7 +4041,10 @@ export default function CareersSettingsPage() {
                           type="text"
                           value={settings.shareIconBorderRadius}
                           onChange={(e) =>
-                            setSettings({ ...settings, shareIconBorderRadius: e.target.value })
+                            setSettings({
+                              ...settings,
+                              shareIconBorderRadius: e.target.value,
+                            })
                           }
                           placeholder="6px"
                           className="w-full px-2 py-1 border rounded text-sm text-gray-900"
@@ -3180,9 +4058,13 @@ export default function CareersSettingsPage() {
                         Facebook Icon
                       </label>
                       <div className="flex items-center gap-3">
-                        {(shareIconPreviews.facebook || settings.shareIcons?.facebookImage) && (
+                        {(shareIconPreviews.facebook ||
+                          settings.shareIcons?.facebookImage) && (
                           <img
-                            src={shareIconPreviews.facebook || settings.shareIcons?.facebookImage}
+                            src={
+                              shareIconPreviews.facebook ||
+                              settings.shareIcons?.facebookImage
+                            }
                             alt="Facebook"
                             className="w-8 h-8 object-contain"
                           />
@@ -3193,7 +4075,10 @@ export default function CareersSettingsPage() {
                           onChange={(e) => {
                             const file = e.target.files?.[0];
                             if (file) {
-                              setShareIconFiles({ ...shareIconFiles, facebook: file });
+                              setShareIconFiles({
+                                ...shareIconFiles,
+                                facebook: file,
+                              });
                               const reader = new FileReader();
                               reader.onloadend = () => {
                                 setShareIconPreviews({
@@ -3208,14 +4093,19 @@ export default function CareersSettingsPage() {
                         />
                       </div>
                       <div className="mt-2">
-                        <label className="block text-xs text-gray-600 mb-1">Or Enter URL</label>
+                        <label className="block text-xs text-gray-600 mb-1">
+                          Or Enter URL
+                        </label>
                         <input
                           type="text"
-                          value={settings.shareIcons?.facebook || ''}
+                          value={settings.shareIcons?.facebook || ""}
                           onChange={(e) =>
                             setSettings({
                               ...settings,
-                              shareIcons: { ...settings.shareIcons, facebook: e.target.value },
+                              shareIcons: {
+                                ...settings.shareIcons,
+                                facebook: e.target.value,
+                              },
                             })
                           }
                           placeholder="https://example.com/facebook.svg"
@@ -3230,9 +4120,13 @@ export default function CareersSettingsPage() {
                         Twitter/X Icon
                       </label>
                       <div className="flex items-center gap-3">
-                        {(shareIconPreviews.twitter || settings.shareIcons?.twitterImage) && (
+                        {(shareIconPreviews.twitter ||
+                          settings.shareIcons?.twitterImage) && (
                           <img
-                            src={shareIconPreviews.twitter || settings.shareIcons?.twitterImage}
+                            src={
+                              shareIconPreviews.twitter ||
+                              settings.shareIcons?.twitterImage
+                            }
                             alt="Twitter"
                             className="w-8 h-8 object-contain"
                           />
@@ -3243,7 +4137,10 @@ export default function CareersSettingsPage() {
                           onChange={(e) => {
                             const file = e.target.files?.[0];
                             if (file) {
-                              setShareIconFiles({ ...shareIconFiles, twitter: file });
+                              setShareIconFiles({
+                                ...shareIconFiles,
+                                twitter: file,
+                              });
                               const reader = new FileReader();
                               reader.onloadend = () => {
                                 setShareIconPreviews({
@@ -3258,14 +4155,19 @@ export default function CareersSettingsPage() {
                         />
                       </div>
                       <div className="mt-2">
-                        <label className="block text-xs text-gray-600 mb-1">Or Enter URL</label>
+                        <label className="block text-xs text-gray-600 mb-1">
+                          Or Enter URL
+                        </label>
                         <input
                           type="text"
-                          value={settings.shareIcons?.twitter || ''}
+                          value={settings.shareIcons?.twitter || ""}
                           onChange={(e) =>
                             setSettings({
                               ...settings,
-                              shareIcons: { ...settings.shareIcons, twitter: e.target.value },
+                              shareIcons: {
+                                ...settings.shareIcons,
+                                twitter: e.target.value,
+                              },
                             })
                           }
                           placeholder="https://example.com/twitter.svg"
@@ -3280,9 +4182,13 @@ export default function CareersSettingsPage() {
                         LinkedIn Icon
                       </label>
                       <div className="flex items-center gap-3">
-                        {(shareIconPreviews.linkedin || settings.shareIcons?.linkedinImage) && (
+                        {(shareIconPreviews.linkedin ||
+                          settings.shareIcons?.linkedinImage) && (
                           <img
-                            src={shareIconPreviews.linkedin || settings.shareIcons?.linkedinImage}
+                            src={
+                              shareIconPreviews.linkedin ||
+                              settings.shareIcons?.linkedinImage
+                            }
                             alt="LinkedIn"
                             className="w-8 h-8 object-contain"
                           />
@@ -3293,7 +4199,10 @@ export default function CareersSettingsPage() {
                           onChange={(e) => {
                             const file = e.target.files?.[0];
                             if (file) {
-                              setShareIconFiles({ ...shareIconFiles, linkedin: file });
+                              setShareIconFiles({
+                                ...shareIconFiles,
+                                linkedin: file,
+                              });
                               const reader = new FileReader();
                               reader.onloadend = () => {
                                 setShareIconPreviews({
@@ -3308,14 +4217,19 @@ export default function CareersSettingsPage() {
                         />
                       </div>
                       <div className="mt-2">
-                        <label className="block text-xs text-gray-600 mb-1">Or Enter URL</label>
+                        <label className="block text-xs text-gray-600 mb-1">
+                          Or Enter URL
+                        </label>
                         <input
                           type="text"
-                          value={settings.shareIcons?.linkedin || ''}
+                          value={settings.shareIcons?.linkedin || ""}
                           onChange={(e) =>
                             setSettings({
                               ...settings,
-                              shareIcons: { ...settings.shareIcons, linkedin: e.target.value },
+                              shareIcons: {
+                                ...settings.shareIcons,
+                                linkedin: e.target.value,
+                              },
                             })
                           }
                           placeholder="https://example.com/linkedin.svg"
@@ -3330,9 +4244,13 @@ export default function CareersSettingsPage() {
                         WhatsApp Icon
                       </label>
                       <div className="flex items-center gap-3">
-                        {(shareIconPreviews.whatsapp || settings.shareIcons?.whatsappImage) && (
+                        {(shareIconPreviews.whatsapp ||
+                          settings.shareIcons?.whatsappImage) && (
                           <img
-                            src={shareIconPreviews.whatsapp || settings.shareIcons?.whatsappImage}
+                            src={
+                              shareIconPreviews.whatsapp ||
+                              settings.shareIcons?.whatsappImage
+                            }
                             alt="WhatsApp"
                             className="w-8 h-8 object-contain"
                           />
@@ -3343,7 +4261,10 @@ export default function CareersSettingsPage() {
                           onChange={(e) => {
                             const file = e.target.files?.[0];
                             if (file) {
-                              setShareIconFiles({ ...shareIconFiles, whatsapp: file });
+                              setShareIconFiles({
+                                ...shareIconFiles,
+                                whatsapp: file,
+                              });
                               const reader = new FileReader();
                               reader.onloadend = () => {
                                 setShareIconPreviews({
@@ -3358,14 +4279,19 @@ export default function CareersSettingsPage() {
                         />
                       </div>
                       <div className="mt-2">
-                        <label className="block text-xs text-gray-600 mb-1">Or Enter URL</label>
+                        <label className="block text-xs text-gray-600 mb-1">
+                          Or Enter URL
+                        </label>
                         <input
                           type="text"
-                          value={settings.shareIcons?.whatsapp || ''}
+                          value={settings.shareIcons?.whatsapp || ""}
                           onChange={(e) =>
                             setSettings({
                               ...settings,
-                              shareIcons: { ...settings.shareIcons, whatsapp: e.target.value },
+                              shareIcons: {
+                                ...settings.shareIcons,
+                                whatsapp: e.target.value,
+                              },
                             })
                           }
                           placeholder="https://example.com/whatsapp.svg"
@@ -3380,9 +4306,13 @@ export default function CareersSettingsPage() {
                         Email Icon
                       </label>
                       <div className="flex items-center gap-3">
-                        {(shareIconPreviews.email || settings.shareIcons?.emailImage) && (
+                        {(shareIconPreviews.email ||
+                          settings.shareIcons?.emailImage) && (
                           <img
-                            src={shareIconPreviews.email || settings.shareIcons?.emailImage}
+                            src={
+                              shareIconPreviews.email ||
+                              settings.shareIcons?.emailImage
+                            }
                             alt="Email"
                             className="w-8 h-8 object-contain"
                           />
@@ -3393,7 +4323,10 @@ export default function CareersSettingsPage() {
                           onChange={(e) => {
                             const file = e.target.files?.[0];
                             if (file) {
-                              setShareIconFiles({ ...shareIconFiles, email: file });
+                              setShareIconFiles({
+                                ...shareIconFiles,
+                                email: file,
+                              });
                               const reader = new FileReader();
                               reader.onloadend = () => {
                                 setShareIconPreviews({
@@ -3408,14 +4341,19 @@ export default function CareersSettingsPage() {
                         />
                       </div>
                       <div className="mt-2">
-                        <label className="block text-xs text-gray-600 mb-1">Or Enter URL</label>
+                        <label className="block text-xs text-gray-600 mb-1">
+                          Or Enter URL
+                        </label>
                         <input
                           type="text"
-                          value={settings.shareIcons?.email || ''}
+                          value={settings.shareIcons?.email || ""}
                           onChange={(e) =>
                             setSettings({
                               ...settings,
-                              shareIcons: { ...settings.shareIcons, email: e.target.value },
+                              shareIcons: {
+                                ...settings.shareIcons,
+                                email: e.target.value,
+                              },
                             })
                           }
                           placeholder="https://example.com/email.svg"
@@ -3433,8 +4371,9 @@ export default function CareersSettingsPage() {
                   Custom CSS
                 </label>
                 <p className="text-xs text-gray-500 mb-2">
-                  Add custom CSS that will apply globally to the Careers page and Job Details page.
-                  Use this to override or extend default styles.
+                  Add custom CSS that will apply globally to the Careers page
+                  and Job Details page. Use this to override or extend default
+                  styles.
                 </p>
                 <textarea
                   value={settings.customCss}
@@ -3444,23 +4383,25 @@ export default function CareersSettingsPage() {
                   rows={12}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md text-gray-900 font-mono text-sm"
                   placeholder={`.custom-card-btn {
-  border-radius: 8px;
-  transition: all 0.3s ease;
-}
+                                              border-radius: 8px;
+                                              transition: all 0.3s ease;
+                                            }
 
-.custom-card-btn:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-}
+                                            .custom-card-btn:hover {
+                                              transform: translateY(-2px);
+                                              box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+                                            }
 
-/* Add your custom styles here */`}
+                                            /* Add your custom styles here */`}
                 />
               </div>
 
               {/* CSS Preview */}
               {settings.customCss && (
                 <div className="p-4 bg-gray-100 rounded-md">
-                  <p className="text-xs font-semibold text-gray-700 mb-2">CSS Preview:</p>
+                  <p className="text-xs font-semibold text-gray-700 mb-2">
+                    CSS Preview:
+                  </p>
                   <pre className="text-xs text-gray-800 overflow-x-auto whitespace-pre-wrap">
                     {settings.customCss}
                   </pre>
@@ -3590,11 +4531,21 @@ export default function CareersSettingsPage() {
               ) : (
                 <>
                   <Save className="h-4 w-4 mr-2" />
-                  Save {activeTab === 'logo' ? 'Logo & Navigation' : 
-                        activeTab === 'banner' ? 'Banner' : 
-                        activeTab === 'cards' ? 'Card' : 
-                        activeTab === 'footer' ? 'Footer' : 
-                        activeTab === 'styling' ? 'Styling' : ''} Settings
+                  Save{" "}
+                  {activeTab === "logo"
+                    ? "Logo & Navigation"
+                    : activeTab === "banner"
+                    ? "Banner"
+                    : activeTab === "cards"
+                    ? "Card"
+                    : activeTab === "details"
+                    ? "Careers Page Details"
+                    : activeTab === "footer"
+                    ? "Footer"
+                    : activeTab === "styling"
+                    ? "Styling"
+                    : ""}{" "}
+                  Settings
                 </>
               )}
             </button>
