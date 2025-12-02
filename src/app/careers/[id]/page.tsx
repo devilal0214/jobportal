@@ -116,6 +116,25 @@ interface CareersSettings {
   shareIconWidth?: string;
   shareIconHeight?: string;
   shareIconBorderRadius?: string;
+  // Career Page Details settings
+  detailsFontFamily?: string;
+  detailsFontSize?: string;
+  detailsFontWeight?: string;
+  detailsButtonBg?: string;
+  detailsButtonColor?: string;
+  detailsButtonRadius?: string;
+  detailsShareEnabled?: boolean;
+  detailsShareWidth?: string;
+  detailsShareHeight?: string;
+  detailsShareRadius?: string;
+  detailsShareFacebookIcon?: string;
+  detailsShareFacebookUrl?: string;
+  detailsShareLinkedinIcon?: string;
+  detailsShareLinkedinUrl?: string;
+  detailsShareWhatsappIcon?: string;
+  detailsShareWhatsappUrl?: string;
+  detailsShareMailIcon?: string;
+  detailsShareMailUrl?: string;
   // Custom CSS
   customCss?: string;
   // Footer settings
@@ -242,27 +261,31 @@ export default function CareerDetailPage() {
     const url = window.location.href;
     const text = `Check out this job opportunity: ${job.title}`;
 
+    // Use custom URLs from details settings if available
     switch (platform) {
       case "facebook":
-        window.open(
-          `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(
-            url
-          )}`,
-          "_blank"
-        );
+        const fbUrl = settings.detailsShareFacebookUrl 
+          ? settings.detailsShareFacebookUrl.replace('{jobUrl}', encodeURIComponent(url))
+          : `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}`;
+        window.open(fbUrl, "_blank");
         break;
       case "linkedin":
-        window.open(
-          `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(
-            url
-          )}`,
-          "_blank"
-        );
+        const liUrl = settings.detailsShareLinkedinUrl
+          ? settings.detailsShareLinkedinUrl.replace('{jobUrl}', encodeURIComponent(url))
+          : `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(url)}`;
+        window.open(liUrl, "_blank");
+        break;
+      case "whatsapp":
+        const waUrl = settings.detailsShareWhatsappUrl
+          ? settings.detailsShareWhatsappUrl.replace('{jobUrl}', encodeURIComponent(url))
+          : `https://wa.me/?text=${encodeURIComponent(text + ' ' + url)}`;
+        window.open(waUrl, "_blank");
         break;
       case "email":
-        window.location.href = `mailto:?subject=${encodeURIComponent(
-          text
-        )}&body=${encodeURIComponent(url)}`;
+        const mailUrl = settings.detailsShareMailUrl
+          ? settings.detailsShareMailUrl.replace('{jobUrl}', encodeURIComponent(url))
+          : `mailto:?subject=${encodeURIComponent(text)}&body=${encodeURIComponent(url)}`;
+        window.location.href = mailUrl;
         break;
       case "copy":
         navigator.clipboard.writeText(url);
@@ -441,6 +464,11 @@ export default function CareerDetailPage() {
                   [&_p]:text-gray-700 [&_p]:mb-4 [&_p]:leading-relaxed
                   [&_ul]:list-disc [&_ul]:ml-6 [&_ul]:mb-4 [&_ul]:text-gray-700
                   [&_ol]:list-decimal [&_ol]:ml-6 [&_ol]:mb-4 [&_ol]:text-gray-700"
+                style={{
+                  fontFamily: settings.detailsFontFamily && settings.detailsFontFamily !== 'System Default' ? getFontFamily(settings.detailsFontFamily) : 'inherit',
+                  fontSize: settings.detailsFontSize || '16px',
+                  fontWeight: settings.detailsFontWeight || '400',
+                }}
                 dangerouslySetInnerHTML={{ __html: job.description }}
               />
             </div>
@@ -502,94 +530,95 @@ export default function CareerDetailPage() {
                 </>
               )}
 
-              {/* Share */}
-              <div className="border-t border-gray-200 pt-4 mt-2">
-                <p className="text-sm font-medium text-gray-700 mb-3">
-                  Share this job
-                </p>
-                <div className="flex space-x-[-10px] justify-start">
-                  {/* Facebook - Always visible */}
-                  <button
-                    onClick={() => {
-                      console.log("Facebook icon path:", settings.shareIcons?.facebookImage);
-                      shareJob("facebook");
-                    }}
-                    className="p-2 hover:opacity-70 transition-opacity"
-                    title="Share on Facebook"
-                  >
-                    {settings.shareIcons?.facebookImage ? (
-                      <img
-                        src={settings.shareIcons.facebookImage}
-                        alt="Facebook"
-                        style={{
-                          width: settings.shareIconWidth || '32px',
-                          height: settings.shareIconHeight || '32px',
-                          borderRadius: settings.shareIconBorderRadius || '6px',
-                          objectFit: 'contain',
-                        }}
-                        onLoad={() => console.log("FB image loaded successfully")}
-                        onError={(e) => console.error("FB image failed to load:", e)}
-                      />
-                    ) : (
-                      <Facebook className="h-6 w-6 text-blue-600" />
+              {/* Share - Use details settings if enabled, otherwise use default */}
+              {settings.detailsShareEnabled && (
+                <div className="border-t border-gray-200 pt-4 mt-2">
+                  <p className="text-sm font-medium text-gray-700 mb-3">
+                    Share this job
+                  </p>
+                  <div className="flex space-x-2 justify-start">
+                    {/* Facebook */}
+                    {settings.detailsShareFacebookIcon && (
+                      <button
+                        onClick={() => shareJob("facebook")}
+                        className="p-2 hover:opacity-70 transition-opacity"
+                        title="Share on Facebook"
+                      >
+                        <img
+                          src={settings.detailsShareFacebookIcon}
+                          alt="Facebook"
+                          style={{
+                            width: settings.detailsShareWidth || '32px',
+                            height: settings.detailsShareHeight || '32px',
+                            borderRadius: settings.detailsShareRadius || '6px',
+                            objectFit: 'contain',
+                          }}
+                        />
+                      </button>
                     )}
-                  </button>
 
-                  {/* LinkedIn - Always visible */}
-                  <button
-                    onClick={() => {
-                      console.log("LinkedIn icon path:", settings.shareIcons?.linkedinImage);
-                      shareJob("linkedin");
-                    }}
-                    className="p-2 hover:opacity-70 transition-opacity"
-                    title="Share on LinkedIn"
-                  >
-                    {settings.shareIcons?.linkedinImage ? (
-                      <img
-                        src={settings.shareIcons.linkedinImage}
-                        alt="LinkedIn"
-                        style={{
-                          width: settings.shareIconWidth || '32px',
-                          height: settings.shareIconHeight || '32px',
-                          borderRadius: settings.shareIconBorderRadius || '6px',
-                          objectFit: 'contain',
-                        }}
-                        onLoad={() => console.log("LinkedIn image loaded successfully")}
-                        onError={(e) => console.error("LinkedIn image failed to load:", e)}
-                      />
-                    ) : (
-                      <Linkedin className="h-6 w-6 text-blue-700" />
+                    {/* LinkedIn */}
+                    {settings.detailsShareLinkedinIcon && (
+                      <button
+                        onClick={() => shareJob("linkedin")}
+                        className="p-2 hover:opacity-70 transition-opacity"
+                        title="Share on LinkedIn"
+                      >
+                        <img
+                          src={settings.detailsShareLinkedinIcon}
+                          alt="LinkedIn"
+                          style={{
+                            width: settings.detailsShareWidth || '32px',
+                            height: settings.detailsShareHeight || '32px',
+                            borderRadius: settings.detailsShareRadius || '6px',
+                            objectFit: 'contain',
+                          }}
+                        />
+                      </button>
                     )}
-                  </button>
 
-                  {/* Email - Always visible */}
-                  <button
-                    onClick={() => {
-                      console.log("Email icon path:", settings.shareIcons?.emailImage);
-                      shareJob("email");
-                    }}
-                    className="p-2 hover:opacity-70 transition-opacity"
-                    title="Share via Email"
-                  >
-                    {settings.shareIcons?.emailImage ? (
-                      <img
-                        src={settings.shareIcons.emailImage}
-                        alt="Email"
-                        style={{
-                          width: settings.shareIconWidth || '32px',
-                          height: settings.shareIconHeight || '32px',
-                          borderRadius: settings.shareIconBorderRadius || '6px',
-                          objectFit: 'contain',
-                        }}
-                        onLoad={() => console.log("Email image loaded successfully")}
-                        onError={(e) => console.error("Email image failed to load:", e)}
-                      />
-                    ) : (
-                      <Mail className="h-6 w-6 text-gray-600" />
+                    {/* WhatsApp */}
+                    {settings.detailsShareWhatsappIcon && (
+                      <button
+                        onClick={() => shareJob("whatsapp")}
+                        className="p-2 hover:opacity-70 transition-opacity"
+                        title="Share on WhatsApp"
+                      >
+                        <img
+                          src={settings.detailsShareWhatsappIcon}
+                          alt="WhatsApp"
+                          style={{
+                            width: settings.detailsShareWidth || '32px',
+                            height: settings.detailsShareHeight || '32px',
+                            borderRadius: settings.detailsShareRadius || '6px',
+                            objectFit: 'contain',
+                          }}
+                        />
+                      </button>
                     )}
-                  </button>
+
+                    {/* Email */}
+                    {settings.detailsShareMailIcon && (
+                      <button
+                        onClick={() => shareJob("email")}
+                        className="p-2 hover:opacity-70 transition-opacity"
+                        title="Share via Email"
+                      >
+                        <img
+                          src={settings.detailsShareMailIcon}
+                          alt="Email"
+                          style={{
+                            width: settings.detailsShareWidth || '32px',
+                            height: settings.detailsShareHeight || '32px',
+                            borderRadius: settings.detailsShareRadius || '6px',
+                            objectFit: 'contain',
+                          }}
+                        />
+                      </button>
+                    )}
+                  </div>
                 </div>
-              </div>
+              )}
 
               {/* Remove the default share section as we always show now */}
               {false && (

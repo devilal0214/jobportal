@@ -120,7 +120,26 @@ export async function GET() {
             'careers_show_filters',
             'careers_show_search_filter',
             'careers_show_department_filter',
-            'careers_show_experience_filter'
+            'careers_show_experience_filter',
+            // Career Page Details settings
+            'careers_details_font_family',
+            'careers_details_font_size',
+            'careers_details_font_weight',
+            'careers_details_button_bg',
+            'careers_details_button_color',
+            'careers_details_button_radius',
+            'careers_details_share_enabled',
+            'careers_details_share_width',
+            'careers_details_share_height',
+            'careers_details_share_radius',
+            'careers_details_share_facebook_icon',
+            'careers_details_share_facebook_url',
+            'careers_details_share_linkedin_icon',
+            'careers_details_share_linkedin_url',
+            'careers_details_share_whatsapp_icon',
+            'careers_details_share_whatsapp_url',
+            'careers_details_share_mail_icon',
+            'careers_details_share_mail_url'
           ]
         }
       }
@@ -497,6 +516,61 @@ export async function GET() {
           break
         case 'careers_show_experience_filter':
           careersSettings.showExperienceFilter = setting.value === 'true'
+          break
+        // Career Page Details settings
+        case 'careers_details_font_family':
+          careersSettings.detailsFontFamily = setting.value
+          break
+        case 'careers_details_font_size':
+          careersSettings.detailsFontSize = setting.value
+          break
+        case 'careers_details_font_weight':
+          careersSettings.detailsFontWeight = setting.value
+          break
+        case 'careers_details_button_bg':
+          careersSettings.detailsButtonBg = setting.value
+          break
+        case 'careers_details_button_color':
+          careersSettings.detailsButtonColor = setting.value
+          break
+        case 'careers_details_button_radius':
+          careersSettings.detailsButtonRadius = setting.value
+          break
+        case 'careers_details_share_enabled':
+          careersSettings.detailsShareEnabled = setting.value === 'true'
+          break
+        case 'careers_details_share_width':
+          careersSettings.detailsShareWidth = setting.value
+          break
+        case 'careers_details_share_height':
+          careersSettings.detailsShareHeight = setting.value
+          break
+        case 'careers_details_share_radius':
+          careersSettings.detailsShareRadius = setting.value
+          break
+        case 'careers_details_share_facebook_icon':
+          careersSettings.detailsShareFacebookIcon = setting.value
+          break
+        case 'careers_details_share_facebook_url':
+          careersSettings.detailsShareFacebookUrl = setting.value
+          break
+        case 'careers_details_share_linkedin_icon':
+          careersSettings.detailsShareLinkedinIcon = setting.value
+          break
+        case 'careers_details_share_linkedin_url':
+          careersSettings.detailsShareLinkedinUrl = setting.value
+          break
+        case 'careers_details_share_whatsapp_icon':
+          careersSettings.detailsShareWhatsappIcon = setting.value
+          break
+        case 'careers_details_share_whatsapp_url':
+          careersSettings.detailsShareWhatsappUrl = setting.value
+          break
+        case 'careers_details_share_mail_icon':
+          careersSettings.detailsShareMailIcon = setting.value
+          break
+        case 'careers_details_share_mail_url':
+          careersSettings.detailsShareMailUrl = setting.value
           break
       }
     })

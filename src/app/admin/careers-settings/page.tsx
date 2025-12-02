@@ -434,6 +434,20 @@ export default function CareersSettingsPage() {
   const [widgetLogoFiles, setWidgetLogoFiles] = useState<Record<string, File>>({});
   const [widgetLogoPreviews, setWidgetLogoPreviews] = useState<Record<string, string>>({});
 
+  /* details share icon uploads */
+  const [detailsShareIconFiles, setDetailsShareIconFiles] = useState<{
+    facebook?: File;
+    linkedin?: File;
+    whatsapp?: File;
+    mail?: File;
+  }>({});
+  const [detailsShareIconPreviews, setDetailsShareIconPreviews] = useState<{
+    facebook?: string;
+    linkedin?: string;
+    whatsapp?: string;
+    mail?: string;
+  }>({});
+
   const handleWidgetLogoUpload = (widgetId: string, file: File) => {
     setWidgetLogoFiles(prev => ({ ...prev, [widgetId]: file }));
     
@@ -586,6 +600,8 @@ export default function CareersSettingsPage() {
         return handleSaveBanner();
       case 'cards':
         return handleSaveCards();
+      case 'details':
+        return handleSaveDetails();
       case 'footer':
         return handleSaveFooter();
       case 'styling':
@@ -722,6 +738,88 @@ export default function CareersSettingsPage() {
     } catch (err) {
       console.error('Save error:', err);
       alert("Failed to save card settings");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  // Helper function to upload icon immediately
+  const uploadDetailsIcon = async (file: File, iconType: 'facebook' | 'linkedin' | 'whatsapp' | 'mail') => {
+    try {
+      const token = localStorage.getItem("token");
+      const formData = new FormData();
+      formData.append('image', file);
+      
+      const res = await fetch('/api/upload/job-image', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+        body: formData,
+      });
+      
+      const data = await res.json();
+      if (data.imageUrl) {
+        // Update settings immediately
+        setSettings(prev => ({
+          ...prev,
+          [`detailsShare${iconType.charAt(0).toUpperCase() + iconType.slice(1)}Icon`]: data.imageUrl
+        }));
+        return data.imageUrl;
+      }
+    } catch (error) {
+      console.error(`Failed to upload ${iconType} icon:`, error);
+      alert(`Failed to upload ${iconType} icon`);
+    }
+    return null;
+  };
+
+  const handleSaveDetails = async () => {
+    setSaving(true);
+    try {
+      const token = localStorage.getItem("token");
+      const formData = new FormData();
+
+      // Career Page Details settings - following the same pattern as handleSaveBanner
+      formData.append('detailsFontFamily', settings.detailsFontFamily || '');
+      formData.append('detailsFontSize', settings.detailsFontSize || '');
+      formData.append('detailsFontWeight', settings.detailsFontWeight || '');
+      formData.append('detailsButtonBg', settings.detailsButtonBg || '');
+      formData.append('detailsButtonColor', settings.detailsButtonColor || '');
+      formData.append('detailsButtonRadius', settings.detailsButtonRadius || '');
+      formData.append('detailsShareEnabled', String(settings.detailsShareEnabled || false));
+      formData.append('detailsShareWidth', settings.detailsShareWidth || '');
+      formData.append('detailsShareHeight', settings.detailsShareHeight || '');
+      formData.append('detailsShareRadius', settings.detailsShareRadius || '');
+      formData.append('detailsShareFacebookIcon', settings.detailsShareFacebookIcon || '');
+      formData.append('detailsShareFacebookUrl', settings.detailsShareFacebookUrl || '');
+      formData.append('detailsShareLinkedinIcon', settings.detailsShareLinkedinIcon || '');
+      formData.append('detailsShareLinkedinUrl', settings.detailsShareLinkedinUrl || '');
+      formData.append('detailsShareWhatsappIcon', settings.detailsShareWhatsappIcon || '');
+      formData.append('detailsShareWhatsappUrl', settings.detailsShareWhatsappUrl || '');
+      formData.append('detailsShareMailIcon', settings.detailsShareMailIcon || '');
+      formData.append('detailsShareMailUrl', settings.detailsShareMailUrl || '');
+
+      // Add file uploads if selected
+      if (detailsShareIconFiles.facebook) formData.append('facebookIconFile', detailsShareIconFiles.facebook);
+      if (detailsShareIconFiles.linkedin) formData.append('linkedinIconFile', detailsShareIconFiles.linkedin);
+      if (detailsShareIconFiles.whatsapp) formData.append('whatsappIconFile', detailsShareIconFiles.whatsapp);
+      if (detailsShareIconFiles.mail) formData.append('mailIconFile', detailsShareIconFiles.mail);
+
+      const res = await fetch("/api/admin/careers-settings/details", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+        body: formData,
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        alert(`Failed to save: ${data.error || "Unknown error"}`);
+        return;
+      }
+      alert(data.message || "Career Page Details settings saved!");
+      window.location.reload();
+    } catch (err) {
+      console.error('Save error:', err);
+      alert("Failed to save details settings");
     } finally {
       setSaving(false);
     }
@@ -2440,52 +2538,49 @@ export default function CareersSettingsPage() {
 
                       {/* Preview + Upload */}
                       <div className="flex items-center gap-3">
-                        {settings.detailsShareFacebookIcon &&
-                          settings.detailsShareFacebookIcon !== "" && (
+                        {(detailsShareIconPreviews.facebook || settings.detailsShareFacebookIcon) && (
                             <img
-                              src={settings.detailsShareFacebookIcon}
+                              src={detailsShareIconPreviews.facebook || settings.detailsShareFacebookIcon}
                               alt="Facebook"
-                              className="w-8 h-8 object-contain"
+                              className="w-10 h-10 object-contain border rounded p-1"
                             />
                           )}
 
-                        <input
-                          type="file"
-                          accept="image/*"
-                          onChange={(e) => {
-                            const file = e.target.files?.[0];
-                            if (!file) return;
-                            const reader = new FileReader();
-                            reader.onloadend = () => {
-                              setSettings({
-                                ...settings,
-                                detailsShareFacebookIcon:
-                                  reader.result as string,
-                              });
-                            };
-                            reader.readAsDataURL(file);
-                          }}
-                          className="flex-1 text-xs"
-                        />
-                      </div>
-
-                      {/* ICON URL INPUT */}
-                      <div className="mt-2">
-                        <label className="block text-xs text-gray-600 mb-1">
-                          Icon URL
+                        <label className="flex-1">
+                          <span className="inline-block px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded cursor-pointer hover:bg-indigo-700">
+                            Choose Image
+                          </span>
+                          <input
+                            type="file"
+                            accept="image/*"
+                            onChange={async (e) => {
+                              const file = e.target.files?.[0];
+                              if (!file) return;
+                              
+                              // Validate file type
+                              const allowedTypes = ['image/png', 'image/jpeg', 'image/jpg', 'image/svg+xml'];
+                              if (!allowedTypes.includes(file.type)) {
+                                alert('Invalid file type. Only PNG, JPG, JPEG, and SVG images are allowed.');
+                                e.target.value = '';
+                                return;
+                              }
+                              
+                              // Show preview immediately
+                              const reader = new FileReader();
+                              reader.onloadend = () => {
+                                setDetailsShareIconPreviews(prev => ({
+                                  ...prev,
+                                  facebook: reader.result as string
+                                }));
+                              };
+                              reader.readAsDataURL(file);
+                              
+                              // Upload immediately
+                              await uploadDetailsIcon(file, 'facebook');
+                            }}
+                            className="hidden"
+                          />
                         </label>
-                        <input
-                          type="text"
-                          value={settings.detailsShareFacebookIcon}
-                          onChange={(e) =>
-                            setSettings({
-                              ...settings,
-                              detailsShareFacebookIcon: e.target.value,
-                            })
-                          }
-                          placeholder="https://cdn.jsdelivr.net/npm/simple-icons@v9/icons/facebook.svg"
-                          className="w-full px-2 py-1 border rounded text-xs text-gray-900"
-                        />
                       </div>
 
                       {/* SHARE URL */}
@@ -2529,60 +2624,58 @@ export default function CareersSettingsPage() {
                       </label>
 
                       <div className="flex items-center gap-3">
-                        {settings.detailsShareLinkedinIcon &&
-                          settings.detailsShareLinkedinIcon !== "" && (
+                        {(detailsShareIconPreviews.linkedin || settings.detailsShareLinkedinIcon) && (
                             <img
-                              src={settings.detailsShareLinkedinIcon}
+                              src={detailsShareIconPreviews.linkedin || settings.detailsShareLinkedinIcon}
                               alt="LinkedIn"
-                              className="w-8 h-8 object-contain"
+                              className="w-10 h-10 object-contain border rounded p-1"
                             />
                           )}
 
-                        <input
-                          type="file"
-                          accept="image/*"
-                          onChange={(e) => {
-                            const file = e.target.files?.[0];
-                            if (!file) return;
-                            const reader = new FileReader();
-                            reader.onloadend = () => {
-                              setSettings({
-                                ...settings,
-                                detailsShareLinkedinIcon:
-                                  reader.result as string,
-                              });
-                            };
-                            reader.readAsDataURL(file);
-                          }}
-                          className="flex-1 text-xs"
-                        />
+                        <label className="flex-1">
+                          <span className="inline-block px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded cursor-pointer hover:bg-indigo-700">
+                            Choose Image
+                          </span>
+                          <input
+                            type="file"
+                            accept="image/*"
+                            onChange={async (e) => {
+                              const file = e.target.files?.[0];
+                              if (!file) return;
+                              
+                              // Validate file type
+                              const allowedTypes = ['image/png', 'image/jpeg', 'image/jpg', 'image/svg+xml'];
+                              if (!allowedTypes.includes(file.type)) {
+                                alert('Invalid file type. Only PNG, JPG, JPEG, and SVG images are allowed.');
+                                e.target.value = '';
+                                return;
+                              }
+                              
+                              // Show preview immediately
+                              const reader = new FileReader();
+                              reader.onloadend = () => {
+                                setDetailsShareIconPreviews(prev => ({
+                                  ...prev,
+                                  linkedin: reader.result as string
+                                }));
+                              };
+                              reader.readAsDataURL(file);
+                              
+                              // Upload immediately
+                              await uploadDetailsIcon(file, 'linkedin');
+                            }}
+                            className="hidden"
+                          />
+                        </label>
                       </div>
 
                       <div className="mt-2">
                         <label className="block text-xs text-gray-600 mb-1">
-                          Icon URL
+                          LinkedIn Share URL (optional)
                         </label>
                         <input
                           type="text"
-                          value={settings.detailsShareLinkedinIcon}
-                          onChange={(e) =>
-                            setSettings({
-                              ...settings,
-                              detailsShareLinkedinIcon: e.target.value,
-                            })
-                          }
-                          placeholder="https://cdn.jsdelivr.net/npm/simple-icons@v9/icons/linkedin.svg"
-                          className="w-full px-2 py-1 border rounded text-xs text-gray-900"
-                        />
-                      </div>
-
-                      <div className="mt-2">
-                        <label className="block text-xs text-gray-600 mb-1">
-                          Share URL
-                        </label>
-                        <input
-                          type="text"
-                          value={settings.detailsShareLinkedinUrl}
+                          value={settings.detailsShareLinkedinUrl || ''}
                           onChange={(e) =>
                             setSettings({
                               ...settings,
@@ -2593,19 +2686,6 @@ export default function CareersSettingsPage() {
                           className="w-full px-2 py-1 border rounded text-xs text-gray-900"
                         />
                       </div>
-
-                      <button
-                        onClick={() =>
-                          setSettings({
-                            ...settings,
-                            detailsShareLinkedinIcon: "",
-                            detailsShareLinkedinUrl: "",
-                          })
-                        }
-                        className="mt-3 text-xs text-red-600 hover:underline"
-                      >
-                        Remove Icon
-                      </button>
                     </div>
 
                     {/* WHATSAPP */}
@@ -2615,60 +2695,58 @@ export default function CareersSettingsPage() {
                       </label>
 
                       <div className="flex items-center gap-3">
-                        {settings.detailsShareWhatsappIcon &&
-                          settings.detailsShareWhatsappIcon !== "" && (
+                        {(detailsShareIconPreviews.whatsapp || settings.detailsShareWhatsappIcon) && (
                             <img
-                              src={settings.detailsShareWhatsappIcon}
+                              src={detailsShareIconPreviews.whatsapp || settings.detailsShareWhatsappIcon}
                               alt="WhatsApp"
-                              className="w-8 h-8 object-contain"
+                              className="w-10 h-10 object-contain border rounded p-1"
                             />
                           )}
 
-                        <input
-                          type="file"
-                          accept="image/*"
-                          onChange={(e) => {
-                            const file = e.target.files?.[0];
-                            if (!file) return;
-                            const reader = new FileReader();
-                            reader.onloadend = () => {
-                              setSettings({
-                                ...settings,
-                                detailsShareWhatsappIcon:
-                                  reader.result as string,
-                              });
-                            };
-                            reader.readAsDataURL(file);
-                          }}
-                          className="flex-1 text-xs"
-                        />
+                        <label className="flex-1">
+                          <span className="inline-block px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded cursor-pointer hover:bg-indigo-700">
+                            Choose Image
+                          </span>
+                          <input
+                            type="file"
+                            accept="image/*"
+                            onChange={async (e) => {
+                              const file = e.target.files?.[0];
+                              if (!file) return;
+                              
+                              // Validate file type
+                              const allowedTypes = ['image/png', 'image/jpeg', 'image/jpg', 'image/svg+xml'];
+                              if (!allowedTypes.includes(file.type)) {
+                                alert('Invalid file type. Only PNG, JPG, JPEG, and SVG images are allowed.');
+                                e.target.value = '';
+                                return;
+                              }
+                              
+                              // Show preview immediately
+                              const reader = new FileReader();
+                              reader.onloadend = () => {
+                                setDetailsShareIconPreviews(prev => ({
+                                  ...prev,
+                                  whatsapp: reader.result as string
+                                }));
+                              };
+                              reader.readAsDataURL(file);
+                              
+                              // Upload immediately
+                              await uploadDetailsIcon(file, 'whatsapp');
+                            }}
+                            className="hidden"
+                          />
+                        </label>
                       </div>
 
                       <div className="mt-2">
                         <label className="block text-xs text-gray-600 mb-1">
-                          Icon URL
+                          WhatsApp Share URL (optional)
                         </label>
                         <input
                           type="text"
-                          value={settings.detailsShareWhatsappIcon}
-                          onChange={(e) =>
-                            setSettings({
-                              ...settings,
-                              detailsShareWhatsappIcon: e.target.value,
-                            })
-                          }
-                          placeholder="https://cdn.jsdelivr.net/npm/simple-icons@v9/icons/whatsapp.svg"
-                          className="w-full px-2 py-1 border rounded text-xs text-gray-900"
-                        />
-                      </div>
-
-                      <div className="mt-2">
-                        <label className="block text-xs text-gray-600 mb-1">
-                          Share URL
-                        </label>
-                        <input
-                          type="text"
-                          value={settings.detailsShareWhatsappUrl}
+                          value={settings.detailsShareWhatsappUrl || ''}
                           onChange={(e) =>
                             setSettings({
                               ...settings,
@@ -2679,19 +2757,6 @@ export default function CareersSettingsPage() {
                           className="w-full px-2 py-1 border rounded text-xs text-gray-900"
                         />
                       </div>
-
-                      <button
-                        onClick={() =>
-                          setSettings({
-                            ...settings,
-                            detailsShareWhatsappIcon: "",
-                            detailsShareWhatsappUrl: "",
-                          })
-                        }
-                        className="mt-3 text-xs text-red-600 hover:underline"
-                      >
-                        Remove Icon
-                      </button>
                     </div>
 
                     {/* EMAIL */}
@@ -2701,59 +2766,58 @@ export default function CareersSettingsPage() {
                       </label>
 
                       <div className="flex items-center gap-3">
-                        {settings.detailsShareMailIcon &&
-                          settings.detailsShareMailIcon !== "" && (
+                        {(detailsShareIconPreviews.mail || settings.detailsShareMailIcon) && (
                             <img
-                              src={settings.detailsShareMailIcon}
+                              src={detailsShareIconPreviews.mail || settings.detailsShareMailIcon}
                               alt="Email"
-                              className="w-8 h-8 object-contain"
+                              className="w-10 h-10 object-contain border rounded p-1"
                             />
                           )}
 
-                        <input
-                          type="file"
-                          accept="image/*"
-                          onChange={(e) => {
-                            const file = e.target.files?.[0];
-                            if (!file) return;
-                            const reader = new FileReader();
-                            reader.onloadend = () => {
-                              setSettings({
-                                ...settings,
-                                detailsShareMailIcon: reader.result as string,
-                              });
-                            };
-                            reader.readAsDataURL(file);
-                          }}
-                          className="flex-1 text-xs"
-                        />
+                        <label className="flex-1">
+                          <span className="inline-block px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded cursor-pointer hover:bg-indigo-700">
+                            Choose Image
+                          </span>
+                          <input
+                            type="file"
+                            accept="image/*"
+                            onChange={async (e) => {
+                              const file = e.target.files?.[0];
+                              if (!file) return;
+                              
+                              // Validate file type
+                              const allowedTypes = ['image/png', 'image/jpeg', 'image/jpg', 'image/svg+xml'];
+                              if (!allowedTypes.includes(file.type)) {
+                                alert('Invalid file type. Only PNG, JPG, JPEG, and SVG images are allowed.');
+                                e.target.value = '';
+                                return;
+                              }
+                              
+                              // Show preview immediately
+                              const reader = new FileReader();
+                              reader.onloadend = () => {
+                                setDetailsShareIconPreviews(prev => ({
+                                  ...prev,
+                                  mail: reader.result as string
+                                }));
+                              };
+                              reader.readAsDataURL(file);
+                              
+                              // Upload immediately
+                              await uploadDetailsIcon(file, 'mail');
+                            }}
+                            className="hidden"
+                          />
+                        </label>
                       </div>
 
                       <div className="mt-2">
                         <label className="block text-xs text-gray-600 mb-1">
-                          Icon URL
+                          Email Share URL (optional)
                         </label>
                         <input
                           type="text"
-                          value={settings.detailsShareMailIcon}
-                          onChange={(e) =>
-                            setSettings({
-                              ...settings,
-                              detailsShareMailIcon: e.target.value,
-                            })
-                          }
-                          placeholder="https://cdn.jsdelivr.net/npm/simple-icons@v9/icons/maildotru.svg"
-                          className="w-full px-2 py-1 border rounded text-xs text-gray-900"
-                        />
-                      </div>
-
-                      <div className="mt-2">
-                        <label className="block text-xs text-gray-600 mb-1">
-                          Share URL
-                        </label>
-                        <input
-                          type="text"
-                          value={settings.detailsShareMailUrl}
+                          value={settings.detailsShareMailUrl || ''}
                           onChange={(e) =>
                             setSettings({
                               ...settings,
@@ -2764,19 +2828,6 @@ export default function CareersSettingsPage() {
                           className="w-full px-2 py-1 border rounded text-xs text-gray-900"
                         />
                       </div>
-
-                      <button
-                        onClick={() =>
-                          setSettings({
-                            ...settings,
-                            detailsShareMailIcon: "",
-                            detailsShareMailUrl: "",
-                          })
-                        }
-                        className="mt-3 text-xs text-red-600 hover:underline"
-                      >
-                        Remove Icon
-                      </button>
                     </div>
                   </>
                 )}
