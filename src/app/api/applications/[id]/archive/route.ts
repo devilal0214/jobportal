@@ -21,7 +21,15 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
     const user = await prisma.user.findUnique({
       where: { id: decoded.userId },
       include: {
-        role: true
+        role: {
+          include: {
+            permissions: {
+              include: {
+                permission: true
+              }
+            }
+          }
+        }
       }
     })
 
@@ -29,9 +37,12 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
       return NextResponse.json({ error: 'User not found' }, { status: 404 })
     }
 
-    // Check if user has permission to archive applications
-    const roleName = user.role?.name
-    if (!['Administrator', 'Human Resources', 'Manager'].includes(roleName || '')) {
+    // Check permission to archive applications
+    const hasPermission = user.role?.permissions?.some((rp: any) => 
+      rp.permission.module === 'applications' && rp.permission.action === 'archive' && rp.granted
+    );
+    
+    if (!hasPermission) {
       return NextResponse.json({ error: 'Insufficient permissions' }, { status: 403 })
     }
 

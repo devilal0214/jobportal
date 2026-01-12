@@ -20,15 +20,29 @@ export async function GET(request: NextRequest) {
     const user = await prisma.user.findUnique({
       where: { id: decoded.userId },
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      include: { role: true } as any
+      include: { 
+        role: {
+          include: {
+            permissions: {
+              include: {
+                permission: true
+              }
+            }
+          }
+        } 
+      } as any
     })
 
     if (!user) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 })
     }
 
-    // Only allow admin users to manage user roles
-    if (!user.role || !['Administrator', 'Human Resources'].includes((user.role as any).name)) {
+    // Check permission to read roles
+    const hasPermission = user.role?.permissions?.some((rp: any) => 
+      rp.permission.module === 'roles' && rp.permission.action === 'read' && rp.granted
+    );
+    
+    if (!hasPermission) {
       return NextResponse.json({ error: 'Insufficient permissions' }, { status: 403 })
     }
 

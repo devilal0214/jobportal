@@ -20,7 +20,15 @@ export async function GET(request: NextRequest) {
     const user = await prisma.user.findUnique({
       where: { id: decoded.userId },
       include: {
-        role: true
+        role: {
+          include: {
+            permissions: {
+              include: {
+                permission: true
+              }
+            }
+          }
+        }
       } as any
     })
 
@@ -28,9 +36,12 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 })
     }
 
-    // Check if user has permission to view archived applications
-    const roleName = (user.role as any)?.name
-    if (!['Administrator', 'Human Resources', 'Manager'].includes(roleName || '')) {
+    // Check permission to read applications (archived applications are still applications)
+    const hasPermission = user.role?.permissions?.some((rp: any) => 
+      rp.permission.module === 'applications' && rp.permission.action === 'read' && rp.granted
+    );
+    
+    if (!hasPermission) {
       return NextResponse.json({ error: 'Insufficient permissions' }, { status: 403 })
     }
 
@@ -164,17 +175,29 @@ export async function PATCH(request: NextRequest) {
     const user = await prisma.user.findUnique({
       where: { id: decoded.userId },
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      include: { role: true } as any
+      include: { 
+        role: {
+          include: {
+            permissions: {
+              include: {
+                permission: true
+              }
+            }
+          }
+        }
+      } as any
     })
 
     if (!user) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 })
     }
 
-    // Check if user has permission to archive applications
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const roleName = (user.role as any)?.name
-    if (!['Administrator', 'Human Resources', 'Manager'].includes(roleName || '')) {
+    // Check permission to archive applications
+    const hasPermission = user.role?.permissions?.some((rp: any) => 
+      rp.permission.module === 'applications' && rp.permission.action === 'archive' && rp.granted
+    );
+    
+    if (!hasPermission) {
       return NextResponse.json({ error: 'Insufficient permissions' }, { status: 403 })
     }
 

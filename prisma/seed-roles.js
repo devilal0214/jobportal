@@ -160,6 +160,7 @@ async function main() {
     ['dashboard', 'forms'].includes(p.module) ||
     (p.module === 'jobs' && ['create', 'read', 'update', 'assign'].includes(p.action)) ||
     (p.module === 'applications' && ['read', 'update', 'archive'].includes(p.action)) ||
+    (p.module === 'forms' && ['create', 'read', 'update'].includes(p.action)) ||
     (p.module === 'users' && ['read'].includes(p.action))
   )
   for (const permission of managerPermissions) {
@@ -237,7 +238,7 @@ async function main() {
   console.log('\n🔐 System Roles:')
   console.log('- Administrator: Full access to all modules')
   console.log('- Human Resources: Jobs, applications, forms, email management')
-  console.log('- Manager: View dashboard, manage assigned jobs and applications')
+  console.log('- Manager: View dashboard, manage assigned jobs, applications, and forms (create, read, update)')
   console.log('- Viewer: Read-only access to basic data')
 }
 

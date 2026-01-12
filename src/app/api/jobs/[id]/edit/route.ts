@@ -20,12 +20,29 @@ export async function PUT(
     const user = await prisma.user.findUnique({
       where: { id: decoded.userId },
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      include: { role: true } as any
+      include: { 
+        role: {
+          include: {
+            permissions: {
+              include: {
+                permission: true
+              }
+            }
+          }
+        } 
+      } as any
     })
 
-    // Check permissions - only Administrator and Human Resources can edit jobs
-    const userRole = (user?.role as unknown) as { name: string } | null
-    if (!user || !userRole || !['Administrator', 'Human Resources'].includes(userRole.name)) {
+    if (!user) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+    }
+
+    // Check permission to update jobs
+    const hasPermission = user.role?.permissions?.some((rp: any) => 
+      rp.permission.module === 'jobs' && rp.permission.action === 'update' && rp.granted
+    );
+    
+    if (!hasPermission) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
 

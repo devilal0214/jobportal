@@ -64,11 +64,6 @@ export async function PUT(
       return NextResponse.json({ error: 'Role not found' }, { status: 404 })
     }
 
-    // Don't allow editing system roles' core properties
-    if (existingRole.isSystem && (name !== existingRole.name)) {
-      return NextResponse.json({ error: 'Cannot modify system role name' }, { status: 400 })
-    }
-
     // Check if new name conflicts with existing role (if name is changing)
     if (name !== existingRole.name) {
       const nameConflict = await prisma.role.findUnique({
@@ -84,7 +79,7 @@ export async function PUT(
     const updatedRole = await prisma.role.update({
       where: { id: roleId },
       data: {
-        name: existingRole.isSystem ? existingRole.name : name, // Don't change system role names
+        name, // Allow changing system role names now
         description,
         isActive: isActive !== undefined ? isActive : existingRole.isActive,
         permissions: {
@@ -203,9 +198,9 @@ export async function DELETE(
       return NextResponse.json({ error: 'Role not found' }, { status: 404 })
     }
 
-    // Don't allow deleting system roles
-    if (existingRole.isSystem) {
-      return NextResponse.json({ error: 'Cannot delete system roles' }, { status: 400 })
+    // Don't allow deleting Administrator role (core system role)
+    if (existingRole.isSystem && existingRole.name === 'Administrator') {
+      return NextResponse.json({ error: 'Cannot delete Administrator role' }, { status: 400 })
     }
 
     // Don't allow deleting roles that are assigned to users

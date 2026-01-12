@@ -444,23 +444,22 @@ export default function RolesPage() {
                       {showPermissions[role.id] ? <EyeOff className="h-4 w-4 mr-1" /> : <Eye className="h-4 w-4 mr-1" />}
                       {showPermissions[role.id] ? 'Hide' : 'View'} Permissions
                     </button>
-                    {!role.isSystem && (
-                      <>
-                        <button 
-                          onClick={() => openEditModal(role)}
-                          className="inline-flex items-center px-3 py-1.5 border border-gray-300 text-xs font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-                        >
-                          <Edit2 className="h-4 w-4 mr-1" />
-                          Edit
-                        </button>
-                        <button 
-                          onClick={() => handleDeleteRole(role.id)}
-                          className="inline-flex items-center px-3 py-1.5 border border-red-300 text-xs font-medium rounded-md text-red-700 bg-white hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
-                        >
-                          <Trash2 className="h-4 w-4 mr-1" />
-                          Delete
-                        </button>
-                      </>
+                    <button 
+                      onClick={() => openEditModal(role)}
+                      className="inline-flex items-center px-3 py-1.5 border border-gray-300 text-xs font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                    >
+                      <Edit2 className="h-4 w-4 mr-1" />
+                      Edit
+                    </button>
+                    {role.name !== 'Administrator' && (
+                      <button 
+                        onClick={() => handleDeleteRole(role.id)}
+                        className="inline-flex items-center px-3 py-1.5 border border-red-300 text-xs font-medium rounded-md text-red-700 bg-white hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+                        title={role.isSystem ? 'System roles can be deleted (except Administrator)' : 'Delete this role'}
+                      >
+                        <Trash2 className="h-4 w-4 mr-1" />
+                        Delete
+                      </button>
                     )}
                   </div>
                 </div>

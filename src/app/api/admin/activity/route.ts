@@ -29,11 +29,28 @@ export async function GET(request: NextRequest) {
     const user = await prisma.user.findUnique({
       where: { id: decoded.userId },
       include: {
-        role: true
+        role: {
+          include: {
+            permissions: {
+              include: {
+                permission: true
+              }
+            }
+          }
+        }
       }
     })
 
-    if (!user || !['Administrator', 'Human Resources'].includes(user.role?.name || '')) {
+    if (!user) {
+      return NextResponse.json({ error: 'User not found' }, { status: 404 })
+    }
+
+    // Check permission to view dashboard (activity is part of dashboard)
+    const hasPermission = user.role?.permissions?.some((rp: any) => 
+      rp.permission.module === 'dashboard' && rp.permission.action === 'read' && rp.granted
+    );
+    
+    if (!hasPermission) {
       return NextResponse.json({ error: 'Insufficient permissions' }, { status: 403 })
     }
 
