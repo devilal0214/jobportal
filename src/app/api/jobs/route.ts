@@ -97,7 +97,7 @@ export async function POST(request: NextRequest) {
     const userRole = user.role as unknown as { name: string } | null;
     if (
       !userRole ||
-      !["Administrator", "Human Resources"].includes(userRole.name)
+      !["Administrator", "Human Resources", "Manager"].includes(userRole.name)
     ) {
       return NextResponse.json(
         { error: "Insufficient permissions" },

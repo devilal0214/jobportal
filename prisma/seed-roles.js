@@ -157,8 +157,8 @@ async function main() {
 
   // Manager permissions
   const managerPermissions = allPermissions.filter(p => 
-    ['dashboard'].includes(p.module) ||
-    (p.module === 'jobs' && ['read', 'update', 'assign'].includes(p.action)) ||
+    ['dashboard', 'forms'].includes(p.module) ||
+    (p.module === 'jobs' && ['create', 'read', 'update', 'assign'].includes(p.action)) ||
     (p.module === 'applications' && ['read', 'update', 'archive'].includes(p.action)) ||
     (p.module === 'users' && ['read'].includes(p.action))
   )

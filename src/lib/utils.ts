@@ -96,7 +96,7 @@ export function getRolePermissions(role: string) {
       canCreateFormFields: true,
     },
     MANAGER: {
-      canCreateJobs: false,
+      canCreateJobs: true,
       canEditJobs: false,
       canDeleteJobs: false,
       canAssignJobs: false,
@@ -104,7 +104,7 @@ export function getRolePermissions(role: string) {
       canManageUsers: false,
       canManageSettings: false,
       canManageTemplates: false,
-      canCreateFormFields: false,
+      canCreateFormFields: true,
     },
   }
   

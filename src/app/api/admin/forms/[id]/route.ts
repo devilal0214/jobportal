@@ -51,7 +51,7 @@ async function authUser(req: NextRequest) {
     include: { role: true },
   });
   if (!me) throw new Error("404");
-  if (!me.role || !["Administrator", "Human Resources"].includes(me.role.name))
+  if (!me.role || !["Administrator", "Human Resources", "Manager"].includes(me.role.name))
     throw new Error("403");
   return me;
 }

@@ -324,7 +324,7 @@ function FormBuilderContent() {
         });
         if (response.ok) {
           const userData = await response.json();
-          if (userData.role?.name !== "Administrator") {
+          if (!['Administrator', 'Human Resources', 'Manager'].includes(userData.role?.name || '')) {
             router.push("/admin");
             return;
           }

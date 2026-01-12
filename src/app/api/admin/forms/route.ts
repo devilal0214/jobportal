@@ -38,7 +38,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Only allow admin users to manage forms
-    if (!user.role || !['Administrator', 'Human Resources'].includes((user.role as any).name)) {
+    if (!user.role || !['Administrator', 'Human Resources', 'Manager'].includes((user.role as any).name)) {
       return NextResponse.json({ error: 'Insufficient permissions' }, { status: 403 })
     }
 
@@ -91,7 +91,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Only allow admin users to create forms
-    if (!user.role || !['Administrator', 'Human Resources'].includes((user.role as any).name)) {
+    if (!user.role || !['Administrator', 'Human Resources', 'Manager'].includes((user.role as any).name)) {
       return NextResponse.json({ error: 'Insufficient permissions' }, { status: 403 })
     }
 
