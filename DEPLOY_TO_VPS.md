@@ -28,7 +28,7 @@ npm install
 # 7. Run seed script to update permissions
 node prisma/seed-roles.js
 
-# 8. Restart application
+# 8. First exit from current user and Restart application
 pm2 restart jobs-jaiveeru
 
 # 9. Verify it's working
