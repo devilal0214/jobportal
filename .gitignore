@@ -50,9 +50,10 @@ fix-*.js
 update-*.js
 
 # Database files
-prisma/dev.db
+# Temporarily allowing dev.db to be committed for deployment
+# prisma/dev.db
 prisma/dev.db-journal
-*.db
+# *.db
 *.db-journal
 debug-*.js
 setup-*.js
