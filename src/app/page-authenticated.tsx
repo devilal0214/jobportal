@@ -1,183 +1,185 @@
-'use client'
+"use client";
 
-import { useState, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
-import Link from 'next/link'
-import { 
-  Users, 
-  Briefcase, 
-  FileText, 
-  Settings, 
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import Link from "next/link";
+import {
+  Users,
+  Briefcase,
+  FileText,
+  Settings,
   LogOut,
   Plus,
   Eye,
   Edit,
   Pause,
   Play,
-  Clock
-} from 'lucide-react'
+  Clock,
+} from "lucide-react";
 
 interface User {
-  id: string
-  name: string
-  email: string
-  role: string
+  id: string;
+  name: string;
+  email: string;
+  role: string;
 }
 
 interface Job {
-  id: string
-  title: string
-  department: string
-  location: string
-  status: string
-  applicationsCount: number
-  createdAt: string
+  id: string;
+  title: string;
+  department: string;
+  location: string;
+  status: string;
+  applicationsCount: number;
+  createdAt: string;
 }
 
 interface Application {
-  id: string
-  candidateName: string
-  position: string
-  status: string
-  appliedAt: string
-  email: string
+  id: string;
+  candidateName: string;
+  position: string;
+  status: string;
+  appliedAt: string;
+  email: string;
 }
 
 interface DashboardStats {
-  newApplications: number
-  totalApplications: number
-  underReview: number
-  totalJobs: number
+  newApplications: number;
+  totalApplications: number;
+  underReview: number;
+  totalJobs: number;
 }
 
 export default function DashboardPage() {
-  const [user, setUser] = useState<User | null>(null)
-  const [loading, setLoading] = useState(true)
+  const [user, setUser] = useState<User | null>(null);
+  const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState<DashboardStats>({
     newApplications: 0,
     totalApplications: 0,
     underReview: 0,
-    totalJobs: 0
-  })
-  const [recentApplications, setRecentApplications] = useState<Application[]>([])
-  const [jobs, setJobs] = useState<Job[]>([])
-  const router = useRouter()
+    totalJobs: 0,
+  });
+  const [recentApplications, setRecentApplications] = useState<Application[]>(
+    [],
+  );
+  const [jobs, setJobs] = useState<Job[]>([]);
+  const router = useRouter();
 
   useEffect(() => {
     const checkAuth = async () => {
-      const token = localStorage.getItem('token')
+      const token = localStorage.getItem("token");
       if (!token) {
-        router.push('/login')
-        return
+        router.push("/login");
+        return;
       }
 
       try {
         // Verify token and get user info
-        const response = await fetch('/api/auth/me', {
+        const response = await fetch("/api/auth/me", {
           headers: {
-            'Authorization': `Bearer ${token}`
-          }
-        })
+            Authorization: `Bearer ${token}`,
+          },
+        });
 
         if (response.ok) {
-          const userData = await response.json()
-          setUser(userData)
+          const userData = await response.json();
+          setUser(userData);
         } else {
-          localStorage.removeItem('token')
-          router.push('/login')
+          localStorage.removeItem("token");
+          router.push("/login");
         }
       } catch (error) {
-        console.error('Auth check failed:', error)
-        router.push('/login')
+        console.error("Auth check failed:", error);
+        router.push("/login");
       } finally {
-        setLoading(false)
+        setLoading(false);
       }
-    }
+    };
 
     const fetchDashboardData = async () => {
-      const token = localStorage.getItem('token')
-      if (!token) return
+      const token = localStorage.getItem("token");
+      if (!token) return;
 
       try {
         // Fetch dashboard stats
-        const statsResponse = await fetch('/api/dashboard/stats', {
+        const statsResponse = await fetch("/api/dashboard/stats", {
           headers: {
-            'Authorization': `Bearer ${token}`
-          }
-        })
+            Authorization: `Bearer ${token}`,
+          },
+        });
 
         if (statsResponse.ok) {
-          const statsData = await statsResponse.json()
-          setStats(statsData)
+          const statsData = await statsResponse.json();
+          setStats(statsData);
         }
 
         // Fetch recent applications
-        const applicationsResponse = await fetch('/api/applications?limit=5', {
+        const applicationsResponse = await fetch("/api/applications?limit=5", {
           headers: {
-            'Authorization': `Bearer ${token}`
-          }
-        })
+            Authorization: `Bearer ${token}`,
+          },
+        });
 
         if (applicationsResponse.ok) {
-          const applicationsData = await applicationsResponse.json()
-          setRecentApplications(applicationsData.applications || [])
+          const applicationsData = await applicationsResponse.json();
+          setRecentApplications(applicationsData.applications || []);
         }
 
         // Fetch jobs
-        const jobsResponse = await fetch('/api/jobs?limit=5', {
+        const jobsResponse = await fetch("/api/jobs?limit=5", {
           headers: {
-            'Authorization': `Bearer ${token}`
-          }
-        })
+            Authorization: `Bearer ${token}`,
+          },
+        });
 
         if (jobsResponse.ok) {
-          const jobsData = await jobsResponse.json()
-          setJobs(jobsData.jobs || [])
+          const jobsData = await jobsResponse.json();
+          setJobs(jobsData.jobs || []);
         }
       } catch (error) {
-        console.error('Failed to fetch dashboard data:', error)
+        console.error("Failed to fetch dashboard data:", error);
       }
-    }
+    };
 
     const init = async () => {
-      await checkAuth()
-      await fetchDashboardData()
-    }
-    init()
-  }, [router])
+      await checkAuth();
+      await fetchDashboardData();
+    };
+    init();
+  }, [router]);
 
   const handleLogout = async () => {
     try {
-      await fetch('/api/auth/logout', {
-        method: 'POST',
+      await fetch("/api/auth/logout", {
+        method: "POST",
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        }
-      })
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+      });
     } catch (error) {
-      console.error('Logout error:', error)
+      console.error("Logout error:", error);
     } finally {
-      localStorage.removeItem('token')
-      router.push('/login')
+      localStorage.removeItem("token");
+      router.push("/login");
     }
-  }
+  };
 
   const getStatusColor = (status: string) => {
     switch (status.toLowerCase()) {
-      case 'selected':
-        return 'bg-green-100 text-green-800'
-      case 'interview':
-        return 'bg-blue-100 text-blue-800'
-      case 'rejected':
-      case 'reject':
-        return 'bg-red-100 text-red-800'
-      case 'under review':
-      case 'under-review':
-        return 'bg-yellow-100 text-yellow-800'
+      case "selected":
+        return "bg-green-100 text-green-800";
+      case "interview":
+        return "bg-blue-100 text-blue-800";
+      case "rejected":
+      case "reject":
+        return "bg-red-100 text-red-800";
+      case "under review":
+      case "under-review":
+        return "bg-yellow-100 text-yellow-800";
       default:
-        return 'bg-gray-100 text-gray-800'
+        return "bg-gray-100 text-gray-800";
     }
-  }
+  };
 
   if (loading) {
     return (
@@ -187,11 +189,11 @@ export default function DashboardPage() {
           <p className="mt-4 text-gray-600">Loading...</p>
         </div>
       </div>
-    )
+    );
   }
 
   if (!user) {
-    return null
+    return null;
   }
 
   return (
@@ -201,26 +203,50 @@ export default function DashboardPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center">
-              <h1 className="text-xl font-semibold text-gray-900">Job Portal</h1>
+              <h1 className="text-xl font-semibold text-gray-900">
+                Job Portal
+              </h1>
             </div>
             <div className="flex items-center space-x-8">
-              <Link href="/jobs" className="text-gray-700 hover:text-gray-900 flex items-center space-x-1">
+              <Link
+                href="/jobs"
+                className="text-gray-700 hover:text-gray-900 flex items-center space-x-1"
+              >
                 <Briefcase className="h-4 w-4" />
                 <span>Job Openings</span>
               </Link>
-              <Link href="/applications" className="text-gray-700 hover:text-gray-900 flex items-center space-x-1">
+              <Link
+                href="/applications"
+                className="text-gray-700 hover:text-gray-900 flex items-center space-x-1"
+              >
                 <FileText className="h-4 w-4" />
                 <span>Applications</span>
               </Link>
-              {((user as any).role?.name === 'Administrator' || (user as any).role?.name === 'Human Resources') && (
-                <Link href="/admin" className="text-gray-700 hover:text-gray-900 flex items-center space-x-1">
+              {(((user as any).role &&
+                Array.isArray((user as any).role.permissions) &&
+                (user as any).role.permissions.some(
+                  (p: any) =>
+                    (p.module === "roles" ||
+                      p.module === "users" ||
+                      p.module === "settings" ||
+                      p.module === "dashboard" ||
+                      p.module === "email" ||
+                      p.module === "forms") &&
+                    p.action === "read" &&
+                    p.granted,
+                )) ||
+                (user as any).role?.name === "Administrator") && (
+                <Link
+                  href="/admin"
+                  className="text-gray-700 hover:text-gray-900 flex items-center space-x-1"
+                >
                   <Settings className="h-4 w-4" />
                   <span>Admin</span>
                 </Link>
               )}
               <div className="flex items-center space-x-3">
                 <span className="text-sm text-gray-700">
-                  Welcome, {user.name} ({(user as any).role?.name || 'Guest'})
+                  Welcome, {user.name} ({(user as any).role?.name || "Guest"})
                 </span>
                 <button
                   onClick={handleLogout}
@@ -245,8 +271,12 @@ export default function DashboardPage() {
                 <FileText className="h-8 w-8 text-blue-600" />
               </div>
               <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">New Applications</p>
-                <p className="text-2xl font-semibold text-gray-900">{stats.newApplications}</p>
+                <p className="text-sm font-medium text-gray-600">
+                  New Applications
+                </p>
+                <p className="text-2xl font-semibold text-gray-900">
+                  {stats.newApplications}
+                </p>
               </div>
             </div>
           </div>
@@ -257,8 +287,12 @@ export default function DashboardPage() {
                 <Users className="h-8 w-8 text-green-600" />
               </div>
               <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">Total Applications</p>
-                <p className="text-2xl font-semibold text-gray-900">{stats.totalApplications}</p>
+                <p className="text-sm font-medium text-gray-600">
+                  Total Applications
+                </p>
+                <p className="text-2xl font-semibold text-gray-900">
+                  {stats.totalApplications}
+                </p>
               </div>
             </div>
           </div>
@@ -269,8 +303,12 @@ export default function DashboardPage() {
                 <Clock className="h-8 w-8 text-yellow-600" />
               </div>
               <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">Under Review</p>
-                <p className="text-2xl font-semibold text-gray-900">{stats.underReview}</p>
+                <p className="text-sm font-medium text-gray-600">
+                  Under Review
+                </p>
+                <p className="text-2xl font-semibold text-gray-900">
+                  {stats.underReview}
+                </p>
               </div>
             </div>
           </div>
@@ -282,7 +320,9 @@ export default function DashboardPage() {
               </div>
               <div className="ml-4">
                 <p className="text-sm font-medium text-gray-600">Total Jobs</p>
-                <p className="text-2xl font-semibold text-gray-900">{stats.totalJobs}</p>
+                <p className="text-2xl font-semibold text-gray-900">
+                  {stats.totalJobs}
+                </p>
               </div>
             </div>
           </div>
@@ -292,9 +332,11 @@ export default function DashboardPage() {
           {/* Recent Applications */}
           <div className="bg-white rounded-lg shadow">
             <div className="px-4 sm:px-6 py-4 border-b border-gray-200 flex justify-between items-center">
-              <h2 className="text-lg font-medium text-gray-900">Recent Applications</h2>
-              <Link 
-                href="/applications" 
+              <h2 className="text-lg font-medium text-gray-900">
+                Recent Applications
+              </h2>
+              <Link
+                href="/applications"
                 className="text-sm text-indigo-600 hover:text-indigo-500"
               >
                 View all
@@ -342,7 +384,9 @@ export default function DashboardPage() {
                           </div>
                         </td>
                         <td className="px-3 sm:px-6 py-4">
-                          <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(application.status)} max-w-full truncate`}>
+                          <span
+                            className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(application.status)} max-w-full truncate`}
+                          >
                             {application.status}
                           </span>
                         </td>
@@ -371,9 +415,17 @@ export default function DashboardPage() {
           {/* Job Openings */}
           <div className="bg-white rounded-lg shadow">
             <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
-              <h2 className="text-lg font-medium text-gray-900">Job Openings</h2>
+              <h2 className="text-lg font-medium text-gray-900">
+                Job Openings
+              </h2>
               <div className="flex space-x-2">
-                {((user as any).role?.name === 'Administrator' || (user as any).role?.name === 'Human Resources') && (
+                {(((user as any).role &&
+                  Array.isArray((user as any).role.permissions) &&
+                  (user as any).role.permissions.some(
+                    (p: any) =>
+                      p.module === "jobs" && p.action === "create" && p.granted,
+                  )) ||
+                  (user as any).role?.name === "Administrator") && (
                   <Link
                     href="/jobs/new"
                     className="bg-indigo-600 text-white px-3 py-1 rounded text-sm flex items-center space-x-1 hover:bg-indigo-700"
@@ -382,8 +434,8 @@ export default function DashboardPage() {
                     <span>Add Job</span>
                   </Link>
                 )}
-                <Link 
-                  href="/jobs" 
+                <Link
+                  href="/jobs"
                   className="text-sm text-indigo-600 hover:text-indigo-500"
                 >
                   View all
@@ -423,9 +475,13 @@ export default function DashboardPage() {
                         {job.applicationsCount}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                          job.status === 'ACTIVE' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
-                        }`}>
+                        <span
+                          className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                            job.status === "ACTIVE"
+                              ? "bg-green-100 text-green-800"
+                              : "bg-gray-100 text-gray-800"
+                          }`}
+                        >
                           {job.status}
                         </span>
                       </td>
@@ -437,7 +493,15 @@ export default function DashboardPage() {
                           >
                             <Eye className="h-4 w-4" />
                           </Link>
-                          {((user as any).role?.name === 'Administrator' || (user as any).role?.name === 'Human Resources') && (
+                          {(((user as any).role &&
+                            Array.isArray((user as any).role.permissions) &&
+                            (user as any).role.permissions.some(
+                              (p: any) =>
+                                p.module === "jobs" &&
+                                p.action === "update" &&
+                                p.granted,
+                            )) ||
+                            (user as any).role?.name === "Administrator") && (
                             <>
                               <Link
                                 href={`/jobs/${job.id}/edit`}
@@ -446,7 +510,11 @@ export default function DashboardPage() {
                                 <Edit className="h-4 w-4" />
                               </Link>
                               <button className="text-gray-600 hover:text-gray-900">
-                                {job.status === 'ACTIVE' ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
+                                {job.status === "ACTIVE" ? (
+                                  <Pause className="h-4 w-4" />
+                                ) : (
+                                  <Play className="h-4 w-4" />
+                                )}
                               </button>
                             </>
                           )}
@@ -466,5 +534,5 @@ export default function DashboardPage() {
         </div>
       </div>
     </div>
-  )
+  );
 }

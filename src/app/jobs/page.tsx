@@ -1,14 +1,14 @@
-'use client'
+"use client";
 
-import { useState, useEffect, useCallback } from 'react'
-import { useRouter } from 'next/navigation'
-import Link from 'next/link'
-import { 
-  Briefcase, 
-  Plus, 
-  Edit, 
-  Pause, 
-  Play, 
+import { useState, useEffect, useCallback } from "react";
+import { useRouter } from "next/navigation";
+import Link from "next/link";
+import {
+  Briefcase,
+  Plus,
+  Edit,
+  Pause,
+  Play,
   Trash2,
   Search,
   Filter,
@@ -26,307 +26,325 @@ import {
   Calendar,
   Building,
   SortAsc,
-  FilterX
-} from 'lucide-react'
-import { User } from '@/types/user'
+  FilterX,
+} from "lucide-react";
+import { User } from "@/types/user";
 
 interface Job {
-  id: string
-  title: string
-  department: string
-  location: string
-  status: string
-  description?: string
-  experienceLevel?: string
-  applicationsCount: number
-  createdAt: string
-  formId?: string
+  id: string;
+  title: string;
+  department: string;
+  location: string;
+  status: string;
+  description?: string;
+  experienceLevel?: string;
+  applicationsCount: number;
+  createdAt: string;
+  formId?: string;
   form?: {
-    id: string
-    name: string
-  }
+    id: string;
+    name: string;
+  };
   creator: {
-    name: string
-    email: string
-  }
+    name: string;
+    email: string;
+  };
 }
 
 export default function JobsPage() {
-  const [user, setUser] = useState<User | null>(null)
-  const [jobs, setJobs] = useState<Job[]>([])
-  const [loading, setLoading] = useState(true)
-  const [searchTerm, setSearchTerm] = useState('')
-  const [statusFilter, setStatusFilter] = useState('')
-  const [departmentFilter, setDepartmentFilter] = useState('')
-  const [locationFilter, setLocationFilter] = useState('')
-  const [datePostedFilter, setDatePostedFilter] = useState('')
-  const [sortBy, setSortBy] = useState('')
-  const [showEmbedModal, setShowEmbedModal] = useState(false)
-  const [selectedJobForEmbed, setSelectedJobForEmbed] = useState<Job | null>(null)
-  const [embedCopied, setEmbedCopied] = useState(false)
-  const [hasMore, setHasMore] = useState(true)
-  const [currentPage, setCurrentPage] = useState(1)
-  const [totalJobs, setTotalJobs] = useState(0)
-  const [showJobsDropdown, setShowJobsDropdown] = useState(false)
-  const itemsPerPage = 10
-  const router = useRouter()
+  const [user, setUser] = useState<User | null>(null);
+  const [jobs, setJobs] = useState<Job[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [statusFilter, setStatusFilter] = useState("");
+  const [departmentFilter, setDepartmentFilter] = useState("");
+  const [locationFilter, setLocationFilter] = useState("");
+  const [datePostedFilter, setDatePostedFilter] = useState("");
+  const [sortBy, setSortBy] = useState("");
+  const [showEmbedModal, setShowEmbedModal] = useState(false);
+  const [selectedJobForEmbed, setSelectedJobForEmbed] = useState<Job | null>(
+    null,
+  );
+  const [embedCopied, setEmbedCopied] = useState(false);
+  const [hasMore, setHasMore] = useState(true);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalJobs, setTotalJobs] = useState(0);
+  const [showJobsDropdown, setShowJobsDropdown] = useState(false);
+  const itemsPerPage = 10;
+  const router = useRouter();
 
   // Fetch jobs data with pagination
-  const fetchJobsData = useCallback(async (page: number, limit: number = itemsPerPage) => {
-    const token = localStorage.getItem('token')
-    if (!token) {
-      throw new Error('No authentication token')
-    }
-
-    const response = await fetch(`/api/jobs?limit=${limit}&page=${page}`, {
-      headers: {
-        'Authorization': `Bearer ${token}`
+  const fetchJobsData = useCallback(
+    async (page: number, limit: number = itemsPerPage) => {
+      const token = localStorage.getItem("token");
+      if (!token) {
+        throw new Error("No authentication token");
       }
-    })
 
-    if (!response.ok) {
-      throw new Error('Failed to fetch jobs')
-    }
+      const response = await fetch(`/api/jobs?limit=${limit}&page=${page}`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
 
-    const data = await response.json()
-    return {
-      items: data.jobs || [],
-      total: data.pagination?.total || 0,
-      hasMore: page < (data.pagination?.pages || 1)
-    }
-  }, [])
+      if (!response.ok) {
+        throw new Error("Failed to fetch jobs");
+      }
+
+      const data = await response.json();
+      return {
+        items: data.jobs || [],
+        total: data.pagination?.total || 0,
+        hasMore: page < (data.pagination?.pages || 1),
+      };
+    },
+    [],
+  );
 
   // Load more jobs for infinite scroll
   const loadMoreJobs = useCallback(async () => {
-    if (loading || !hasMore) return
+    if (loading || !hasMore) return;
 
-    setLoading(true)
+    setLoading(true);
     try {
-      const data = await fetchJobsData(currentPage)
-      
+      const data = await fetchJobsData(currentPage);
+
       if (data.items.length > 0) {
-        setJobs(prev => {
+        setJobs((prev) => {
           // Create a map of existing job IDs to avoid duplicates
-          const existingIds = new Set(prev.map(job => job.id))
-          const newJobs = data.items.filter((job: Job) => !existingIds.has(job.id))
-          return [...prev, ...newJobs]
-        })
-        setCurrentPage(prev => prev + 1)
+          const existingIds = new Set(prev.map((job) => job.id));
+          const newJobs = data.items.filter(
+            (job: Job) => !existingIds.has(job.id),
+          );
+          return [...prev, ...newJobs];
+        });
+        setCurrentPage((prev) => prev + 1);
       }
-      
-      setTotalJobs(data.total)
-      setHasMore(data.hasMore)
+
+      setTotalJobs(data.total);
+      setHasMore(data.hasMore);
     } catch (error) {
-      console.error('Failed to load jobs:', error)
+      console.error("Failed to load jobs:", error);
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }, [fetchJobsData, loading, hasMore, currentPage])
+  }, [fetchJobsData, loading, hasMore, currentPage]);
 
   // Refresh function - resets and loads first page
   const refreshJobs = useCallback(async () => {
-    setLoading(true)
-    setJobs([])
-    setCurrentPage(1)
-    setHasMore(true)
-    
+    setLoading(true);
+    setJobs([]);
+    setCurrentPage(1);
+    setHasMore(true);
+
     try {
-      const data = await fetchJobsData(1)
-      setJobs(data.items)
-      setCurrentPage(2)
-      setTotalJobs(data.total)
-      setHasMore(data.hasMore)
+      const data = await fetchJobsData(1);
+      setJobs(data.items);
+      setCurrentPage(2);
+      setTotalJobs(data.total);
+      setHasMore(data.hasMore);
     } catch (error) {
-      console.error('Failed to refresh jobs:', error)
+      console.error("Failed to refresh jobs:", error);
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }, [fetchJobsData])
+  }, [fetchJobsData]);
 
   // Scroll handler for infinite scroll
   useEffect(() => {
-    let scrollTimeout: NodeJS.Timeout | null = null
-    
+    let scrollTimeout: NodeJS.Timeout | null = null;
+
     const handleScroll = () => {
       // Clear previous timeout
       if (scrollTimeout) {
-        clearTimeout(scrollTimeout)
+        clearTimeout(scrollTimeout);
       }
-      
+
       // Debounce scroll events
       scrollTimeout = setTimeout(() => {
         if (
           window.innerHeight + document.documentElement.scrollTop >=
-          document.documentElement.offsetHeight - 100 &&
+            document.documentElement.offsetHeight - 100 &&
           hasMore &&
           !loading
         ) {
-          loadMoreJobs()
+          loadMoreJobs();
         }
-      }, 100) // 100ms debounce
-    }
+      }, 100); // 100ms debounce
+    };
 
-    window.addEventListener('scroll', handleScroll)
+    window.addEventListener("scroll", handleScroll);
     return () => {
-      window.removeEventListener('scroll', handleScroll)
+      window.removeEventListener("scroll", handleScroll);
       if (scrollTimeout) {
-        clearTimeout(scrollTimeout)
+        clearTimeout(scrollTimeout);
       }
-    }
-  }, [hasMore, loading, loadMoreJobs])
+    };
+  }, [hasMore, loading, loadMoreJobs]);
 
   useEffect(() => {
     const checkAuth = async () => {
-      const token = localStorage.getItem('token')
+      const token = localStorage.getItem("token");
       if (!token) {
-        router.push('/login')
-        return
+        router.push("/login");
+        return;
       }
 
       try {
-        const response = await fetch('/api/auth/me', {
+        const response = await fetch("/api/auth/me", {
           headers: {
-            'Authorization': `Bearer ${token}`
-          }
-        })
+            Authorization: `Bearer ${token}`,
+          },
+        });
 
         if (response.ok) {
-          const userData = await response.json()
-          setUser(userData)
-          await refreshJobs()
+          const userData = await response.json();
+          setUser(userData);
+          await refreshJobs();
         } else {
-          localStorage.removeItem('token')
-          router.push('/login')
+          localStorage.removeItem("token");
+          router.push("/login");
         }
       } catch (error) {
-        console.error('Auth check failed:', error)
-        router.push('/login')
+        console.error("Auth check failed:", error);
+        router.push("/login");
       } finally {
-        setLoading(false)
+        setLoading(false);
       }
-    }
+    };
 
-    checkAuth()
-  }, [router, refreshJobs])
+    checkAuth();
+  }, [router, refreshJobs]);
 
   // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (showJobsDropdown) {
-        const target = event.target as Element
-        if (!target.closest('.relative')) {
-          setShowJobsDropdown(false)
+        const target = event.target as Element;
+        if (!target.closest(".relative")) {
+          setShowJobsDropdown(false);
         }
       }
-    }
+    };
 
-    document.addEventListener('mousedown', handleClickOutside)
+    document.addEventListener("mousedown", handleClickOutside);
     return () => {
-      document.removeEventListener('mousedown', handleClickOutside)
-    }
-  }, [showJobsDropdown])
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [showJobsDropdown]);
 
   const handleLogout = async () => {
     try {
-      await fetch('/api/auth/logout', {
-        method: 'POST',
+      await fetch("/api/auth/logout", {
+        method: "POST",
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        }
-      })
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+      });
     } catch (error) {
-      console.error('Logout error:', error)
+      console.error("Logout error:", error);
     } finally {
-      localStorage.removeItem('token')
-      router.push('/login')
+      localStorage.removeItem("token");
+      router.push("/login");
     }
-  }
+  };
 
   const handleDeleteJob = async (jobId: string, jobTitle: string) => {
-    if (!confirm(`Are you sure you want to delete "${jobTitle}"? This action cannot be undone.`)) {
-      return
+    if (
+      !confirm(
+        `Are you sure you want to delete "${jobTitle}"? This action cannot be undone.`,
+      )
+    ) {
+      return;
     }
 
-    const token = localStorage.getItem('token')
-    if (!token) return
+    const token = localStorage.getItem("token");
+    if (!token) return;
 
     try {
       const response = await fetch(`/api/jobs/${jobId}/delete`, {
-        method: 'DELETE',
+        method: "DELETE",
         headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      })
+          Authorization: `Bearer ${token}`,
+        },
+      });
 
       if (response.ok) {
         // Refresh the jobs list
-        await refreshJobs()
+        await refreshJobs();
       } else {
-        console.error('Failed to delete job')
-        alert('Failed to delete job. Please try again.')
+        console.error("Failed to delete job");
+        alert("Failed to delete job. Please try again.");
       }
     } catch (error) {
-      console.error('Error deleting job:', error)
-      alert('An error occurred while deleting the job.')
+      console.error("Error deleting job:", error);
+      alert("An error occurred while deleting the job.");
     }
-  }
+  };
 
-  const handleToggleJobStatus = async (jobId: string, currentStatus: string, jobTitle: string) => {
-    const newStatus = currentStatus === 'ACTIVE' ? 'PAUSED' : 'ACTIVE'
-    const action = currentStatus === 'ACTIVE' ? 'pause' : 'activate'
-    
+  const handleToggleJobStatus = async (
+    jobId: string,
+    currentStatus: string,
+    jobTitle: string,
+  ) => {
+    const newStatus = currentStatus === "ACTIVE" ? "PAUSED" : "ACTIVE";
+    const action = currentStatus === "ACTIVE" ? "pause" : "activate";
+
     if (!confirm(`Are you sure you want to ${action} "${jobTitle}"?`)) {
-      return
+      return;
     }
 
-    const token = localStorage.getItem('token')
-    if (!token) return
+    const token = localStorage.getItem("token");
+    if (!token) return;
 
     try {
       const response = await fetch(`/api/jobs/${jobId}/edit`, {
-        method: 'PUT',
+        method: "PUT",
         headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ 
+        body: JSON.stringify({
           status: newStatus,
           // We need to send existing data to avoid overwriting
-          title: jobs.find(j => j.id === jobId)?.title || '',
-          description: (jobs.find(j => j.id === jobId))?.description || ''
-        })
-      })
+          title: jobs.find((j) => j.id === jobId)?.title || "",
+          description: jobs.find((j) => j.id === jobId)?.description || "",
+        }),
+      });
 
       if (response.ok) {
         // Refresh the jobs list
-        await refreshJobs()
+        await refreshJobs();
       } else {
-        console.error('Failed to update job status')
-        alert('Failed to update job status. Please try again.')
+        console.error("Failed to update job status");
+        alert("Failed to update job status. Please try again.");
       }
     } catch (error) {
-      console.error('Error updating job status:', error)
-      alert('An error occurred while updating the job status.')
+      console.error("Error updating job status:", error);
+      alert("An error occurred while updating the job status.");
     }
-  }
+  };
 
   const getStatusColor = (status: string) => {
     switch (status.toLowerCase()) {
-      case 'active':
-        return 'bg-green-100 text-green-800'
-      case 'paused':
-        return 'bg-yellow-100 text-yellow-800'
-      case 'closed':
-        return 'bg-red-100 text-red-800'
-      case 'draft':
-        return 'bg-gray-100 text-gray-800'
+      case "active":
+        return "bg-green-100 text-green-800";
+      case "paused":
+        return "bg-yellow-100 text-yellow-800";
+      case "closed":
+        return "bg-red-100 text-red-800";
+      case "draft":
+        return "bg-gray-100 text-gray-800";
       default:
-        return 'bg-gray-100 text-gray-800'
+        return "bg-gray-100 text-gray-800";
     }
-  }
+  };
 
   const generateEmbedCode = (job: Job) => {
-    const baseUrl = typeof window !== 'undefined' ? window.location.origin : 'https://yourjobportal.com'
+    const baseUrl =
+      typeof window !== "undefined"
+        ? window.location.origin
+        : "https://yourjobportal.com";
     return `<iframe 
   src="${baseUrl}/embed/job/${job.id}" 
   width="100%" 
@@ -349,85 +367,118 @@ export default function JobsPage() {
     iframe.style.background = 'white';
     document.getElementById('job-embed-${job.id}').appendChild(iframe);
   })();
-</script>`
-  }
+</script>`;
+  };
 
   const copyEmbedCode = () => {
     if (selectedJobForEmbed) {
-      const embedCode = generateEmbedCode(selectedJobForEmbed)
+      const embedCode = generateEmbedCode(selectedJobForEmbed);
       navigator.clipboard.writeText(embedCode).then(() => {
-        setEmbedCopied(true)
-        setTimeout(() => setEmbedCopied(false), 2000)
-      })
+        setEmbedCopied(true);
+        setTimeout(() => setEmbedCopied(false), 2000);
+      });
     }
-  }
+  };
 
   // Get unique departments and locations for filter options
-  const uniqueDepartments = [...new Set(jobs.map(job => job.department).filter(Boolean))].sort()
-  const uniqueLocations = [...new Set(jobs.map(job => job.location).filter(Boolean))].sort()
+  const uniqueDepartments = [
+    ...new Set(jobs.map((job) => job.department).filter(Boolean)),
+  ].sort();
+  const uniqueLocations = [
+    ...new Set(jobs.map((job) => job.location).filter(Boolean)),
+  ].sort();
 
   // Clear all filters function
   const clearAllFilters = () => {
-    setSearchTerm('')
-    setStatusFilter('')
-    setDepartmentFilter('')
-    setLocationFilter('')
-    setDatePostedFilter('')
-    setSortBy('')
-  }
+    setSearchTerm("");
+    setStatusFilter("");
+    setDepartmentFilter("");
+    setLocationFilter("");
+    setDatePostedFilter("");
+    setSortBy("");
+  };
 
   // Check if any filters are active
-  const hasActiveFilters = searchTerm || statusFilter || departmentFilter || locationFilter || datePostedFilter || sortBy
+  const hasActiveFilters =
+    searchTerm ||
+    statusFilter ||
+    departmentFilter ||
+    locationFilter ||
+    datePostedFilter ||
+    sortBy;
 
-  const filteredJobs = jobs.filter(job => {
-    const matchesSearch = !searchTerm || 
-      job.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      job.department?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      job.location?.toLowerCase().includes(searchTerm.toLowerCase())
-    
-    const matchesStatus = !statusFilter || job.status?.toLowerCase() === statusFilter.toLowerCase()
-    
-    const matchesDepartment = !departmentFilter || job.department?.toLowerCase() === departmentFilter.toLowerCase()
-    
-    const matchesLocation = !locationFilter || job.location?.toLowerCase() === locationFilter.toLowerCase()
-    
-    const matchesDatePosted = !datePostedFilter || (() => {
-      const jobDate = new Date(job.createdAt)
-      const now = new Date()
-      const diffTime = Math.abs(now.getTime() - jobDate.getTime())
-      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
-      
-      switch (datePostedFilter) {
-        case 'today':
-          return diffDays <= 1
-        case 'week':
-          return diffDays <= 7
-        case 'month':
-          return diffDays <= 30
-        case '3months':
-          return diffDays <= 90
+  const filteredJobs = jobs
+    .filter((job) => {
+      const matchesSearch =
+        !searchTerm ||
+        job.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        job.department?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        job.location?.toLowerCase().includes(searchTerm.toLowerCase());
+
+      const matchesStatus =
+        !statusFilter ||
+        job.status?.toLowerCase() === statusFilter.toLowerCase();
+
+      const matchesDepartment =
+        !departmentFilter ||
+        job.department?.toLowerCase() === departmentFilter.toLowerCase();
+
+      const matchesLocation =
+        !locationFilter ||
+        job.location?.toLowerCase() === locationFilter.toLowerCase();
+
+      const matchesDatePosted =
+        !datePostedFilter ||
+        (() => {
+          const jobDate = new Date(job.createdAt);
+          const now = new Date();
+          const diffTime = Math.abs(now.getTime() - jobDate.getTime());
+          const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+          switch (datePostedFilter) {
+            case "today":
+              return diffDays <= 1;
+            case "week":
+              return diffDays <= 7;
+            case "month":
+              return diffDays <= 30;
+            case "3months":
+              return diffDays <= 90;
+            default:
+              return true;
+          }
+        })();
+
+      return (
+        matchesSearch &&
+        matchesStatus &&
+        matchesDepartment &&
+        matchesLocation &&
+        matchesDatePosted
+      );
+    })
+    .sort((a, b) => {
+      switch (sortBy) {
+        case "name-asc":
+          return a.title.localeCompare(b.title);
+        case "name-desc":
+          return b.title.localeCompare(a.title);
+        case "latest":
+          return (
+            new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+          );
+        case "oldest":
+          return (
+            new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+          );
+        case "applications":
+          return (b.applicationsCount || 0) - (a.applicationsCount || 0);
         default:
-          return true
+          return (
+            new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+          ); // Default to latest
       }
-    })()
-    
-    return matchesSearch && matchesStatus && matchesDepartment && matchesLocation && matchesDatePosted
-  }).sort((a, b) => {
-    switch (sortBy) {
-      case 'name-asc':
-        return a.title.localeCompare(b.title)
-      case 'name-desc':
-        return b.title.localeCompare(a.title)
-      case 'latest':
-        return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-      case 'oldest':
-        return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
-      case 'applications':
-        return (b.applicationsCount || 0) - (a.applicationsCount || 0)
-      default:
-        return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime() // Default to latest
-    }
-  })
+    });
 
   if (loading) {
     return (
@@ -437,11 +488,11 @@ export default function JobsPage() {
           <p className="mt-4 text-gray-600">Loading...</p>
         </div>
       </div>
-    )
+    );
   }
 
   if (!user) {
-    return null
+    return null;
   }
 
   return (
@@ -476,39 +527,78 @@ export default function JobsPage() {
                         <Briefcase className="h-4 w-4" />
                         <span>View All Jobs</span>
                       </Link>
-                      <Link
-                        href="/jobs/new"
-                        className="px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center space-x-2"
-                        onClick={() => setShowJobsDropdown(false)}
-                      >
-                        <Plus className="h-4 w-4" />
-                        <span>Create Job</span>
-                      </Link>
-                      <Link
-                        href="/admin/form-builder"
-                        className="px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center space-x-2"
-                        onClick={() => setShowJobsDropdown(false)}
-                      >
-                        <FormInput className="h-4 w-4" />
-                        <span>Create Form</span>
-                      </Link>
+                      {((user.role &&
+                        Array.isArray(user.role.permissions) &&
+                        user.role.permissions.some(
+                          (p) =>
+                            p.module === "jobs" &&
+                            p.action === "create" &&
+                            p.granted,
+                        )) ||
+                        user.role?.name === "Administrator") && (
+                        <Link
+                          href="/jobs/new"
+                          className="px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center space-x-2"
+                          onClick={() => setShowJobsDropdown(false)}
+                        >
+                          <Plus className="h-4 w-4" />
+                          <span>Create Job</span>
+                        </Link>
+                      )}
+                      {((user.role &&
+                        Array.isArray(user.role.permissions) &&
+                        user.role.permissions.some(
+                          (p) =>
+                            p.module === "forms" &&
+                            p.action === "create" &&
+                            p.granted,
+                        )) ||
+                        user.role?.name === "Administrator") && (
+                        <Link
+                          href="/admin/form-builder"
+                          className="px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center space-x-2"
+                          onClick={() => setShowJobsDropdown(false)}
+                        >
+                          <FormInput className="h-4 w-4" />
+                          <span>Create Form</span>
+                        </Link>
+                      )}
                     </div>
                   </div>
                 )}
               </div>
-              <Link href="/applications" className="text-gray-700 hover:text-gray-900 flex items-center space-x-1">
+              <Link
+                href="/applications"
+                className="text-gray-700 hover:text-gray-900 flex items-center space-x-1"
+              >
                 <FileText className="h-4 w-4" />
                 <span>Applications</span>
               </Link>
-              {(user.role?.name === 'Administrator' || user.role?.name === 'Human Resources') && (
-                <Link href="/admin" className="text-gray-700 hover:text-gray-900 flex items-center space-x-1">
+              {((user.role &&
+                Array.isArray(user.role.permissions) &&
+                user.role.permissions.some(
+                  (p) =>
+                    (p.module === "roles" ||
+                      p.module === "users" ||
+                      p.module === "settings" ||
+                      p.module === "dashboard" ||
+                      p.module === "email" ||
+                      p.module === "forms") &&
+                    p.action === "read" &&
+                    p.granted,
+                )) ||
+                user.role?.name === "Administrator") && (
+                <Link
+                  href="/admin"
+                  className="text-gray-700 hover:text-gray-900 flex items-center space-x-1"
+                >
                   <Settings className="h-4 w-4" />
                   <span>Admin</span>
                 </Link>
               )}
               <div className="flex items-center space-x-3">
                 <span className="text-sm text-gray-700">
-                  {user.name} ({user.role?.name || 'Guest'})
+                  {user.name} ({user.role?.name || "Guest"})
                 </span>
                 <button
                   onClick={handleLogout}
@@ -532,7 +622,12 @@ export default function JobsPage() {
               Manage job postings and track applications
             </p>
           </div>
-          {(user.role?.name === 'Administrator' || user.role?.name === 'Human Resources') && (
+          {((user.role &&
+            Array.isArray(user.role.permissions) &&
+            user.role.permissions.some(
+              (p) => p.module === "jobs" && p.action === "create" && p.granted,
+            )) ||
+            user.role?.name === "Administrator") && (
             <Link
               href="/jobs/new"
               className="bg-indigo-600 text-white px-4 py-2 rounded-md flex items-center space-x-2 hover:bg-indigo-700"
@@ -546,7 +641,9 @@ export default function JobsPage() {
         {/* Filters */}
         <div className="bg-white rounded-lg shadow mb-6 p-6">
           <div className="flex justify-between items-center mb-4">
-            <h2 className="text-lg font-semibold text-gray-900">Filters & Search</h2>
+            <h2 className="text-lg font-semibold text-gray-900">
+              Filters & Search
+            </h2>
             {hasActiveFilters && (
               <button
                 onClick={clearAllFilters}
@@ -557,7 +654,7 @@ export default function JobsPage() {
               </button>
             )}
           </div>
-          
+
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 mb-4">
             {/* Search */}
             <div>
@@ -575,7 +672,7 @@ export default function JobsPage() {
                 />
               </div>
             </div>
-            
+
             {/* Status Filter */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -689,7 +786,7 @@ export default function JobsPage() {
             {/* Results Count */}
             <div className="flex items-end">
               <div className="text-sm text-gray-600">
-                <span className="font-medium">{filteredJobs.length}</span> of{' '}
+                <span className="font-medium">{filteredJobs.length}</span> of{" "}
                 <span className="font-medium">{jobs.length}</span> jobs
                 {hasActiveFilters && (
                   <span className="block text-xs text-indigo-600 mt-1">
@@ -704,16 +801,21 @@ export default function JobsPage() {
         {/* Jobs Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredJobs.map((job) => (
-            <div key={job.id} className="bg-white rounded-lg shadow hover:shadow-md transition-shadow">
+            <div
+              key={job.id}
+              className="bg-white rounded-lg shadow hover:shadow-md transition-shadow"
+            >
               <div className="p-6">
                 <div className="flex justify-between items-start mb-4">
-                  <Link 
+                  <Link
                     href={`/jobs/${job.id}`}
                     className="text-lg font-semibold text-gray-900 hover:text-indigo-600 transition-colors line-clamp-2"
                   >
                     {job.title}
                   </Link>
-                  <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(job.status)}`}>
+                  <span
+                    className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(job.status)}`}
+                  >
                     {job.status}
                   </span>
                 </div>
@@ -721,16 +823,26 @@ export default function JobsPage() {
                 <div className="space-y-2 mb-4">
                   <div className="flex items-center text-sm text-gray-600">
                     <Briefcase className="h-4 w-4 mr-2" />
-                    {job.department || 'Not specified'}
+                    {job.department || "Not specified"}
                   </div>
                   <div className="flex items-center text-sm text-gray-600">
                     <MapPin className="h-4 w-4 mr-2" />
-                    {job.location || 'Not specified'}
+                    {job.location || "Not specified"}
                   </div>
                   {job.experienceLevel && (
                     <div className="flex items-center text-sm text-gray-600">
-                      <svg className="h-4 w-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+                      <svg
+                        className="h-4 w-4 mr-2"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"
+                        />
                       </svg>
                       {job.experienceLevel}
                     </div>
@@ -750,15 +862,23 @@ export default function JobsPage() {
                     <div className="flex space-x-2">
                       <button
                         onClick={() => {
-                          setSelectedJobForEmbed(job)
-                          setShowEmbedModal(true)
+                          setSelectedJobForEmbed(job);
+                          setShowEmbedModal(true);
                         }}
                         className="text-green-600 hover:text-green-900"
                         title="Get Embed Code"
                       >
                         <Code className="h-4 w-4" />
                       </button>
-                      {(user.role?.name === 'Administrator' || user.role?.name === 'Human Resources') && (
+                      {((user?.role &&
+                        Array.isArray(user.role.permissions) &&
+                        user.role.permissions.some(
+                          (p) =>
+                            p.module === "jobs" &&
+                            p.action === "update" &&
+                            p.granted,
+                        )) ||
+                        user.role?.name === "Administrator") && (
                         <>
                           <Link
                             href={`/jobs/${job.id}/edit`}
@@ -777,11 +897,25 @@ export default function JobsPage() {
                             </Link>
                           )}
                           <button
-                            onClick={() => handleToggleJobStatus(job.id, job.status, job.title)}
+                            onClick={() =>
+                              handleToggleJobStatus(
+                                job.id,
+                                job.status,
+                                job.title,
+                              )
+                            }
                             className="text-gray-600 hover:text-gray-900"
-                            title={job.status === 'ACTIVE' ? 'Pause Job' : 'Activate Job'}
+                            title={
+                              job.status === "ACTIVE"
+                                ? "Pause Job"
+                                : "Activate Job"
+                            }
                           >
-                            {job.status === 'ACTIVE' ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
+                            {job.status === "ACTIVE" ? (
+                              <Pause className="h-4 w-4" />
+                            ) : (
+                              <Play className="h-4 w-4" />
+                            )}
                           </button>
                           <button
                             onClick={() => handleDeleteJob(job.id, job.title)}
@@ -803,24 +937,32 @@ export default function JobsPage() {
         {filteredJobs.length === 0 && (
           <div className="text-center py-12">
             <Briefcase className="mx-auto h-12 w-12 text-gray-400" />
-            <h3 className="mt-2 text-sm font-medium text-gray-900">No jobs found</h3>
+            <h3 className="mt-2 text-sm font-medium text-gray-900">
+              No jobs found
+            </h3>
             <p className="mt-1 text-sm text-gray-500">
-              {jobs.length === 0 
+              {jobs.length === 0
                 ? "No job openings have been created yet."
-                : "Try adjusting your search or filter criteria."
-              }
+                : "Try adjusting your search or filter criteria."}
             </p>
-            {(user.role?.name === 'Administrator' || user.role?.name === 'Human Resources') && jobs.length === 0 && (
-              <div className="mt-6">
-                <Link
-                  href="/jobs/new"
-                  className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700"
-                >
-                  <Plus className="h-4 w-4 mr-2" />
-                  Create your first job
-                </Link>
-              </div>
-            )}
+            {((user?.role &&
+              Array.isArray(user.role.permissions) &&
+              user.role.permissions.some(
+                (p) =>
+                  p.module === "jobs" && p.action === "create" && p.granted,
+              )) ||
+              user.role?.name === "Administrator") &&
+              jobs.length === 0 && (
+                <div className="mt-6">
+                  <Link
+                    href="/jobs/new"
+                    className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700"
+                  >
+                    <Plus className="h-4 w-4 mr-2" />
+                    Create your first job
+                  </Link>
+                </div>
+              )}
           </div>
         )}
 
@@ -830,13 +972,15 @@ export default function JobsPage() {
             <div className="text-sm text-gray-500">Loading more jobs...</div>
           </div>
         )}
-        
+
         {/* Jobs Count */}
         {totalJobs > 0 && (
           <div className="mt-8">
             <div className="text-sm text-gray-700">
               Showing {jobs.length} of {totalJobs} jobs
-              {!hasMore && jobs.length > 0 && <span className="ml-2 text-gray-500">(All jobs loaded)</span>}
+              {!hasMore && jobs.length > 0 && (
+                <span className="ml-2 text-gray-500">(All jobs loaded)</span>
+              )}
             </div>
           </div>
         )}
@@ -852,9 +996,9 @@ export default function JobsPage() {
               </h3>
               <button
                 onClick={() => {
-                  setShowEmbedModal(false)
-                  setSelectedJobForEmbed(null)
-                  setEmbedCopied(false)
+                  setShowEmbedModal(false);
+                  setSelectedJobForEmbed(null);
+                  setEmbedCopied(false);
                 }}
                 className="text-gray-400 hover:text-gray-600"
               >
@@ -864,10 +1008,11 @@ export default function JobsPage() {
 
             <div className="mb-4">
               <p className="text-sm text-gray-600 mb-3">
-                Copy this code and paste it into any website where you want to display this job opening. 
-                The embedded job will include the application form and all data will be saved to your database.
+                Copy this code and paste it into any website where you want to
+                display this job opening. The embedded job will include the
+                application form and all data will be saved to your database.
               </p>
-              
+
               <div className="bg-gray-50 border border-gray-200 rounded-md p-4">
                 <div className="flex justify-between items-center mb-2">
                   <label className="text-sm font-medium text-gray-700">
@@ -876,13 +1021,13 @@ export default function JobsPage() {
                   <button
                     onClick={copyEmbedCode}
                     className={`flex items-center px-3 py-1 text-sm rounded ${
-                      embedCopied 
-                        ? 'bg-green-100 text-green-800' 
-                        : 'bg-blue-100 text-blue-800 hover:bg-blue-200'
+                      embedCopied
+                        ? "bg-green-100 text-green-800"
+                        : "bg-blue-100 text-blue-800 hover:bg-blue-200"
                     }`}
                   >
                     <Copy className="h-4 w-4 mr-1" />
-                    {embedCopied ? 'Copied!' : 'Copy Code'}
+                    {embedCopied ? "Copied!" : "Copy Code"}
                   </button>
                 </div>
                 <textarea
@@ -894,7 +1039,9 @@ export default function JobsPage() {
             </div>
 
             <div className="bg-blue-50 border border-blue-200 rounded-md p-4 mb-4">
-              <h4 className="text-sm font-medium text-blue-900 mb-2">Features:</h4>
+              <h4 className="text-sm font-medium text-blue-900 mb-2">
+                Features:
+              </h4>
               <ul className="text-sm text-blue-800 space-y-1">
                 <li>• Responsive design that works on any website</li>
                 <li>• Complete job description and application form</li>
@@ -911,7 +1058,7 @@ export default function JobsPage() {
                 className="flex-1 bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700 flex items-center justify-center"
               >
                 <Copy className="h-4 w-4 mr-2" />
-                {embedCopied ? 'Copied to Clipboard!' : 'Copy Embed Code'}
+                {embedCopied ? "Copied to Clipboard!" : "Copy Embed Code"}
               </button>
               <Link
                 href={`/embed/job/${selectedJobForEmbed.id}`}
@@ -925,5 +1072,5 @@ export default function JobsPage() {
         </div>
       )}
     </div>
-  )
+  );
 }

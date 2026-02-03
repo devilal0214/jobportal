@@ -48,11 +48,21 @@ async function authUser(req: NextRequest) {
   if (!decoded || typeof decoded === "string") throw new Error("401");
   const me = await prisma.user.findUnique({
     where: { id: (decoded as any).userId },
-    include: { role: true },
+    include: {
+      role: { include: { permissions: { include: { permission: true } } } },
+    },
   });
   if (!me) throw new Error("404");
-  if (!me.role || !["Administrator", "Human Resources", "Manager"].includes(me.role.name))
-    throw new Error("403");
+  const hasUpdate =
+    me.role &&
+    Array.isArray(me.role.permissions) &&
+    me.role.permissions.some(
+      (rp: any) =>
+        rp.permission.module === "forms" &&
+        rp.permission.action === "update" &&
+        rp.granted,
+    );
+  if (!hasUpdate && me.role?.name !== "Administrator") throw new Error("403");
   return me;
 }
 
@@ -68,7 +78,7 @@ async function doUpdate(formId: string, body: any) {
 
   const clean = (Array.isArray(fields) ? fields : []).map((f, i) => {
     const key = String(
-      f.fieldType || ""
+      f.fieldType || "",
     ).toUpperCase() as keyof typeof PrismaFieldType;
     if (!ALLOWED.has(key)) throw new Error(`Invalid fieldType: ${f.fieldType}`);
     const enumVal = PrismaFieldType[key];
@@ -126,7 +136,7 @@ async function doUpdate(formId: string, body: any) {
 
 export async function PUT(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: { id: string } },
 ) {
   try {
     await authUser(req);
@@ -137,13 +147,13 @@ export async function PUT(
       e?.message === "401"
         ? 401
         : e?.message === "403"
-        ? 403
-        : e?.message === "404"
-        ? 404
-        : 500;
+          ? 403
+          : e?.message === "404"
+            ? 404
+            : 500;
     return NextResponse.json(
       { error: code === 500 ? "Failed to update form" : "Unauthorized" },
-      { status: code }
+      { status: code },
     );
   }
 }
@@ -151,7 +161,7 @@ export async function PUT(
 // 🔁 Accept POST to /api/admin/forms/:id as an update alias (avoids 405 from some clients)
 export async function POST(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: { id: string } },
 ) {
   try {
     await authUser(req);
@@ -162,13 +172,13 @@ export async function POST(
       e?.message === "401"
         ? 401
         : e?.message === "403"
-        ? 403
-        : e?.message === "404"
-        ? 404
-        : 500;
+          ? 403
+          : e?.message === "404"
+            ? 404
+            : 500;
     return NextResponse.json(
       { error: code === 500 ? "Failed to update form" : "Unauthorized" },
-      { status: code }
+      { status: code },
     );
   }
 }
@@ -186,7 +196,7 @@ export async function OPTIONS() {
 
 export async function GET(
   _req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: { id: string } },
 ) {
   const form = await prisma.form.findUnique({
     where: { id: params.id },
@@ -198,7 +208,7 @@ export async function GET(
 
 export async function DELETE(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: { id: string } },
 ) {
   try {
     await authUser(req);
@@ -207,7 +217,7 @@ export async function DELETE(
   } catch {
     return NextResponse.json(
       { error: "Failed to delete form" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

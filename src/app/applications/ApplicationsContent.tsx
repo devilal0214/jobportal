@@ -1,10 +1,10 @@
-'use client'
+"use client";
 
-import { useState, useEffect, useCallback, useRef } from 'react'
-import { useRouter } from 'next/navigation'
-import Link from 'next/link'
-import { 
-  FileText, 
+import { useState, useEffect, useCallback, useRef } from "react";
+import { useRouter } from "next/navigation";
+import Link from "next/link";
+import {
+  FileText,
   Search,
   Filter,
   LogOut,
@@ -17,262 +17,292 @@ import {
   FormInput,
   Loader2,
   Trash2,
-  Users
-} from 'lucide-react'
-import { User } from '@/types/user'
+  Users,
+} from "lucide-react";
+import { User } from "@/types/user";
 
 interface Application {
-  id: string
-  candidateName: string
-  position: string
-  status: string
-  appliedAt: string
-  email: string
-  opened?: boolean // Track if application has been viewed
-  isArchived?: boolean // Archive status
+  id: string;
+  candidateName: string;
+  position: string;
+  status: string;
+  appliedAt: string;
+  email: string;
+  opened?: boolean; // Track if application has been viewed
+  isArchived?: boolean; // Archive status
 }
 
 export default function ApplicationsContent() {
-  const [user, setUser] = useState<User | null>(null)
-  const [initialLoading, setInitialLoading] = useState(true)
-  const [searchTerm, setSearchTerm] = useState('')
-  const [statusFilter, setStatusFilter] = useState('')
-  const [selectedApplications, setSelectedApplications] = useState<string[]>([])
-  const [archiveMode, setArchiveMode] = useState<'normal' | 'archive'>('normal')
-  const [bulkActionLoading, setBulkActionLoading] = useState(false)
-  const [showJobsDropdown, setShowJobsDropdown] = useState(false)
-  const itemsPerPage = 10
-  const router = useRouter()
+  const [user, setUser] = useState<User | null>(null);
+  const [initialLoading, setInitialLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [statusFilter, setStatusFilter] = useState("");
+  const [selectedApplications, setSelectedApplications] = useState<string[]>(
+    [],
+  );
+  const [archiveMode, setArchiveMode] = useState<"normal" | "archive">(
+    "normal",
+  );
+  const [bulkActionLoading, setBulkActionLoading] = useState(false);
+  const [showJobsDropdown, setShowJobsDropdown] = useState(false);
+  const itemsPerPage = 10;
+  const router = useRouter();
 
   // Infinite scroll state
-  const [applications, setApplications] = useState<Application[]>([])
-  const [loading, setLoading] = useState(false)
-  const [hasMore, setHasMore] = useState(true)
-  const currentPageRef = useRef(1) // Use ref to avoid stale closure issues
-  const [totalApplications, setTotalApplications] = useState(0)
+  const [applications, setApplications] = useState<Application[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [hasMore, setHasMore] = useState(true);
+  const currentPageRef = useRef(1); // Use ref to avoid stale closure issues
+  const [totalApplications, setTotalApplications] = useState(0);
 
   // Fetch function for infinite scroll
-  const fetchApplicationsData = useCallback(async (page: number, limit: number) => {
-    const token = localStorage.getItem('token')
-    if (!token) {
-      throw new Error('No authentication token')
-    }
-
-    const params = new URLSearchParams({
-      limit: limit.toString(),
-      page: page.toString()
-    })
-    
-    if (statusFilter) {
-      params.append('status', statusFilter)
-    }
-
-    const endpoint = archiveMode === 'archive' 
-      ? `/api/applications/archive?${params.toString()}`
-      : `/api/applications?${params.toString()}`
-
-    console.log('fetchApplicationsData called with archiveMode:', archiveMode, 'endpoint:', endpoint)
-
-    const response = await fetch(endpoint, {
-      headers: {
-        'Authorization': `Bearer ${token}`
+  const fetchApplicationsData = useCallback(
+    async (page: number, limit: number) => {
+      const token = localStorage.getItem("token");
+      if (!token) {
+        throw new Error("No authentication token");
       }
-    })
 
-    if (!response.ok) {
-      throw new Error('Failed to fetch applications')
-    }
+      const params = new URLSearchParams({
+        limit: limit.toString(),
+        page: page.toString(),
+      });
 
-    const data = await response.json()
-    
-    // Set "opened" status based on application status
-    // Pending = Not opened (unread), Other statuses = opened (read)
-    const applicationsWithOpenedStatus = (data.applications || []).map((app: Application) => ({
-      ...app,
-      opened: app.status !== 'pending' // If status is not pending, it means it has been opened/viewed
-    }))
-    
-    
-    return {
-      items: applicationsWithOpenedStatus,
-      total: data.total || 0,
-      hasMore: (data.page || 1) < (data.totalPages || 1) // Current page < total pages means more data available
-    }
-  }, [statusFilter, archiveMode])
+      if (statusFilter) {
+        params.append("status", statusFilter);
+      }
+
+      const endpoint =
+        archiveMode === "archive"
+          ? `/api/applications/archive?${params.toString()}`
+          : `/api/applications?${params.toString()}`;
+
+      console.log(
+        "fetchApplicationsData called with archiveMode:",
+        archiveMode,
+        "endpoint:",
+        endpoint,
+      );
+
+      const response = await fetch(endpoint, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to fetch applications");
+      }
+
+      const data = await response.json();
+
+      // Set "opened" status based on application status
+      // Pending = Not opened (unread), Other statuses = opened (read)
+      const applicationsWithOpenedStatus = (data.applications || []).map(
+        (app: Application) => ({
+          ...app,
+          opened: app.status !== "pending", // If status is not pending, it means it has been opened/viewed
+        }),
+      );
+
+      return {
+        items: applicationsWithOpenedStatus,
+        total: data.total || 0,
+        hasMore: (data.page || 1) < (data.totalPages || 1), // Current page < total pages means more data available
+      };
+    },
+    [statusFilter, archiveMode],
+  );
 
   // Load more applications for infinite scroll
   const loadMoreApplications = useCallback(async () => {
     if (loading || !hasMore) {
-      return
+      return;
     }
 
-    const nextPage = currentPageRef.current
-    setLoading(true)
+    const nextPage = currentPageRef.current;
+    setLoading(true);
     try {
-      const data = await fetchApplicationsData(nextPage, itemsPerPage)
-      
+      const data = await fetchApplicationsData(nextPage, itemsPerPage);
+
       if (data.items.length > 0) {
-        setApplications(prev => [...prev, ...data.items])
-        currentPageRef.current = nextPage + 1
+        setApplications((prev) => [...prev, ...data.items]);
+        currentPageRef.current = nextPage + 1;
       }
-      
-      setTotalApplications(data.total)
-      setHasMore(data.hasMore)
+
+      setTotalApplications(data.total);
+      setHasMore(data.hasMore);
     } catch (error) {
-      console.error('Failed to load applications:', error)
+      console.error("Failed to load applications:", error);
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }, [fetchApplicationsData, itemsPerPage, loading, hasMore])
+  }, [fetchApplicationsData, itemsPerPage, loading, hasMore]);
 
   // Refresh function - resets and loads first page
   const refreshApplications = useCallback(async () => {
-    setLoading(true)
-    setApplications([])
-    currentPageRef.current = 1
-    setHasMore(true)
-    
+    setLoading(true);
+    setApplications([]);
+    currentPageRef.current = 1;
+    setHasMore(true);
+
     try {
-      const data = await fetchApplicationsData(1, itemsPerPage)
-      setApplications(data.items)
-      currentPageRef.current = 2 // Set to 2 so next load fetches page 2
-      setTotalApplications(data.total)
-      setHasMore(data.hasMore)
+      const data = await fetchApplicationsData(1, itemsPerPage);
+      setApplications(data.items);
+      currentPageRef.current = 2; // Set to 2 so next load fetches page 2
+      setTotalApplications(data.total);
+      setHasMore(data.hasMore);
     } catch (error) {
-      console.error('Failed to refresh applications:', error)
+      console.error("Failed to refresh applications:", error);
     } finally {
-      setLoading(false)
-      setInitialLoading(false)
+      setLoading(false);
+      setInitialLoading(false);
     }
-  }, [fetchApplicationsData, itemsPerPage])
+  }, [fetchApplicationsData, itemsPerPage]);
 
   // Scroll handler for infinite scroll - REMOVED to prevent page distortion
   // Using manual "Load More" button instead of automatic scroll detection
 
   useEffect(() => {
     const checkAuth = async () => {
-      const token = localStorage.getItem('token')
+      const token = localStorage.getItem("token");
       if (!token) {
-        router.push('/login')
-        return
+        router.push("/login");
+        return;
       }
 
       try {
-        const response = await fetch('/api/auth/me', {
+        const response = await fetch("/api/auth/me", {
           headers: {
-            'Authorization': `Bearer ${token}`
-          }
-        })
+            Authorization: `Bearer ${token}`,
+          },
+        });
 
         if (response.ok) {
-          const userData = await response.json()
-          setUser(userData)
-          
+          const userData = await response.json();
+          setUser(userData);
+
           // Inline initial data load to avoid dependency issues
-          setLoading(true)
-          setApplications([])
-          setHasMore(true)
-          
+          setLoading(true);
+          setApplications([]);
+          setHasMore(true);
+
           try {
             const params = new URLSearchParams({
               limit: itemsPerPage.toString(),
-              page: '1'
-            })
-            
+              page: "1",
+            });
+
             if (statusFilter) {
-              params.append('status', statusFilter)
+              params.append("status", statusFilter);
             }
 
-            const endpoint = archiveMode === 'archive' 
-              ? `/api/applications/archive?${params.toString()}`
-              : `/api/applications?${params.toString()}`
+            const endpoint =
+              archiveMode === "archive"
+                ? `/api/applications/archive?${params.toString()}`
+                : `/api/applications?${params.toString()}`;
 
             const appsResponse = await fetch(endpoint, {
               headers: {
-                'Authorization': `Bearer ${token}`
-              }
-            })
+                Authorization: `Bearer ${token}`,
+              },
+            });
 
             if (appsResponse.ok) {
-              const data = await appsResponse.json()
-              
+              const data = await appsResponse.json();
+
               // Set "opened" status based on application status
-              const applicationsWithOpenedStatus = (data.applications || []).map((app: Application) => ({
+              const applicationsWithOpenedStatus = (
+                data.applications || []
+              ).map((app: Application) => ({
                 ...app,
-                opened: app.status !== 'pending'
-              }))
-              
-              setApplications(applicationsWithOpenedStatus)
-              currentPageRef.current = 2 // Set to 2 so next load fetches page 2
-              setTotalApplications(data.total || 0)
-              setHasMore((data.page || 1) < (data.totalPages || 1))
+                opened: app.status !== "pending",
+              }));
+
+              setApplications(applicationsWithOpenedStatus);
+              currentPageRef.current = 2; // Set to 2 so next load fetches page 2
+              setTotalApplications(data.total || 0);
+              setHasMore((data.page || 1) < (data.totalPages || 1));
             }
           } catch (appsError) {
-            console.error('Failed to load initial applications:', appsError)
+            console.error("Failed to load initial applications:", appsError);
           } finally {
-            setLoading(false)
+            setLoading(false);
           }
         } else {
-          localStorage.removeItem('token')
-          router.push('/login')
+          localStorage.removeItem("token");
+          router.push("/login");
         }
       } catch (error) {
-        console.error('Auth check failed:', error)
-        router.push('/login')
+        console.error("Auth check failed:", error);
+        router.push("/login");
       } finally {
-        setInitialLoading(false)
+        setInitialLoading(false);
       }
-    }
+    };
 
-    checkAuth()
+    checkAuth();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [router]) // Only router dependency - statusFilter/archiveMode should NOT trigger re-auth
+  }, [router]); // Only router dependency - statusFilter/archiveMode should NOT trigger re-auth
 
   // Handle URL parameters for filtering (e.g., ?status=PENDING)
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const urlParams = new URLSearchParams(window.location.search)
-      const statusParam = urlParams.get('status')
-      
+    if (typeof window !== "undefined") {
+      const urlParams = new URLSearchParams(window.location.search);
+      const statusParam = urlParams.get("status");
+
       if (statusParam) {
         // Validate the status parameter against valid values
-        const validStatuses = ['PENDING', 'UNDER_REVIEW', 'SHORTLISTED', 'SELECTED', 'REJECTED']
+        const validStatuses = [
+          "PENDING",
+          "UNDER_REVIEW",
+          "SHORTLISTED",
+          "SELECTED",
+          "REJECTED",
+        ];
         if (validStatuses.includes(statusParam.toUpperCase())) {
-          console.log('Setting status filter from URL:', statusParam.toUpperCase())
-          setStatusFilter(statusParam.toUpperCase())
+          console.log(
+            "Setting status filter from URL:",
+            statusParam.toUpperCase(),
+          );
+          setStatusFilter(statusParam.toUpperCase());
         }
       }
     }
-  }, []) // Run once on component mount
+  }, []); // Run once on component mount
 
   // Watch for status filter changes and refresh data
   useEffect(() => {
     if (user && !initialLoading) {
-      console.log('Status filter changed to:', statusFilter, 'Refreshing data...')
+      console.log(
+        "Status filter changed to:",
+        statusFilter,
+        "Refreshing data...",
+      );
       // Clear applications immediately to show loading state
-      setApplications([])
-      setLoading(true)
-      currentPageRef.current = 1
-      setHasMore(true)
-      
+      setApplications([]);
+      setLoading(true);
+      currentPageRef.current = 1;
+      setHasMore(true);
+
       // Load data with new filter
       const loadFilteredData = async () => {
         try {
-          const data = await fetchApplicationsData(1, itemsPerPage)
-          setApplications(data.items)
-          currentPageRef.current = 2
-          setTotalApplications(data.total)
-          setHasMore(data.hasMore)
+          const data = await fetchApplicationsData(1, itemsPerPage);
+          setApplications(data.items);
+          currentPageRef.current = 2;
+          setTotalApplications(data.total);
+          setHasMore(data.hasMore);
         } catch (error) {
-          console.error('Failed to load filtered applications:', error)
+          console.error("Failed to load filtered applications:", error);
         } finally {
-          setLoading(false)
+          setLoading(false);
         }
-      }
-      
-      loadFilteredData()
+      };
+
+      loadFilteredData();
     }
-  }, [statusFilter, user, initialLoading, fetchApplicationsData, itemsPerPage])
+  }, [statusFilter, user, initialLoading, fetchApplicationsData, itemsPerPage]);
 
   // Remove the automatic archive mode useEffect to avoid conflicts - button handles it directly
 
@@ -346,198 +376,217 @@ export default function ApplicationsContent() {
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (showJobsDropdown) {
-        const target = event.target as Element
-        if (!target.closest('.relative')) {
-          setShowJobsDropdown(false)
+        const target = event.target as Element;
+        if (!target.closest(".relative")) {
+          setShowJobsDropdown(false);
         }
       }
-    }
+    };
 
-    document.addEventListener('mousedown', handleClickOutside)
+    document.addEventListener("mousedown", handleClickOutside);
     return () => {
-      document.removeEventListener('mousedown', handleClickOutside)
-    }
-  }, [showJobsDropdown])
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [showJobsDropdown]);
 
   const handleLogout = async () => {
     try {
-      await fetch('/api/auth/logout', {
-        method: 'POST',
+      await fetch("/api/auth/logout", {
+        method: "POST",
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        }
-      })
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+      });
     } catch (error) {
-      console.error('Logout error:', error)
+      console.error("Logout error:", error);
     } finally {
-      localStorage.removeItem('token')
-      router.push('/login')
+      localStorage.removeItem("token");
+      router.push("/login");
     }
-  }
+  };
 
-  const handleDeleteApplication = async (applicationId: string, candidateName: string) => {
-    if (!confirm(`Are you sure you want to delete the application from "${candidateName}"? This action cannot be undone.`)) {
-      return
+  const handleDeleteApplication = async (
+    applicationId: string,
+    candidateName: string,
+  ) => {
+    if (
+      !confirm(
+        `Are you sure you want to delete the application from "${candidateName}"? This action cannot be undone.`,
+      )
+    ) {
+      return;
     }
 
-    const token = localStorage.getItem('token')
-    if (!token) return
+    const token = localStorage.getItem("token");
+    if (!token) return;
 
     try {
       const response = await fetch(`/api/applications/${applicationId}`, {
-        method: 'DELETE',
+        method: "DELETE",
         headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      })
-
-      if (response.ok) {
-        // Refresh the applications list
-        await refreshApplications()
-      } else {
-        console.error('Failed to delete application')
-        alert('Failed to delete application. Please try again.')
-      }
-    } catch (error) {
-      console.error('Error deleting application:', error)
-      alert('An error occurred while deleting the application.')
-    }
-  }
-
-  const handleArchiveApplication = async (applicationId: string, isArchived: boolean) => {
-    const token = localStorage.getItem('token')
-    if (!token) return
-
-    try {
-      const response = await fetch(`/api/applications/${applicationId}/archive`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
+          Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ isArchived: !isArchived })
-      })
+      });
 
       if (response.ok) {
         // Refresh the applications list
-        await refreshApplications()
+        await refreshApplications();
       } else {
-        console.error('Failed to archive/unarchive application')
-        alert('Failed to update application. Please try again.')
+        console.error("Failed to delete application");
+        alert("Failed to delete application. Please try again.");
       }
     } catch (error) {
-      console.error('Error archiving application:', error)
-      alert('An error occurred while updating the application.')
+      console.error("Error deleting application:", error);
+      alert("An error occurred while deleting the application.");
     }
-  }
+  };
 
-  const handleBulkAction = async (action: 'archive' | 'unarchive' | 'delete') => {
-    if (selectedApplications.length === 0) {
-      alert('Please select applications first.')
-      return
-    }
-
-    const message = action === 'archive' 
-      ? `Are you sure you want to archive ${selectedApplications.length} application(s)?`
-      : action === 'unarchive'
-      ? `Are you sure you want to unarchive ${selectedApplications.length} application(s)?`
-      : `Are you sure you want to delete ${selectedApplications.length} application(s)? This action cannot be undone.`
-    
-    if (!confirm(message)) {
-      return
-    }
-
-    setBulkActionLoading(true)
-    const token = localStorage.getItem('token')
-    if (!token) return
+  const handleArchiveApplication = async (
+    applicationId: string,
+    isArchived: boolean,
+  ) => {
+    const token = localStorage.getItem("token");
+    if (!token) return;
 
     try {
-      const promises = selectedApplications.map(id => {
-        if (action === 'archive') {
+      const response = await fetch(
+        `/api/applications/${applicationId}/archive`,
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({ isArchived: !isArchived }),
+        },
+      );
+
+      if (response.ok) {
+        // Refresh the applications list
+        await refreshApplications();
+      } else {
+        console.error("Failed to archive/unarchive application");
+        alert("Failed to update application. Please try again.");
+      }
+    } catch (error) {
+      console.error("Error archiving application:", error);
+      alert("An error occurred while updating the application.");
+    }
+  };
+
+  const handleBulkAction = async (
+    action: "archive" | "unarchive" | "delete",
+  ) => {
+    if (selectedApplications.length === 0) {
+      alert("Please select applications first.");
+      return;
+    }
+
+    const message =
+      action === "archive"
+        ? `Are you sure you want to archive ${selectedApplications.length} application(s)?`
+        : action === "unarchive"
+          ? `Are you sure you want to unarchive ${selectedApplications.length} application(s)?`
+          : `Are you sure you want to delete ${selectedApplications.length} application(s)? This action cannot be undone.`;
+
+    if (!confirm(message)) {
+      return;
+    }
+
+    setBulkActionLoading(true);
+    const token = localStorage.getItem("token");
+    if (!token) return;
+
+    try {
+      const promises = selectedApplications.map((id) => {
+        if (action === "archive") {
           return fetch(`/api/applications/${id}/archive`, {
-            method: 'PUT',
+            method: "PUT",
             headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${token}`
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
             },
-            body: JSON.stringify({ isArchived: true })
-          })
-        } else if (action === 'unarchive') {
+            body: JSON.stringify({ isArchived: true }),
+          });
+        } else if (action === "unarchive") {
           return fetch(`/api/applications/${id}/archive`, {
-            method: 'PUT',
+            method: "PUT",
             headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${token}`
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
             },
-            body: JSON.stringify({ isArchived: false })
-          })
+            body: JSON.stringify({ isArchived: false }),
+          });
         } else {
           return fetch(`/api/applications/${id}`, {
-            method: 'DELETE',
+            method: "DELETE",
             headers: {
-              'Authorization': `Bearer ${token}`
-            }
-          })
+              Authorization: `Bearer ${token}`,
+            },
+          });
         }
-      })
+      });
 
-      await Promise.all(promises)
-      setSelectedApplications([])
-      await refreshApplications()
+      await Promise.all(promises);
+      setSelectedApplications([]);
+      await refreshApplications();
     } catch (error) {
-      console.error(`Error ${action}ing applications:`, error)
-      alert(`An error occurred while ${action}ing applications.`)
+      console.error(`Error ${action}ing applications:`, error);
+      alert(`An error occurred while ${action}ing applications.`);
     } finally {
-      setBulkActionLoading(false)
+      setBulkActionLoading(false);
     }
-  }
+  };
 
   // Mark application as opened when viewed - changes status from pending to under_review
   const markAsOpened = useCallback(async (applicationId: string) => {
-    const token = localStorage.getItem('token')
-    if (!token) return
+    const token = localStorage.getItem("token");
+    if (!token) return;
 
     try {
       // Update local state immediately for better UX
-      setApplications(prev => 
-        prev.map(app => 
-          app.id === applicationId 
-            ? { 
-                ...app, 
+      setApplications((prev) =>
+        prev.map((app) =>
+          app.id === applicationId
+            ? {
+                ...app,
                 opened: true,
-                status: app.status === 'pending' ? 'under_review' : app.status 
+                status: app.status === "pending" ? "under_review" : app.status,
               }
-            : app
-        )
-      )
+            : app,
+        ),
+      );
 
       // Send API request to mark as opened and update status
       await fetch(`/api/applications/${applicationId}/mark-opened`, {
-        method: 'PUT',
+        method: "PUT",
         headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
-          status: 'under_review'
-        })
-      })
+          status: "under_review",
+        }),
+      });
     } catch (error) {
-      console.error('Failed to mark application as opened:', error)
+      console.error("Failed to mark application as opened:", error);
     }
-  }, [])
+  }, []);
 
   // Filter applications
-  const filteredApplications = applications.filter(application => {
-    const matchesSearch = !searchTerm || 
-      application.candidateName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+  const filteredApplications = applications.filter((application) => {
+    const matchesSearch =
+      !searchTerm ||
+      application.candidateName
+        .toLowerCase()
+        .includes(searchTerm.toLowerCase()) ||
       application.position.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      application.email.toLowerCase().includes(searchTerm.toLowerCase())
-    
-    const matchesStatus = !statusFilter || application.status === statusFilter
-    
-    return matchesSearch && matchesStatus
-  })
+      application.email.toLowerCase().includes(searchTerm.toLowerCase());
+
+    const matchesStatus = !statusFilter || application.status === statusFilter;
+
+    return matchesSearch && matchesStatus;
+  });
 
   if (initialLoading) {
     return (
@@ -547,15 +596,20 @@ export default function ApplicationsContent() {
           <p className="mt-4 text-gray-600">Loading...</p>
         </div>
       </div>
-    )
+    );
   }
 
   if (!user) {
-    return null
+    return null;
   }
 
   // Debug log the current state
-  console.log('Rendering with archiveMode:', archiveMode, 'Applications count:', applications.length)
+  console.log(
+    "Rendering with archiveMode:",
+    archiveMode,
+    "Applications count:",
+    applications.length,
+  );
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -589,39 +643,78 @@ export default function ApplicationsContent() {
                         <Briefcase className="h-4 w-4" />
                         <span>View All Jobs</span>
                       </Link>
-                      <Link
-                        href="/jobs/new"
-                        className="px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center space-x-2"
-                        onClick={() => setShowJobsDropdown(false)}
-                      >
-                        <Plus className="h-4 w-4" />
-                        <span>Create Job</span>
-                      </Link>
-                      <Link
-                        href="/admin/form-builder"
-                        className="px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center space-x-2"
-                        onClick={() => setShowJobsDropdown(false)}
-                      >
-                        <FormInput className="h-4 w-4" />
-                        <span>Create Form</span>
-                      </Link>
+                      {((user.role &&
+                        Array.isArray(user.role.permissions) &&
+                        user.role.permissions.some(
+                          (p) =>
+                            p.module === "jobs" &&
+                            p.action === "create" &&
+                            p.granted,
+                        )) ||
+                        user.role?.name === "Administrator") && (
+                        <Link
+                          href="/jobs/new"
+                          className="px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center space-x-2"
+                          onClick={() => setShowJobsDropdown(false)}
+                        >
+                          <Plus className="h-4 w-4" />
+                          <span>Create Job</span>
+                        </Link>
+                      )}
+                      {((user.role &&
+                        Array.isArray(user.role.permissions) &&
+                        user.role.permissions.some(
+                          (p) =>
+                            p.module === "forms" &&
+                            p.action === "create" &&
+                            p.granted,
+                        )) ||
+                        user.role?.name === "Administrator") && (
+                        <Link
+                          href="/admin/form-builder"
+                          className="px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center space-x-2"
+                          onClick={() => setShowJobsDropdown(false)}
+                        >
+                          <FormInput className="h-4 w-4" />
+                          <span>Create Form</span>
+                        </Link>
+                      )}
                     </div>
                   </div>
                 )}
               </div>
-              <Link href="/applications" className="text-indigo-600 font-medium flex items-center space-x-1">
+              <Link
+                href="/applications"
+                className="text-indigo-600 font-medium flex items-center space-x-1"
+              >
                 <FileText className="h-4 w-4" />
                 <span>Applications</span>
               </Link>
-              {(user.role?.name === 'Administrator' || user.role?.name === 'Human Resources') && (
-                <Link href="/admin" className="text-gray-700 hover:text-gray-900 flex items-center space-x-1">
+              {((user.role &&
+                Array.isArray(user.role.permissions) &&
+                user.role.permissions.some(
+                  (p) =>
+                    (p.module === "roles" ||
+                      p.module === "users" ||
+                      p.module === "settings" ||
+                      p.module === "dashboard" ||
+                      p.module === "email" ||
+                      p.module === "forms") &&
+                    p.action === "read" &&
+                    p.granted,
+                )) ||
+                user.role?.name === "Administrator") && (
+                <Link
+                  href="/admin"
+                  className="text-gray-700 hover:text-gray-900 flex items-center space-x-1"
+                >
                   <Settings className="h-4 w-4" />
                   <span>Admin</span>
                 </Link>
               )}
               <div className="flex items-center space-x-3">
                 <span className="text-sm text-gray-700">
-                  {user.name} ({user.role?.name || 'Guest'})
+                  {user.name} ({user.role?.name || "Guest"})
                 </span>
                 <button
                   onClick={handleLogout}
@@ -648,69 +741,81 @@ export default function ApplicationsContent() {
           <div className="flex items-center space-x-3">
             <button
               onClick={async () => {
-                const newMode = archiveMode === 'normal' ? 'archive' : 'normal'
-                console.log('Button clicked - switching from:', archiveMode, 'to:', newMode)
-                
+                const newMode = archiveMode === "normal" ? "archive" : "normal";
+                console.log(
+                  "Button clicked - switching from:",
+                  archiveMode,
+                  "to:",
+                  newMode,
+                );
+
                 // Update state immediately
-                setArchiveMode(newMode)
-                
+                setArchiveMode(newMode);
+
                 // Clear current applications immediately
-                setApplications([])
-                setLoading(true)
-                currentPageRef.current = 1
-                setHasMore(true)
-                
+                setApplications([]);
+                setLoading(true);
+                currentPageRef.current = 1;
+                setHasMore(true);
+
                 // Fetch data for the new mode directly
                 try {
-                  const token = localStorage.getItem('token')
-                  if (!token) return
-                  
+                  const token = localStorage.getItem("token");
+                  if (!token) return;
+
                   const params = new URLSearchParams({
                     limit: itemsPerPage.toString(),
-                    page: '1'
-                  })
-                  
+                    page: "1",
+                  });
+
                   if (statusFilter) {
-                    params.append('status', statusFilter)
+                    params.append("status", statusFilter);
                   }
-                  
-                  const endpoint = newMode === 'archive'
-                    ? `/api/applications/archive?${params.toString()}`
-                    : `/api/applications?${params.toString()}`
-                    
-                  console.log('Fetching from endpoint:', endpoint)
-                  
+
+                  const endpoint =
+                    newMode === "archive"
+                      ? `/api/applications/archive?${params.toString()}`
+                      : `/api/applications?${params.toString()}`;
+
+                  console.log("Fetching from endpoint:", endpoint);
+
                   const response = await fetch(endpoint, {
-                    headers: { 'Authorization': `Bearer ${token}` }
-                  })
-                  
+                    headers: { Authorization: `Bearer ${token}` },
+                  });
+
                   if (response.ok) {
-                    const data = await response.json()
-                    const applicationsWithOpenedStatus = (data.applications || []).map((app: Application) => ({
+                    const data = await response.json();
+                    const applicationsWithOpenedStatus = (
+                      data.applications || []
+                    ).map((app: Application) => ({
                       ...app,
-                      opened: app.status !== 'PENDING'
-                    }))
-                    
-                    setApplications(applicationsWithOpenedStatus)
-                    setTotalApplications(data.total || 0)
-                    setHasMore((data.page || 1) < (data.totalPages || 1))
-                    currentPageRef.current = 2
-                    
-                    console.log('Data loaded successfully:', applicationsWithOpenedStatus.length, 'applications')
+                      opened: app.status !== "PENDING",
+                    }));
+
+                    setApplications(applicationsWithOpenedStatus);
+                    setTotalApplications(data.total || 0);
+                    setHasMore((data.page || 1) < (data.totalPages || 1));
+                    currentPageRef.current = 2;
+
+                    console.log(
+                      "Data loaded successfully:",
+                      applicationsWithOpenedStatus.length,
+                      "applications",
+                    );
                   }
                 } catch (error) {
-                  console.error('Error switching archive mode:', error)
+                  console.error("Error switching archive mode:", error);
                 } finally {
-                  setLoading(false)
+                  setLoading(false);
                 }
               }}
               className={`flex items-center px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-                archiveMode === 'archive'
-                  ? 'bg-blue-600 text-white hover:bg-blue-700'
-                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                archiveMode === "archive"
+                  ? "bg-blue-600 text-white hover:bg-blue-700"
+                  : "bg-gray-100 text-gray-700 hover:bg-gray-200"
               }`}
             >
-              {archiveMode === 'archive' ? (
+              {archiveMode === "archive" ? (
                 <>
                   <ArchiveX className="h-4 w-4 mr-2" />
                   View Active
@@ -733,9 +838,9 @@ export default function ApplicationsContent() {
                 {selectedApplications.length} application(s) selected
               </span>
               <div className="flex space-x-2">
-                {archiveMode === 'normal' && (
+                {archiveMode === "normal" && (
                   <button
-                    onClick={() => handleBulkAction('archive')}
+                    onClick={() => handleBulkAction("archive")}
                     disabled={bulkActionLoading}
                     className="px-3 py-1.5 bg-yellow-600 text-white text-sm rounded-md hover:bg-yellow-700 disabled:opacity-50 flex items-center"
                   >
@@ -747,9 +852,9 @@ export default function ApplicationsContent() {
                     Archive Selected
                   </button>
                 )}
-                {archiveMode === 'archive' && (
+                {archiveMode === "archive" && (
                   <button
-                    onClick={() => handleBulkAction('unarchive')}
+                    onClick={() => handleBulkAction("unarchive")}
                     disabled={bulkActionLoading}
                     className="px-3 py-1.5 bg-green-600 text-white text-sm rounded-md hover:bg-green-700 disabled:opacity-50 flex items-center"
                   >
@@ -761,9 +866,9 @@ export default function ApplicationsContent() {
                     Unarchive Selected
                   </button>
                 )}
-                {user.role?.name === 'Administrator' && (
+                {user.role?.name === "Administrator" && (
                   <button
-                    onClick={() => handleBulkAction('delete')}
+                    onClick={() => handleBulkAction("delete")}
                     disabled={bulkActionLoading}
                     className="px-3 py-1.5 bg-red-600 text-white text-sm rounded-md hover:bg-red-700 disabled:opacity-50 flex items-center"
                   >
@@ -789,10 +894,12 @@ export default function ApplicationsContent() {
         {/* Page Heading */}
         <div className="mb-6">
           <div className="flex items-center space-x-3">
-            {archiveMode === 'archive' ? (
+            {archiveMode === "archive" ? (
               <>
                 <Archive className="h-6 w-6 text-orange-600" />
-                <h1 className="text-2xl font-bold text-gray-900">Archived Applications</h1>
+                <h1 className="text-2xl font-bold text-gray-900">
+                  Archived Applications
+                </h1>
                 <span className="bg-orange-100 text-orange-800 text-sm font-medium px-2.5 py-0.5 rounded-full">
                   Archive View
                 </span>
@@ -800,7 +907,9 @@ export default function ApplicationsContent() {
             ) : (
               <>
                 <Users className="h-6 w-6 text-blue-600" />
-                <h1 className="text-2xl font-bold text-gray-900">Active Applications</h1>
+                <h1 className="text-2xl font-bold text-gray-900">
+                  Active Applications
+                </h1>
                 <span className="bg-blue-100 text-blue-800 text-sm font-medium px-2.5 py-0.5 rounded-full">
                   Active View
                 </span>
@@ -827,7 +936,7 @@ export default function ApplicationsContent() {
                 />
               </div>
             </div>
-            
+
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Filter by Status
@@ -837,8 +946,8 @@ export default function ApplicationsContent() {
                 <select
                   value={statusFilter}
                   onChange={(e) => {
-                    console.log('Dropdown changed to:', e.target.value)
-                    setStatusFilter(e.target.value)
+                    console.log("Dropdown changed to:", e.target.value);
+                    setStatusFilter(e.target.value);
                     // Remove manual refresh - useEffect will handle it automatically
                   }}
                   className="pl-10 w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 text-gray-600"
@@ -855,7 +964,8 @@ export default function ApplicationsContent() {
 
             <div className="flex items-end">
               <span className="text-sm text-gray-600">
-                {filteredApplications.length} {archiveMode === 'archive' ? 'archived' : 'active'} applications
+                {filteredApplications.length}{" "}
+                {archiveMode === "archive" ? "archived" : "active"} applications
               </span>
             </div>
           </div>
@@ -866,17 +976,20 @@ export default function ApplicationsContent() {
           {initialLoading ? (
             <div className="flex items-center justify-center py-12">
               <Loader2 className="h-6 w-6 animate-spin text-indigo-600" />
-              <span className="ml-2 text-gray-600">Loading applications...</span>
+              <span className="ml-2 text-gray-600">
+                Loading applications...
+              </span>
             </div>
           ) : filteredApplications.length === 0 ? (
             <div className="text-center py-12">
               <FileText className="mx-auto h-12 w-12 text-gray-400" />
-              <h3 className="mt-2 text-sm font-medium text-gray-900">No applications found</h3>
+              <h3 className="mt-2 text-sm font-medium text-gray-900">
+                No applications found
+              </h3>
               <p className="mt-1 text-sm text-gray-500">
-                {applications.length === 0 
+                {applications.length === 0
                   ? "No applications have been submitted yet."
-                  : "Try adjusting your search or filter criteria."
-                }
+                  : "Try adjusting your search or filter criteria."}
               </p>
             </div>
           ) : (
@@ -887,12 +1000,18 @@ export default function ApplicationsContent() {
                     <th className="px-6 py-3 text-left">
                       <input
                         type="checkbox"
-                        checked={selectedApplications.length === filteredApplications.length && filteredApplications.length > 0}
+                        checked={
+                          selectedApplications.length ===
+                            filteredApplications.length &&
+                          filteredApplications.length > 0
+                        }
                         onChange={(e) => {
                           if (e.target.checked) {
-                            setSelectedApplications(filteredApplications.map(app => app.id))
+                            setSelectedApplications(
+                              filteredApplications.map((app) => app.id),
+                            );
                           } else {
-                            setSelectedApplications([])
+                            setSelectedApplications([]);
                           }
                         }}
                         className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
@@ -917,21 +1036,33 @@ export default function ApplicationsContent() {
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
                   {filteredApplications.map((application) => {
-                    const isArchived = application.isArchived || false // Use actual archived status from application
-                    const isUnread = application.status === 'PENDING' // PENDING = Unread (uppercase)
+                    const isArchived = application.isArchived || false; // Use actual archived status from application
+                    const isUnread = application.status === "PENDING"; // PENDING = Unread (uppercase)
                     return (
-                      <tr key={application.id} className={`hover:bg-gray-50 ${
-                        isUnread ? 'bg-blue-50 border-l-4 border-blue-400' : ''
-                      }`}>
+                      <tr
+                        key={application.id}
+                        className={`hover:bg-gray-50 ${
+                          isUnread
+                            ? "bg-blue-50 border-l-4 border-blue-400"
+                            : ""
+                        }`}
+                      >
                         <td className="px-6 py-4 whitespace-nowrap">
                           <input
                             type="checkbox"
-                            checked={selectedApplications.includes(application.id)}
+                            checked={selectedApplications.includes(
+                              application.id,
+                            )}
                             onChange={(e) => {
                               if (e.target.checked) {
-                                setSelectedApplications(prev => [...prev, application.id])
+                                setSelectedApplications((prev) => [
+                                  ...prev,
+                                  application.id,
+                                ]);
                               } else {
-                                setSelectedApplications(prev => prev.filter(id => id !== application.id))
+                                setSelectedApplications((prev) =>
+                                  prev.filter((id) => id !== application.id),
+                                );
                               }
                             }}
                             className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
@@ -941,7 +1072,9 @@ export default function ApplicationsContent() {
                           <div className="flex items-center">
                             <div>
                               <div className="flex items-center">
-                                <div className={`text-sm ${isUnread ? 'font-bold text-gray-900' : 'font-medium text-gray-900'}`}>
+                                <div
+                                  className={`text-sm ${isUnread ? "font-bold text-gray-900" : "font-medium text-gray-900"}`}
+                                >
                                   {application.candidateName}
                                 </div>
                                 {isUnread && (
@@ -950,37 +1083,57 @@ export default function ApplicationsContent() {
                                   </span>
                                 )}
                               </div>
-                              <div className={`text-sm ${isUnread ? 'font-medium text-gray-600' : 'text-gray-500'}`}>
+                              <div
+                                className={`text-sm ${isUnread ? "font-medium text-gray-600" : "text-gray-500"}`}
+                              >
                                 {application.email}
                               </div>
                             </div>
                           </div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
-                          <div className={`text-sm ${isUnread ? 'font-bold text-gray-900' : 'text-gray-900'}`}>
+                          <div
+                            className={`text-sm ${isUnread ? "font-bold text-gray-900" : "text-gray-900"}`}
+                          >
                             {application.position}
                           </div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
-                          <span className={`inline-flex items-center px-3 py-1 text-xs font-bold rounded-full border ${
-                            application.status === 'PENDING' ? 'bg-blue-500 text-white border-blue-600' :
-                            application.status === 'UNDER_REVIEW' ? 'bg-yellow-500 text-black border-yellow-600' :
-                            application.status === 'SHORTLISTED' ? 'bg-purple-500 text-white border-purple-600' :
-                            application.status === 'SELECTED' ? 'bg-green-500 text-white border-green-600' :
-                            application.status === 'REJECTED' ? 'bg-red-500 text-white border-red-600' :
-                            'bg-gray-500 text-white border-gray-600'
-                          }`}>
-                            {application.status === 'UNDER_REVIEW' ? 'UNDER REVIEW' :
-                             application.status === 'REJECTED' ? 'REJECTED' :
-                             application.status === 'PENDING' ? 'PENDING' :
-                             application.status === 'SELECTED' ? 'SELECTED' :
-                             application.status === 'SHORTLISTED' ? 'SHORTLISTED' :
-                             application.status}
+                          <span
+                            className={`inline-flex items-center px-3 py-1 text-xs font-bold rounded-full border ${
+                              application.status === "PENDING"
+                                ? "bg-blue-500 text-white border-blue-600"
+                                : application.status === "UNDER_REVIEW"
+                                  ? "bg-yellow-500 text-black border-yellow-600"
+                                  : application.status === "SHORTLISTED"
+                                    ? "bg-purple-500 text-white border-purple-600"
+                                    : application.status === "SELECTED"
+                                      ? "bg-green-500 text-white border-green-600"
+                                      : application.status === "REJECTED"
+                                        ? "bg-red-500 text-white border-red-600"
+                                        : "bg-gray-500 text-white border-gray-600"
+                            }`}
+                          >
+                            {application.status === "UNDER_REVIEW"
+                              ? "UNDER REVIEW"
+                              : application.status === "REJECTED"
+                                ? "REJECTED"
+                                : application.status === "PENDING"
+                                  ? "PENDING"
+                                  : application.status === "SELECTED"
+                                    ? "SELECTED"
+                                    : application.status === "SHORTLISTED"
+                                      ? "SHORTLISTED"
+                                      : application.status}
                           </span>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
-                          <div className={`text-sm ${isUnread ? 'font-bold text-gray-900' : 'text-gray-900'}`}>
-                            {new Date(application.appliedAt).toLocaleDateString()}
+                          <div
+                            className={`text-sm ${isUnread ? "font-bold text-gray-900" : "text-gray-900"}`}
+                          >
+                            {new Date(
+                              application.appliedAt,
+                            ).toLocaleDateString()}
                           </div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium space-x-2">
@@ -991,18 +1144,28 @@ export default function ApplicationsContent() {
                           >
                             View Details
                           </Link>
-                          
+
                           <button
-                            onClick={() => handleArchiveApplication(application.id, isArchived)}
+                            onClick={() =>
+                              handleArchiveApplication(
+                                application.id,
+                                isArchived,
+                              )
+                            }
                             className="inline-flex items-center px-3 py-1.5 border border-transparent text-sm font-medium rounded-md text-white bg-orange-600 hover:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500"
                           >
                             <Archive className="w-4 h-4 mr-1" />
-                            {isArchived ? 'Unarchive' : 'Archive'}
+                            {isArchived ? "Unarchive" : "Archive"}
                           </button>
 
                           {user?.id && (
                             <button
-                              onClick={() => handleDeleteApplication(application.id, application.candidateName)}
+                              onClick={() =>
+                                handleDeleteApplication(
+                                  application.id,
+                                  application.candidateName,
+                                )
+                              }
                               className="inline-flex items-center px-3 py-1.5 border border-transparent text-sm font-medium rounded-md text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
                             >
                               <Trash2 className="w-4 h-4 mr-1" />
@@ -1011,7 +1174,7 @@ export default function ApplicationsContent() {
                           )}
                         </td>
                       </tr>
-                    )
+                    );
                   })}
                 </tbody>
               </table>
@@ -1021,13 +1184,16 @@ export default function ApplicationsContent() {
                 <div className="border-t border-gray-200 bg-gray-50 px-6 py-4">
                   <div className="flex items-center justify-between">
                     <div className="text-sm text-gray-600">
-                      Showing {applications.length} of {totalApplications} applications
+                      Showing {applications.length} of {totalApplications}{" "}
+                      applications
                     </div>
                     <div className="flex items-center space-x-3">
                       {loading && (
                         <div className="flex items-center">
                           <Loader2 className="w-4 h-4 animate-spin text-indigo-600" />
-                          <span className="ml-2 text-sm text-gray-600">Loading...</span>
+                          <span className="ml-2 text-sm text-gray-600">
+                            Loading...
+                          </span>
                         </div>
                       )}
                       {hasMore && !loading && (
@@ -1039,7 +1205,9 @@ export default function ApplicationsContent() {
                         </button>
                       )}
                       {!hasMore && (
-                        <span className="text-sm text-gray-500">All applications loaded</span>
+                        <span className="text-sm text-gray-500">
+                          All applications loaded
+                        </span>
                       )}
                     </div>
                   </div>
@@ -1050,5 +1218,5 @@ export default function ApplicationsContent() {
         </div>
       </div>
     </div>
-  )
+  );
 }

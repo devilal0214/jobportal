@@ -1,12 +1,12 @@
-'use client'
+"use client";
 
-import { useState, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
-import Link from 'next/link'
-import { 
-  Settings, 
-  Users, 
-  Mail, 
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import Link from "next/link";
+import {
+  Settings,
+  Users,
+  Mail,
   Database,
   LogOut,
   Briefcase,
@@ -18,175 +18,189 @@ import {
   ChevronDown,
   Plus,
   FormInput,
-  Send
-} from 'lucide-react'
-import { User } from '@/types/user'
+  Send,
+} from "lucide-react";
+import { User } from "@/types/user";
 
 interface DashboardStats {
-  totalUsers: number
-  totalJobs: number
-  emailsSent: number
-  pendingNotifications: number
+  totalUsers: number;
+  totalJobs: number;
+  emailsSent: number;
+  pendingNotifications: number;
 }
 
 interface Activity {
-  id: string
-  type: string
-  title: string
-  description: string
-  timestamp: string
-  icon: string
-  color: string
+  id: string;
+  type: string;
+  title: string;
+  description: string;
+  timestamp: string;
+  icon: string;
+  color: string;
 }
 
 export default function AdminPage() {
-  const [user, setUser] = useState<User | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [stats, setStats] = useState<DashboardStats | null>(null)
-  const [activities, setActivities] = useState<Activity[]>([])
-  const [activitiesLoading, setActivitiesLoading] = useState(true)
-  const [showJobsDropdown, setShowJobsDropdown] = useState(false)
-  const router = useRouter()
+  const [user, setUser] = useState<User | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [stats, setStats] = useState<DashboardStats | null>(null);
+  const [activities, setActivities] = useState<Activity[]>([]);
+  const [activitiesLoading, setActivitiesLoading] = useState(true);
+  const [showJobsDropdown, setShowJobsDropdown] = useState(false);
+  const router = useRouter();
 
   useEffect(() => {
     const checkAuth = async () => {
-      const token = localStorage.getItem('token')
+      const token = localStorage.getItem("token");
       if (!token) {
-        router.push('/login')
-        return
+        router.push("/login");
+        return;
       }
 
       try {
-        const response = await fetch('/api/auth/me', {
+        const response = await fetch("/api/auth/me", {
           headers: {
-            'Authorization': `Bearer ${token}`
-          }
-        })
+            Authorization: `Bearer ${token}`,
+          },
+        });
 
         if (response.ok) {
-          const userData = await response.json()
-          if (!['Administrator', 'Human Resources'].includes(userData.role?.name || '')) {
-            router.push('/')
-            return
+          const userData = await response.json();
+          const hasAdminAccess =
+            (userData.role &&
+              Array.isArray(userData.role.permissions) &&
+              userData.role.permissions.some(
+                (p: any) =>
+                  ((p.module === "dashboard" && p.action === "read") ||
+                    (p.module === "roles" && p.action === "read") ||
+                    (p.module === "users" && p.action === "read")) &&
+                  p.granted,
+              )) ||
+            ["Administrator"].includes(userData.role?.name || "");
+
+          if (!hasAdminAccess) {
+            router.push("/");
+            return;
           }
-          setUser(userData)
-          
+          setUser(userData);
+
           // Fetch dashboard stats
-          const statsResponse = await fetch('/api/dashboard/stats', {
+          const statsResponse = await fetch("/api/dashboard/stats", {
             headers: {
-              'Authorization': `Bearer ${token}`
-            }
-          })
-          
+              Authorization: `Bearer ${token}`,
+            },
+          });
+
           if (statsResponse.ok) {
-            const statsData = await statsResponse.json()
-            setStats(statsData)
+            const statsData = await statsResponse.json();
+            setStats(statsData);
           }
 
           // Fetch recent activities
-          const activitiesResponse = await fetch('/api/admin/activity', {
+          const activitiesResponse = await fetch("/api/admin/activity", {
             headers: {
-              'Authorization': `Bearer ${token}`
-            }
-          })
-          
+              Authorization: `Bearer ${token}`,
+            },
+          });
+
           if (activitiesResponse.ok) {
-            const activitiesData = await activitiesResponse.json()
-            setActivities(activitiesData.activities || [])
+            const activitiesData = await activitiesResponse.json();
+            setActivities(activitiesData.activities || []);
           }
         } else {
-          localStorage.removeItem('token')
-          router.push('/login')
+          localStorage.removeItem("token");
+          router.push("/login");
         }
       } catch (error) {
-        console.error('Auth check failed:', error)
-        router.push('/login')
+        console.error("Auth check failed:", error);
+        router.push("/login");
       } finally {
-        setLoading(false)
-        setActivitiesLoading(false)
+        setLoading(false);
+        setActivitiesLoading(false);
       }
-    }
+    };
 
-    checkAuth()
-  }, [router])
+    checkAuth();
+  }, [router]);
 
   // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (showJobsDropdown) {
-        const target = event.target as Element
-        if (!target.closest('.relative')) {
-          setShowJobsDropdown(false)
+        const target = event.target as Element;
+        if (!target.closest(".relative")) {
+          setShowJobsDropdown(false);
         }
       }
-    }
+    };
 
-    document.addEventListener('mousedown', handleClickOutside)
+    document.addEventListener("mousedown", handleClickOutside);
     return () => {
-      document.removeEventListener('mousedown', handleClickOutside)
-    }
-  }, [showJobsDropdown])
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [showJobsDropdown]);
 
   const handleLogout = async () => {
     try {
-      await fetch('/api/auth/logout', {
-        method: 'POST',
+      await fetch("/api/auth/logout", {
+        method: "POST",
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        }
-      })
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+      });
     } catch (error) {
-      console.error('Logout error:', error)
+      console.error("Logout error:", error);
     } finally {
-      localStorage.removeItem('token')
-      router.push('/login')
+      localStorage.removeItem("token");
+      router.push("/login");
     }
-  }
+  };
 
   const getActivityIcon = (iconName: string) => {
     switch (iconName) {
-      case 'FileText':
-        return FileText
-      case 'Briefcase':
-        return Briefcase
-      case 'UserPlus':
-        return UserPlus
-      case 'Mail':
-        return Mail
+      case "FileText":
+        return FileText;
+      case "Briefcase":
+        return Briefcase;
+      case "UserPlus":
+        return UserPlus;
+      case "Mail":
+        return Mail;
       default:
-        return Bell
+        return Bell;
     }
-  }
+  };
 
   const getActivityColor = (color: string) => {
     switch (color) {
-      case 'blue':
-        return 'bg-blue-100 text-blue-600'
-      case 'green':
-        return 'bg-green-100 text-green-600'
-      case 'purple':
-        return 'bg-purple-100 text-purple-600'
-      case 'orange':
-        return 'bg-orange-100 text-orange-600'
+      case "blue":
+        return "bg-blue-100 text-blue-600";
+      case "green":
+        return "bg-green-100 text-green-600";
+      case "purple":
+        return "bg-purple-100 text-purple-600";
+      case "orange":
+        return "bg-orange-100 text-orange-600";
       default:
-        return 'bg-gray-100 text-gray-600'
+        return "bg-gray-100 text-gray-600";
     }
-  }
+  };
 
   const formatActivityTime = (timestamp: string) => {
-    const date = new Date(timestamp)
-    const now = new Date()
-    const diffInHours = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60))
-    
+    const date = new Date(timestamp);
+    const now = new Date();
+    const diffInHours = Math.floor(
+      (now.getTime() - date.getTime()) / (1000 * 60 * 60),
+    );
+
     if (diffInHours < 1) {
-      return 'Just now'
+      return "Just now";
     } else if (diffInHours < 24) {
-      return `${diffInHours}h ago`
+      return `${diffInHours}h ago`;
     } else {
-      const diffInDays = Math.floor(diffInHours / 24)
-      return `${diffInDays}d ago`
+      const diffInDays = Math.floor(diffInHours / 24);
+      return `${diffInDays}d ago`;
     }
-  }
+  };
 
   if (loading) {
     return (
@@ -196,92 +210,92 @@ export default function AdminPage() {
           <p className="mt-4 text-gray-600">Loading...</p>
         </div>
       </div>
-    )
+    );
   }
 
   if (!user) {
-    return null
+    return null;
   }
 
   const adminCards = [
     {
-      title: 'User Management',
-      description: 'Manage user accounts, roles, and permissions',
+      title: "User Management",
+      description: "Manage user accounts, roles, and permissions",
       icon: Users,
-      href: '/admin/users',
-      color: 'bg-blue-500'
+      href: "/admin/users",
+      color: "bg-blue-500",
     },
     {
-      title: 'Careers Page Settings',
-      description: 'Customize careers page banner, logo, and content',
+      title: "Careers Page Settings",
+      description: "Customize careers page banner, logo, and content",
       icon: Briefcase,
-      href: '/admin/careers-settings',
-      color: 'bg-emerald-500'
+      href: "/admin/careers-settings",
+      color: "bg-emerald-500",
     },
     {
-      title: 'Email Templates',
-      description: 'Create and manage email notification templates',
+      title: "Email Templates",
+      description: "Create and manage email notification templates",
       icon: Mail,
-      href: '/admin/email-templates',
-      color: 'bg-green-500'
+      href: "/admin/email-templates",
+      color: "bg-green-500",
     },
     {
-      title: 'Email Testing',
-      description: 'Test email delivery for different statuses and roles',
+      title: "Email Testing",
+      description: "Test email delivery for different statuses and roles",
       icon: Bell,
-      href: '/admin/email-test',
-      color: 'bg-cyan-500'
+      href: "/admin/email-test",
+      color: "bg-cyan-500",
     },
     {
-      title: 'SMTP Test',
-      description: 'Verify SMTP configuration with a simple test email',
+      title: "SMTP Test",
+      description: "Verify SMTP configuration with a simple test email",
       icon: Send,
-      href: '/admin/smtp-test',
-      color: 'bg-indigo-500'
+      href: "/admin/smtp-test",
+      color: "bg-indigo-500",
     },
     {
-      title: 'Send Email',
-      description: 'Send emails to multiple recipients with templates',
+      title: "Send Email",
+      description: "Send emails to multiple recipients with templates",
       icon: Mail,
-      href: '/admin/send-email',
-      color: 'bg-pink-500'
+      href: "/admin/send-email",
+      color: "bg-pink-500",
     },
     {
-      title: 'System Activity',
-      description: 'View recent system activities and logs',
+      title: "System Activity",
+      description: "View recent system activities and logs",
       icon: Bell,
-      href: '/admin/activity',
-      color: 'bg-teal-500'
+      href: "/admin/activity",
+      color: "bg-teal-500",
     },
     {
-      title: 'Form Builder',
-      description: 'Design custom application forms for jobs',
+      title: "Form Builder",
+      description: "Design custom application forms for jobs",
       icon: FileText,
-      href: '/admin/form-builder',
-      color: 'bg-purple-500'
+      href: "/admin/form-builder",
+      color: "bg-purple-500",
     },
     {
-      title: 'System Settings',
-      description: 'Configure SMTP, notifications, and system preferences',
+      title: "System Settings",
+      description: "Configure SMTP, notifications, and system preferences",
       icon: Settings,
-      href: '/admin/settings',
-      color: 'bg-orange-500'
+      href: "/admin/settings",
+      color: "bg-orange-500",
     },
     {
-      title: 'Database Management',
-      description: 'Backup, restore, and manage database',
+      title: "Database Management",
+      description: "Backup, restore, and manage database",
       icon: Database,
-      href: '/admin/database',
-      color: 'bg-red-500'
+      href: "/admin/database",
+      color: "bg-red-500",
     },
     {
-      title: 'Security & Permissions',
-      description: 'Manage security settings and role permissions',
+      title: "Security & Permissions",
+      description: "Manage security settings and role permissions",
       icon: Shield,
-      href: '/admin/security',
-      color: 'bg-indigo-500'
-    }
-  ]
+      href: "/admin/security",
+      color: "bg-indigo-500",
+    },
+  ];
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -335,17 +349,23 @@ export default function AdminPage() {
                   </div>
                 )}
               </div>
-              <Link href="/applications" className="text-gray-700 hover:text-gray-900 flex items-center space-x-1">
+              <Link
+                href="/applications"
+                className="text-gray-700 hover:text-gray-900 flex items-center space-x-1"
+              >
                 <FileText className="h-4 w-4" />
                 <span>Applications</span>
               </Link>
-              <Link href="/admin" className="text-indigo-600 font-medium flex items-center space-x-1">
+              <Link
+                href="/admin"
+                className="text-indigo-600 font-medium flex items-center space-x-1"
+              >
                 <Settings className="h-4 w-4" />
                 <span>Admin</span>
               </Link>
               <div className="flex items-center space-x-3">
                 <span className="text-sm text-gray-700">
-                  {user.name} ({user.role?.name || 'Guest'})
+                  {user.name} ({user.role?.name || "Guest"})
                 </span>
                 <button
                   onClick={handleLogout}
@@ -364,19 +384,34 @@ export default function AdminPage() {
       <div className="bg-gray-50 border-b">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex space-x-8">
-            <Link href="/admin" className="text-indigo-600 border-b-2 border-indigo-600 py-4 px-1 text-sm font-medium">
+            <Link
+              href="/admin"
+              className="text-indigo-600 border-b-2 border-indigo-600 py-4 px-1 text-sm font-medium"
+            >
               Dashboard
             </Link>
-            <Link href="/admin/users" className="text-gray-500 hover:text-gray-700 border-b-2 border-transparent hover:border-gray-300 py-4 px-1 text-sm font-medium">
+            <Link
+              href="/admin/users"
+              className="text-gray-500 hover:text-gray-700 border-b-2 border-transparent hover:border-gray-300 py-4 px-1 text-sm font-medium"
+            >
               Users
             </Link>
-            <Link href="/admin/roles" className="text-gray-500 hover:text-gray-700 border-b-2 border-transparent hover:border-gray-300 py-4 px-1 text-sm font-medium">
+            <Link
+              href="/admin/roles"
+              className="text-gray-500 hover:text-gray-700 border-b-2 border-transparent hover:border-gray-300 py-4 px-1 text-sm font-medium"
+            >
               Roles & Permissions
             </Link>
-            <Link href="/admin/form-builder" className="text-gray-500 hover:text-gray-700 border-b-2 border-transparent hover:border-gray-300 py-4 px-1 text-sm font-medium">
+            <Link
+              href="/admin/form-builder"
+              className="text-gray-500 hover:text-gray-700 border-b-2 border-transparent hover:border-gray-300 py-4 px-1 text-sm font-medium"
+            >
               Form Builder
             </Link>
-            <Link href="/admin/careers-settings" className="text-gray-500 hover:text-gray-700 border-b-2 border-transparent hover:border-gray-300 py-4 px-1 text-sm font-medium">
+            <Link
+              href="/admin/careers-settings"
+              className="text-gray-500 hover:text-gray-700 border-b-2 border-transparent hover:border-gray-300 py-4 px-1 text-sm font-medium"
+            >
               Careers Settings
             </Link>
           </div>
@@ -401,12 +436,18 @@ export default function AdminPage() {
                   <Users className="h-6 w-6 sm:h-8 sm:w-8 text-blue-600" />
                 </div>
                 <div className="ml-3 sm:ml-4 flex-1 min-w-0">
-                  <p className="text-xs sm:text-sm font-medium text-gray-600 truncate">Total Users</p>
-                  <p className="text-xl sm:text-2xl font-semibold text-gray-900">{stats?.totalUsers || 0}</p>
+                  <p className="text-xs sm:text-sm font-medium text-gray-600 truncate">
+                    Total Users
+                  </p>
+                  <p className="text-xl sm:text-2xl font-semibold text-gray-900">
+                    {stats?.totalUsers || 0}
+                  </p>
                 </div>
               </div>
               <div className="mt-2">
-                <p className="text-xs text-blue-600 group-hover:text-blue-700">Manage users →</p>
+                <p className="text-xs text-blue-600 group-hover:text-blue-700">
+                  Manage users →
+                </p>
               </div>
             </div>
           </Link>
@@ -418,12 +459,18 @@ export default function AdminPage() {
                   <Briefcase className="h-6 w-6 sm:h-8 sm:w-8 text-green-600" />
                 </div>
                 <div className="ml-3 sm:ml-4 flex-1 min-w-0">
-                  <p className="text-xs sm:text-sm font-medium text-gray-600 truncate">Active Jobs</p>
-                  <p className="text-xl sm:text-2xl font-semibold text-gray-900">{stats?.totalJobs || 0}</p>
+                  <p className="text-xs sm:text-sm font-medium text-gray-600 truncate">
+                    Active Jobs
+                  </p>
+                  <p className="text-xl sm:text-2xl font-semibold text-gray-900">
+                    {stats?.totalJobs || 0}
+                  </p>
                 </div>
               </div>
               <div className="mt-2">
-                <p className="text-xs text-green-600 group-hover:text-green-700">Manage jobs →</p>
+                <p className="text-xs text-green-600 group-hover:text-green-700">
+                  Manage jobs →
+                </p>
               </div>
             </div>
           </Link>
@@ -435,12 +482,18 @@ export default function AdminPage() {
                   <Mail className="h-6 w-6 sm:h-8 sm:w-8 text-purple-600" />
                 </div>
                 <div className="ml-3 sm:ml-4 flex-1 min-w-0">
-                  <p className="text-xs sm:text-sm font-medium text-gray-600 truncate">Emails Sent</p>
-                  <p className="text-xl sm:text-2xl font-semibold text-gray-900">{stats?.emailsSent || 0}</p>
+                  <p className="text-xs sm:text-sm font-medium text-gray-600 truncate">
+                    Emails Sent
+                  </p>
+                  <p className="text-xl sm:text-2xl font-semibold text-gray-900">
+                    {stats?.emailsSent || 0}
+                  </p>
                 </div>
               </div>
               <div className="mt-2">
-                <p className="text-xs text-purple-600 group-hover:text-purple-700">Email templates →</p>
+                <p className="text-xs text-purple-600 group-hover:text-purple-700">
+                  Email templates →
+                </p>
               </div>
             </div>
           </Link>
@@ -452,12 +505,18 @@ export default function AdminPage() {
                   <Bell className="h-6 w-6 sm:h-8 sm:w-8 text-orange-600" />
                 </div>
                 <div className="ml-3 sm:ml-4 flex-1 min-w-0">
-                  <p className="text-xs sm:text-sm font-medium text-gray-600 truncate">New Applications</p>
-                  <p className="text-xl sm:text-2xl font-semibold text-gray-900">{stats?.pendingNotifications || 0}</p>
+                  <p className="text-xs sm:text-sm font-medium text-gray-600 truncate">
+                    New Applications
+                  </p>
+                  <p className="text-xl sm:text-2xl font-semibold text-gray-900">
+                    {stats?.pendingNotifications || 0}
+                  </p>
                 </div>
               </div>
               <div className="mt-2">
-                <p className="text-xs text-orange-600 group-hover:text-orange-700">Review pending →</p>
+                <p className="text-xs text-orange-600 group-hover:text-orange-700">
+                  Review pending →
+                </p>
               </div>
             </div>
           </Link>
@@ -466,7 +525,10 @@ export default function AdminPage() {
         {/* Admin Tools */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {adminCards.map((card) => (
-            <div key={card.title} className="bg-white rounded-lg shadow hover:shadow-md transition-shadow">
+            <div
+              key={card.title}
+              className="bg-white rounded-lg shadow hover:shadow-md transition-shadow"
+            >
               <div className="p-6">
                 <div className="flex items-center mb-4">
                   <div className={`flex-shrink-0 p-3 rounded-lg ${card.color}`}>
@@ -478,16 +540,24 @@ export default function AdminPage() {
                     </h3>
                   </div>
                 </div>
-                <p className="text-gray-600 mb-4">
-                  {card.description}
-                </p>
+                <p className="text-gray-600 mb-4">{card.description}</p>
                 <Link
                   href={card.href}
                   className="inline-flex items-center text-indigo-600 hover:text-indigo-500 font-medium"
                 >
                   Configure
-                  <svg className="ml-1 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                  <svg
+                    className="ml-1 h-4 w-4"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M9 5l7 7-7 7"
+                    />
                   </svg>
                 </Link>
               </div>
@@ -498,8 +568,10 @@ export default function AdminPage() {
         {/* Recent Activity */}
         <div className="mt-8 bg-white rounded-lg shadow">
           <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
-            <h2 className="text-lg font-medium text-gray-900">Recent System Activity</h2>
-            <Link 
+            <h2 className="text-lg font-medium text-gray-900">
+              Recent System Activity
+            </h2>
+            <Link
               href="/admin/activity"
               className="text-sm text-indigo-600 hover:text-indigo-500 font-medium"
             >
@@ -510,15 +582,22 @@ export default function AdminPage() {
             {activitiesLoading ? (
               <div className="p-6 text-center">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600 mx-auto"></div>
-                <p className="mt-2 text-sm text-gray-500">Loading activities...</p>
+                <p className="mt-2 text-sm text-gray-500">
+                  Loading activities...
+                </p>
               </div>
             ) : activities.length > 0 ? (
               activities.map((activity) => {
-                const IconComponent = getActivityIcon(activity.icon)
+                const IconComponent = getActivityIcon(activity.icon);
                 return (
-                  <div key={activity.id} className="p-6 hover:bg-gray-50 transition-colors">
+                  <div
+                    key={activity.id}
+                    className="p-6 hover:bg-gray-50 transition-colors"
+                  >
                     <div className="flex items-start space-x-4">
-                      <div className={`flex-shrink-0 p-2 rounded-lg ${getActivityColor(activity.color)}`}>
+                      <div
+                        className={`flex-shrink-0 p-2 rounded-lg ${getActivityColor(activity.color)}`}
+                      >
                         <IconComponent className="h-5 w-5" />
                       </div>
                       <div className="flex-1 min-w-0">
@@ -536,12 +615,14 @@ export default function AdminPage() {
                       </div>
                     </div>
                   </div>
-                )
+                );
               })
             ) : (
               <div className="p-6 text-center text-gray-500">
                 <Key className="mx-auto h-12 w-12 text-gray-400" />
-                <h3 className="mt-2 text-sm font-medium text-gray-900">No recent activity</h3>
+                <h3 className="mt-2 text-sm font-medium text-gray-900">
+                  No recent activity
+                </h3>
                 <p className="mt-1 text-sm text-gray-500">
                   System activity logs will appear here
                 </p>
@@ -551,5 +632,5 @@ export default function AdminPage() {
         </div>
       </div>
     </div>
-  )
+  );
 }

@@ -1,21 +1,29 @@
-'use client'
+"use client";
 
-import { useEditor, EditorContent } from '@tiptap/react'
-import StarterKit from '@tiptap/starter-kit'
-import { useEffect, useState } from 'react'
+import { useEditor, EditorContent } from "@tiptap/react";
+import StarterKit from "@tiptap/starter-kit";
+import Underline from "@tiptap/extension-underline";
+import TextAlign from "@tiptap/extension-text-align";
+import { useEffect, useState } from "react";
 
 interface TiptapEditorProps {
-  value: string
-  onChange: (value: string) => void
-  placeholder?: string
-  height?: number
-  defaultPreview?: boolean
+  value: string;
+  onChange: (value: string) => void;
+  placeholder?: string;
+  height?: number;
+  defaultPreview?: boolean;
 }
 
-const TiptapEditor = ({ value, onChange, placeholder, height = 200, defaultPreview = true }: TiptapEditorProps) => {
-  const [isMounted, setIsMounted] = useState(false)
-  const [isPreviewMode, setIsPreviewMode] = useState(defaultPreview)
-  
+const TiptapEditor = ({
+  value,
+  onChange,
+  placeholder,
+  height = 200,
+  defaultPreview = true,
+}: TiptapEditorProps) => {
+  const [isMounted, setIsMounted] = useState(false);
+  const [isPreviewMode, setIsPreviewMode] = useState(defaultPreview);
+
   const editor = useEditor({
     extensions: [
       StarterKit.configure({
@@ -28,28 +36,32 @@ const TiptapEditor = ({ value, onChange, placeholder, height = 200, defaultPrevi
           keepAttributes: false,
         },
       }),
+      Underline,
+      TextAlign.configure({
+        types: ["heading", "paragraph"],
+      }),
     ],
     content: value,
     onUpdate: ({ editor }) => {
-      onChange(editor.getHTML())
+      onChange(editor.getHTML());
     },
     editorProps: {
       attributes: {
-        class: 'focus:outline-none text-gray-900', // Explicit dark text color
+        class: "focus:outline-none text-gray-900", // Explicit dark text color
       },
     },
     immediatelyRender: false,
-  })
+  });
 
   useEffect(() => {
-    setIsMounted(true)
-  }, [])
+    setIsMounted(true);
+  }, []);
 
   useEffect(() => {
     if (editor && value !== editor.getHTML()) {
-      editor.commands.setContent(value, { emitUpdate: false })
+      editor.commands.setContent(value, { emitUpdate: false });
     }
-  }, [value, editor])
+  }, [value, editor]);
 
   if (!isMounted || !editor) {
     return (
@@ -61,14 +73,14 @@ const TiptapEditor = ({ value, onChange, placeholder, height = 200, defaultPrevi
               <div
                 key={i}
                 className="px-3 py-2 text-xs font-medium bg-gray-200 border border-gray-300 rounded animate-pulse"
-                style={{ width: '32px', height: '32px' }}
+                style={{ width: "32px", height: "32px" }}
               />
             ))}
           </div>
         </div>
         {/* Editor Skeleton */}
         <div className="relative">
-          <div 
+          <div
             className="p-4 bg-gray-50 animate-pulse"
             style={{ minHeight: `${height}px` }}
           >
@@ -76,7 +88,7 @@ const TiptapEditor = ({ value, onChange, placeholder, height = 200, defaultPrevi
           </div>
         </div>
       </div>
-    )
+    );
   }
 
   return (
@@ -90,12 +102,14 @@ const TiptapEditor = ({ value, onChange, placeholder, height = 200, defaultPrevi
             onClick={() => setIsPreviewMode(!isPreviewMode)}
             className={`px-3 py-2 text-xs font-medium border border-gray-400 rounded focus:outline-none focus:ring-2 focus:ring-indigo-500 shadow-sm ${
               isPreviewMode
-                ? 'bg-indigo-100 text-indigo-700 border-indigo-300'
-                : 'bg-white text-gray-700 hover:bg-gray-50'
+                ? "bg-indigo-100 text-indigo-700 border-indigo-300"
+                : "bg-white text-gray-700 hover:bg-gray-50"
             }`}
-            title={isPreviewMode ? "Switch to Edit Mode" : "Switch to Preview Mode"}
+            title={
+              isPreviewMode ? "Switch to Edit Mode" : "Switch to Preview Mode"
+            }
           >
-            {isPreviewMode ? '✏️ Edit' : '👁️ Preview'}
+            {isPreviewMode ? "✏️ Edit" : "👁️ Preview"}
           </button>
 
           {/* Toolbar buttons - Hidden in preview mode */}
@@ -108,23 +122,23 @@ const TiptapEditor = ({ value, onChange, placeholder, height = 200, defaultPrevi
                 onClick={() => editor.chain().focus().toggleBold().run()}
                 disabled={!editor.can().chain().focus().toggleBold().run()}
                 className={`px-3 py-2 text-xs font-medium border border-gray-400 rounded focus:outline-none focus:ring-2 focus:ring-indigo-500 shadow-sm ${
-                  editor.isActive('bold')
-                    ? 'bg-indigo-100 text-indigo-700 border-indigo-300'
-                    : 'bg-white text-gray-700 hover:bg-gray-50'
+                  editor.isActive("bold")
+                    ? "bg-indigo-100 text-indigo-700 border-indigo-300"
+                    : "bg-white text-gray-700 hover:bg-gray-50"
                 }`}
                 title="Bold (Ctrl+B)"
               >
                 <strong>B</strong>
               </button>
-          
+
               <button
                 type="button"
                 onClick={() => editor.chain().focus().toggleItalic().run()}
                 disabled={!editor.can().chain().focus().toggleItalic().run()}
                 className={`px-3 py-2 text-xs font-medium border border-gray-400 rounded focus:outline-none focus:ring-2 focus:ring-indigo-500 shadow-sm ${
-                  editor.isActive('italic')
-                    ? 'bg-indigo-100 text-indigo-700 border-indigo-300'
-                    : 'bg-white text-gray-700 hover:bg-gray-50'
+                  editor.isActive("italic")
+                    ? "bg-indigo-100 text-indigo-700 border-indigo-300"
+                    : "bg-white text-gray-700 hover:bg-gray-50"
                 }`}
                 title="Italic (Ctrl+I)"
               >
@@ -136,24 +150,40 @@ const TiptapEditor = ({ value, onChange, placeholder, height = 200, defaultPrevi
                 onClick={() => editor.chain().focus().toggleStrike().run()}
                 disabled={!editor.can().chain().focus().toggleStrike().run()}
                 className={`px-3 py-2 text-xs font-medium border border-gray-400 rounded focus:outline-none focus:ring-2 focus:ring-indigo-500 shadow-sm ${
-                  editor.isActive('strike')
-                    ? 'bg-indigo-100 text-indigo-700 border-indigo-300'
-                    : 'bg-white text-gray-700 hover:bg-gray-50'
+                  editor.isActive("strike")
+                    ? "bg-indigo-100 text-indigo-700 border-indigo-300"
+                    : "bg-white text-gray-700 hover:bg-gray-50"
                 }`}
                 title="Strikethrough"
               >
                 <s>S</s>
               </button>
 
+              <button
+                type="button"
+                onClick={() => editor.chain().focus().toggleUnderline().run()}
+                disabled={!editor.can().chain().focus().toggleUnderline().run()}
+                className={`px-3 py-2 text-xs font-medium border border-gray-400 rounded focus:outline-none focus:ring-2 focus:ring-indigo-500 shadow-sm ${
+                  editor.isActive("underline")
+                    ? "bg-indigo-100 text-indigo-700 border-indigo-300"
+                    : "bg-white text-gray-700 hover:bg-gray-50"
+                }`}
+                title="Underline (Ctrl+U)"
+              >
+                <u>U</u>
+              </button>
+
               <div className="w-px h-6 bg-gray-400 mx-1"></div>
 
               <button
                 type="button"
-                onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()}
+                onClick={() =>
+                  editor.chain().focus().toggleHeading({ level: 1 }).run()
+                }
                 className={`px-3 py-2 text-xs font-medium border border-gray-400 rounded focus:outline-none focus:ring-2 focus:ring-indigo-500 shadow-sm ${
-                  editor.isActive('heading', { level: 1 })
-                    ? 'bg-indigo-100 text-indigo-700 border-indigo-300'
-                    : 'bg-white text-gray-700 hover:bg-gray-50'
+                  editor.isActive("heading", { level: 1 })
+                    ? "bg-indigo-100 text-indigo-700 border-indigo-300"
+                    : "bg-white text-gray-700 hover:bg-gray-50"
                 }`}
                 title="Heading 1"
               >
@@ -162,11 +192,13 @@ const TiptapEditor = ({ value, onChange, placeholder, height = 200, defaultPrevi
 
               <button
                 type="button"
-                onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}
+                onClick={() =>
+                  editor.chain().focus().toggleHeading({ level: 2 }).run()
+                }
                 className={`px-3 py-2 text-xs font-medium border border-gray-400 rounded focus:outline-none focus:ring-2 focus:ring-indigo-500 shadow-sm ${
-                  editor.isActive('heading', { level: 2 })
-                    ? 'bg-indigo-100 text-indigo-700 border-indigo-300'
-                    : 'bg-white text-gray-700 hover:bg-gray-50'
+                  editor.isActive("heading", { level: 2 })
+                    ? "bg-indigo-100 text-indigo-700 border-indigo-300"
+                    : "bg-white text-gray-700 hover:bg-gray-50"
                 }`}
                 title="Heading 2"
               >
@@ -175,11 +207,13 @@ const TiptapEditor = ({ value, onChange, placeholder, height = 200, defaultPrevi
 
               <button
                 type="button"
-                onClick={() => editor.chain().focus().toggleHeading({ level: 3 }).run()}
+                onClick={() =>
+                  editor.chain().focus().toggleHeading({ level: 3 }).run()
+                }
                 className={`px-3 py-2 text-xs font-medium border border-gray-400 rounded focus:outline-none focus:ring-2 focus:ring-indigo-500 shadow-sm ${
-                  editor.isActive('heading', { level: 3 })
-                    ? 'bg-indigo-100 text-indigo-700 border-indigo-300'
-                    : 'bg-white text-gray-700 hover:bg-gray-50'
+                  editor.isActive("heading", { level: 3 })
+                    ? "bg-indigo-100 text-indigo-700 border-indigo-300"
+                    : "bg-white text-gray-700 hover:bg-gray-50"
                 }`}
                 title="Heading 3"
               >
@@ -190,9 +224,9 @@ const TiptapEditor = ({ value, onChange, placeholder, height = 200, defaultPrevi
                 type="button"
                 onClick={() => editor.chain().focus().setParagraph().run()}
                 className={`px-3 py-2 text-xs font-medium border border-gray-400 rounded focus:outline-none focus:ring-2 focus:ring-indigo-500 shadow-sm ${
-                  editor.isActive('paragraph')
-                    ? 'bg-indigo-100 text-indigo-700 border-indigo-300'
-                    : 'bg-white text-gray-700 hover:bg-gray-50'
+                  editor.isActive("paragraph")
+                    ? "bg-indigo-100 text-indigo-700 border-indigo-300"
+                    : "bg-white text-gray-700 hover:bg-gray-50"
                 }`}
                 title="Paragraph"
               >
@@ -205,22 +239,82 @@ const TiptapEditor = ({ value, onChange, placeholder, height = 200, defaultPrevi
                 type="button"
                 onClick={() => editor.chain().focus().toggleBulletList().run()}
                 className={`px-3 py-2 text-xs font-medium border border-gray-400 rounded focus:outline-none focus:ring-2 focus:ring-indigo-500 shadow-sm ${
-                  editor.isActive('bulletList')
-                    ? 'bg-indigo-100 text-indigo-700 border-indigo-300'
-                    : 'bg-white text-gray-700 hover:bg-gray-50'
+                  editor.isActive("bulletList")
+                    ? "bg-indigo-100 text-indigo-700 border-indigo-300"
+                    : "bg-white text-gray-700 hover:bg-gray-50"
                 }`}
                 title="Bullet List"
               >
                 •
               </button>
 
+              <div className="w-px h-6 bg-gray-400 mx-1"></div>
+              <div className="flex items-center gap-1">
+                <button
+                  type="button"
+                  onClick={() =>
+                    editor.chain().focus().setTextAlign("left").run()
+                  }
+                  className={`px-2 py-2 text-xs font-medium border border-gray-400 rounded focus:outline-none focus:ring-2 focus:ring-indigo-500 shadow-sm ${
+                    editor.isActive({ textAlign: "left" })
+                      ? "bg-indigo-100 text-indigo-700 border-indigo-300"
+                      : "bg-white text-gray-700 hover:bg-gray-50"
+                  }`}
+                  title="Align left"
+                >
+                  L
+                </button>
+                <button
+                  type="button"
+                  onClick={() =>
+                    editor.chain().focus().setTextAlign("center").run()
+                  }
+                  className={`px-2 py-2 text-xs font-medium border border-gray-400 rounded focus:outline-none focus:ring-2 focus:ring-indigo-500 shadow-sm ${
+                    editor.isActive({ textAlign: "center" })
+                      ? "bg-indigo-100 text-indigo-700 border-indigo-300"
+                      : "bg-white text-gray-700 hover:bg-gray-50"
+                  }`}
+                  title="Align center"
+                >
+                  C
+                </button>
+                <button
+                  type="button"
+                  onClick={() =>
+                    editor.chain().focus().setTextAlign("right").run()
+                  }
+                  className={`px-2 py-2 text-xs font-medium border border-gray-400 rounded focus:outline-none focus:ring-2 focus:ring-indigo-500 shadow-sm ${
+                    editor.isActive({ textAlign: "right" })
+                      ? "bg-indigo-100 text-indigo-700 border-indigo-300"
+                      : "bg-white text-gray-700 hover:bg-gray-50"
+                  }`}
+                  title="Align right"
+                >
+                  R
+                </button>
+                <button
+                  type="button"
+                  onClick={() =>
+                    editor.chain().focus().setTextAlign("justify").run()
+                  }
+                  className={`px-2 py-2 text-xs font-medium border border-gray-400 rounded focus:outline-none focus:ring-2 focus:ring-indigo-500 shadow-sm ${
+                    editor.isActive({ textAlign: "justify" })
+                      ? "bg-indigo-100 text-indigo-700 border-indigo-300"
+                      : "bg-white text-gray-700 hover:bg-gray-50"
+                  }`}
+                  title="Justify"
+                >
+                  J
+                </button>
+              </div>
+
               <button
                 type="button"
                 onClick={() => editor.chain().focus().toggleOrderedList().run()}
                 className={`px-3 py-2 text-xs font-medium border border-gray-400 rounded focus:outline-none focus:ring-2 focus:ring-indigo-500 shadow-sm ${
-                  editor.isActive('orderedList')
-                    ? 'bg-indigo-100 text-indigo-700 border-indigo-300'
-                    : 'bg-white text-gray-700 hover:bg-gray-50'
+                  editor.isActive("orderedList")
+                    ? "bg-indigo-100 text-indigo-700 border-indigo-300"
+                    : "bg-white text-gray-700 hover:bg-gray-50"
                 }`}
                 title="Numbered List"
               >
@@ -231,22 +325,22 @@ const TiptapEditor = ({ value, onChange, placeholder, height = 200, defaultPrevi
                 type="button"
                 onClick={() => editor.chain().focus().toggleCodeBlock().run()}
                 className={`px-3 py-2 text-xs font-medium border border-gray-400 rounded focus:outline-none focus:ring-2 focus:ring-indigo-500 shadow-sm ${
-                  editor.isActive('codeBlock')
-                    ? 'bg-indigo-100 text-indigo-700 border-indigo-300'
-                    : 'bg-white text-gray-700 hover:bg-gray-50'
+                  editor.isActive("codeBlock")
+                    ? "bg-indigo-100 text-indigo-700 border-indigo-300"
+                    : "bg-white text-gray-700 hover:bg-gray-50"
                 }`}
                 title="Code Block"
               >
-                {'</>'}
+                {"</>"}
               </button>
 
               <button
                 type="button"
                 onClick={() => editor.chain().focus().toggleBlockquote().run()}
                 className={`px-3 py-2 text-xs font-medium border border-gray-400 rounded focus:outline-none focus:ring-2 focus:ring-indigo-500 shadow-sm ${
-                  editor.isActive('blockquote')
-                    ? 'bg-indigo-100 text-indigo-700 border-indigo-300'
-                    : 'bg-white text-gray-700 hover:bg-gray-50'
+                  editor.isActive("blockquote")
+                    ? "bg-indigo-100 text-indigo-700 border-indigo-300"
+                    : "bg-white text-gray-700 hover:bg-gray-50"
                 }`}
                 title="Quote"
               >
@@ -301,21 +395,21 @@ const TiptapEditor = ({ value, onChange, placeholder, height = 200, defaultPrevi
 
       {/* Editor/Preview */}
       <div className="relative">
-        <EditorContent 
-          editor={editor} 
+        <EditorContent
+          editor={editor}
           className={`p-4 min-h-[200px] text-gray-900 border rounded-lg bg-white ${
-            isPreviewMode ? 'tiptap-preview-mode' : ''
+            isPreviewMode ? "tiptap-preview-mode" : ""
           }`}
           style={{ minHeight: `${height}px` }}
         />
         {!value && !isPreviewMode && (
           <div className="absolute top-4 left-4 text-gray-400 pointer-events-none">
-            {placeholder || 'Start typing your content...'}
+            {placeholder || "Start typing your content..."}
           </div>
         )}
       </div>
     </div>
-  )
-}
+  );
+};
 
-export default TiptapEditor
+export default TiptapEditor;

@@ -32,8 +32,6 @@ import {
 import TagsInput from "@/components/TagsInput";
 import { User } from "@/types/user";
 
-
-
 interface FormField {
   id: string;
   label: string;
@@ -42,7 +40,7 @@ interface FormField {
   options?: string[] | string;
   cssClass?: string;
   fieldId?: string;
-  fieldWidth?: string; 
+  fieldWidth?: string;
   isRequired: boolean;
   order: number;
 }
@@ -62,15 +60,12 @@ interface FieldTypeDef {
   defaultPlaceholder: string;
 }
 
-
-
 const LOCALSTORAGE_KEY = "FORM_BUILDER_AUTOSEED_V1";
 
 const COUNTRY_CODES = [
   "+1 - United States/Canada",
   "+44 - United Kingdom",
   "+91 - India",
-  
 ];
 
 const FIELD_TYPES: FieldTypeDef[] = [
@@ -166,13 +161,11 @@ const FIELD_TYPES: FieldTypeDef[] = [
   },
 ];
 
-
 const DEFAULT_AUTOSEED: string[] = [
   "TEXT:Full name",
   "EMAIL:Email",
   "PHONE:Phone number",
 ];
-
 
 function groupByPageBreak(fields: FormField[]) {
   const steps: FormField[][] = [];
@@ -189,16 +182,14 @@ function groupByPageBreak(fields: FormField[]) {
   return steps.filter((step) => step.length > 0);
 }
 
-
 function makeField(fieldType: string, label: string, order: number): FormField {
- 
   const def = FIELD_TYPES.find((d) => d.type === fieldType);
   const placeholder = def?.defaultPlaceholder ?? "";
   const options = ["SELECT", "RADIO", "CHECKBOX", "TAGS"].includes(fieldType)
     ? ["Option 1", "Option 2", "Option 3"]
     : fieldType === "COUNTRY_CODE"
-    ? COUNTRY_CODES
-    : [];
+      ? COUNTRY_CODES
+      : [];
 
   // sensible default fieldId for common fields
   let fieldId = "";
@@ -220,8 +211,6 @@ function makeField(fieldType: string, label: string, order: number): FormField {
   };
 }
 
-
-
 function FormBuilderContent() {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
@@ -235,19 +224,17 @@ function FormBuilderContent() {
   const [previewStep, setPreviewStep] = useState(0);
   const [draggedField, setDraggedField] = useState<FormField | null>(null);
   const [draggedFieldType, setDraggedFieldType] = useState<FieldTypeDef | null>(
-    null
+    null,
   );
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [showJobsDropdown, setShowJobsDropdown] = useState(false);
 
-  
   const [autoSeed, setAutoSeed] = useState<string[]>([]);
 
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  
   useEffect(() => {
     const raw = localStorage.getItem(LOCALSTORAGE_KEY);
     if (raw) {
@@ -262,7 +249,7 @@ function FormBuilderContent() {
         }
       } catch {}
     }
-    
+
     setAutoSeed(DEFAULT_AUTOSEED);
   }, []);
 
@@ -287,8 +274,6 @@ function FormBuilderContent() {
     clone.splice(target, 0, it);
     persistAutoSeed(clone);
   };
-
-  
 
   const fetchForms = useCallback(async () => {
     try {
@@ -324,7 +309,19 @@ function FormBuilderContent() {
         });
         if (response.ok) {
           const userData = await response.json();
-          if (!['Administrator', 'Human Resources', 'Manager'].includes(userData.role?.name || '')) {
+          const hasAccess =
+            (userData.role &&
+              Array.isArray(userData.role.permissions) &&
+              userData.role.permissions.some(
+                (p: any) =>
+                  p.module === "forms" &&
+                  (p.action === "read" ||
+                    p.action === "update" ||
+                    p.action === "create") &&
+                  p.granted,
+              )) ||
+            ["Administrator"].includes(userData.role?.name || "");
+          if (!hasAccess) {
             router.push("/admin");
             return;
           }
@@ -378,7 +375,6 @@ function FormBuilderContent() {
     setSuccess("");
   };
 
-  
   const createNewForm = () => {
     setSelectedForm(null);
     setFormName("");
@@ -386,7 +382,7 @@ function FormBuilderContent() {
 
     const seeded: FormField[] = autoSeed.map((key, idx) => {
       const [type, ...labelParts] = key.split(":");
-      const label = labelParts.join(":").trim() || type; 
+      const label = labelParts.join(":").trim() || type;
       return makeField(type, label, idx);
     });
 
@@ -402,8 +398,8 @@ function FormBuilderContent() {
   const updateField = (fieldId: string, updates: Partial<FormField>) => {
     setFields(
       fields.map((field) =>
-        field.id === fieldId ? { ...field, ...updates } : field
-      )
+        field.id === fieldId ? { ...field, ...updates } : field,
+      ),
     );
   };
 
@@ -416,12 +412,10 @@ function FormBuilderContent() {
     setFields(reordered);
   };
 
-  
-
   const handleDragStart = (
     e: React.DragEvent,
     field: FormField | null,
-    fieldType: FieldTypeDef | null
+    fieldType: FieldTypeDef | null,
   ) => {
     if (field) {
       setDraggedField(field);
@@ -444,7 +438,7 @@ function FormBuilderContent() {
         `${draggedFieldType.label}${
           draggedFieldType.type === "PAGE_BREAK" ? "" : " Field"
         }`,
-        targetIndex
+        targetIndex,
       );
 
       const newFields = [...fields];
@@ -463,7 +457,7 @@ function FormBuilderContent() {
         newFields.splice(
           targetIndex > draggedIndex ? targetIndex - 1 : targetIndex,
           0,
-          draggedField
+          draggedField,
         );
         const reordered = newFields.map((f, i) => ({ ...f, order: i }));
         setFields(reordered);
@@ -471,8 +465,6 @@ function FormBuilderContent() {
       setDraggedField(null);
     }
   };
-
-  
 
   const saveForm = async () => {
     if (!formName.trim()) {
@@ -503,7 +495,7 @@ function FormBuilderContent() {
         description: selectedForm?.description || "",
         fields: fields.map((f, index) => ({
           label: f.label,
-          fieldType: f.fieldType, 
+          fieldType: f.fieldType,
           placeholder: f.placeholder || "",
           options: Array.isArray(f.options) ? f.options : [],
           cssClass: f.cssClass || "",
@@ -545,7 +537,7 @@ function FormBuilderContent() {
       setSuccess(
         selectedForm
           ? "Form updated successfully!"
-          : "Form created successfully!"
+          : "Form created successfully!",
       );
       await fetchForms();
       if (!selectedForm) selectForm(saved);
@@ -556,8 +548,6 @@ function FormBuilderContent() {
       setSaving(false);
     }
   };
-
-  
 
   const renderField = (field: FormField) => {
     const fieldClass = `w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 border-gray-300 text-gray-900 placeholder-gray-600 ${
@@ -964,7 +954,6 @@ function FormBuilderContent() {
               </div>
             </div>
 
-            
             <div className="bg-white rounded-lg shadow">
               <div className="p-4 border-b border-gray-200">
                 <h3 className="text-lg font-semibold text-gray-900">
@@ -996,7 +985,6 @@ function FormBuilderContent() {
               </div>
             </div>
 
-           
             <div className="bg-white rounded-lg shadow">
               <div className="p-4 border-b border-gray-200">
                 <h3 className="text-lg font-semibold text-gray-900">
@@ -1008,7 +996,6 @@ function FormBuilderContent() {
                 </p>
               </div>
               <div className="p-4 space-y-3">
-               
                 {autoSeed.length > 0 ? (
                   <div className="space-y-2">
                     {autoSeed.map((key, idx) => {
@@ -1043,7 +1030,6 @@ function FormBuilderContent() {
                   </div>
                 )}
 
-               
                 <div className="pt-2">
                   <div className="text-xs font-semibold text-gray-700 mb-2">
                     Add from library
@@ -1051,15 +1037,14 @@ function FormBuilderContent() {
                   <div className="grid grid-cols-2 gap-2">
                     {FIELD_TYPES.filter((f) => f.type !== "PAGE_BREAK").map(
                       (ft) => {
-                        
                         const defaultLabel =
                           ft.type === "TEXT"
                             ? "Text"
                             : ft.type === "EMAIL"
-                            ? "Email"
-                            : ft.type === "PHONE"
-                            ? "Phone number"
-                            : ft.label;
+                              ? "Email"
+                              : ft.type === "PHONE"
+                                ? "Phone number"
+                                : ft.label;
                         const key = `${ft.type}:${defaultLabel}`;
                         const selected = autoSeed.includes(key);
                         return (
@@ -1084,11 +1069,10 @@ function FormBuilderContent() {
                             </span>
                           </button>
                         );
-                      }
+                      },
                     )}
                   </div>
 
-                 
                   <button
                     type="button"
                     onClick={() => persistAutoSeed(DEFAULT_AUTOSEED)}
@@ -1101,10 +1085,8 @@ function FormBuilderContent() {
             </div>
           </div>
 
-          
           <div className="flex-1 min-w-0">
             <div className="bg-white rounded-lg shadow">
-             
               <div className="p-6 border-b border-gray-200">
                 <div className="grid grid-cols-2 gap-4 mb-4">
                   <div>
@@ -1168,10 +1150,8 @@ function FormBuilderContent() {
                 )}
               </div>
 
-              
               <div className="p-6">
                 {showPreview ? (
-                  
                   <div>
                     <div className="flex items-center justify-between mb-6">
                       <h3 className="text-lg font-semibold text-gray-900">
@@ -1194,7 +1174,7 @@ function FormBuilderContent() {
                             <div
                               key={field.id}
                               className={`space-y-2 ${getGridCols(
-                                field.fieldWidth || "100%"
+                                field.fieldWidth || "100%",
                               )}`}
                             >
                               {field.fieldType !== "PAGE_BREAK" && (
@@ -1227,7 +1207,7 @@ function FormBuilderContent() {
                               type="button"
                               onClick={() =>
                                 setPreviewStep((s) =>
-                                  Math.min(s + 1, stepsForPreview.length - 1)
+                                  Math.min(s + 1, stepsForPreview.length - 1),
                                 )
                               }
                               className="px-4 py-2 rounded-md bg-indigo-600 text-white hover:bg-indigo-700"
@@ -1248,7 +1228,6 @@ function FormBuilderContent() {
                     )}
                   </div>
                 ) : (
-                  
                   <div>
                     <div className="flex items-center justify-between mb-6">
                       <h3 className="text-lg font-semibold text-gray-900">
@@ -1315,7 +1294,6 @@ function FormBuilderContent() {
                                 </button>
                               </div>
 
-                             
                               {field.fieldType !== "PAGE_BREAK" ? (
                                 <>
                                   <div className="grid grid-cols-2 gap-4 mb-4">
@@ -1451,7 +1429,7 @@ function FormBuilderContent() {
                                         value={
                                           Array.isArray(field.options)
                                             ? (field.options as string[]).join(
-                                                "\n"
+                                                "\n",
                                               )
                                             : ""
                                         }
@@ -1482,7 +1460,6 @@ Option 3`}
                                   )}
                                 </>
                               ) : (
-                                
                                 <div className="text-sm text-gray-600">
                                   This is a <strong>Page Break</strong>. Fields
                                   below it will appear on the next step in the
@@ -1508,7 +1485,6 @@ Option 3`}
               </div>
             </div>
           </div>
-          
         </div>
       </div>
     </div>

@@ -65,7 +65,7 @@ export async function GET(request: NextRequest) {
     console.error("Jobs fetch error:", error);
     return NextResponse.json(
       { error: "Something went wrong" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -87,21 +87,27 @@ export async function POST(request: NextRequest) {
 
     const user = await prisma.user.findUnique({
       where: { id: decoded.userId },
-      include: { role: true } as any,
+      include: {
+        role: { include: { permissions: { include: { permission: true } } } },
+      } as any,
     });
 
     if (!user) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
-    const userRole = user.role as unknown as { name: string } | null;
-    if (
-      !userRole ||
-      !["Administrator", "Human Resources", "Manager"].includes(userRole.name)
-    ) {
+    const userRole = user.role as any;
+    const hasPermission = userRole?.permissions?.some(
+      (rp: any) =>
+        rp.permission.module === "jobs" &&
+        rp.permission.action === "create" &&
+        rp.granted,
+    );
+
+    if (!hasPermission && userRole?.name !== "Administrator") {
       return NextResponse.json(
         { error: "Insufficient permissions" },
-        { status: 403 }
+        { status: 403 },
       );
     }
 
@@ -138,7 +144,7 @@ export async function POST(request: NextRequest) {
     console.error("Job creation error:", error);
     return NextResponse.json(
       { error: "Something went wrong" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

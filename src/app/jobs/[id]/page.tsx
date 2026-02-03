@@ -1,198 +1,218 @@
-'use client'
+"use client";
 
-import { useState, useEffect, use } from 'react'
-import { useRouter } from 'next/navigation'
-import Link from 'next/link'
-import { Briefcase, ArrowLeft, MapPin, Clock, Users, Share2, LogOut, FileText, Settings, ChevronDown, Plus, FormInput } from 'lucide-react'
-import { User } from '@/types/user'
+import { useState, useEffect, use } from "react";
+import { useRouter } from "next/navigation";
+import Link from "next/link";
+import {
+  Briefcase,
+  ArrowLeft,
+  MapPin,
+  Clock,
+  Users,
+  Share2,
+  LogOut,
+  FileText,
+  Settings,
+  ChevronDown,
+  Plus,
+  FormInput,
+} from "lucide-react";
+import { User } from "@/types/user";
 
 interface Job {
-  id: string
-  title: string
-  description: string
-  location?: string
-  position?: string
-  status: string
-  createdAt: string
-  applicationsCount?: number
+  id: string;
+  title: string;
+  description: string;
+  location?: string;
+  position?: string;
+  status: string;
+  createdAt: string;
+  applicationsCount?: number;
   creator: {
-    name: string
-    email: string
-  }
+    name: string;
+    email: string;
+  };
   form?: {
-    id: string
-    name: string
+    id: string;
+    name: string;
     fields?: Array<{
-      id: string
-      label: string
-      type: string
-      required: boolean
-      options?: string[]
-    }>
-  }
+      id: string;
+      label: string;
+      type: string;
+      required: boolean;
+      options?: string[];
+    }>;
+  };
 }
 
-export default function JobDetailPage({ params }: { params: Promise<{ id: string }> }) {
-  const [job, setJob] = useState<Job | null>(null)
-  const [user, setUser] = useState<User | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState('')
-  const [showShareMenu, setShowShareMenu] = useState(false)
-  const [showJobsDropdown, setShowJobsDropdown] = useState(false)
-  const router = useRouter()
-  const resolvedParams = use(params)
+export default function JobDetailPage({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
+  const [job, setJob] = useState<Job | null>(null);
+  const [user, setUser] = useState<User | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [showShareMenu, setShowShareMenu] = useState(false);
+  const [showJobsDropdown, setShowJobsDropdown] = useState(false);
+  const router = useRouter();
+  const resolvedParams = use(params);
 
   // Check if the job form has a location field
   const hasLocationField = (job: Job): boolean => {
-    return job.form?.fields?.some(field => 
-      field.type === 'text' && 
-      field.label.toLowerCase().includes('location')
-    ) || false
-  }
+    return (
+      job.form?.fields?.some(
+        (field) =>
+          field.type === "text" &&
+          field.label.toLowerCase().includes("location"),
+      ) || false
+    );
+  };
 
   useEffect(() => {
     const checkAuth = async () => {
-      const token = localStorage.getItem('token')
+      const token = localStorage.getItem("token");
       if (token) {
         try {
-          const response = await fetch('/api/auth/me', {
+          const response = await fetch("/api/auth/me", {
             headers: {
-              'Authorization': `Bearer ${token}`
-            }
-          })
+              Authorization: `Bearer ${token}`,
+            },
+          });
           if (response.ok) {
-            const userData = await response.json()
-            setUser(userData)
+            const userData = await response.json();
+            setUser(userData);
           }
         } catch (error) {
-          console.error('Auth check failed:', error)
+          console.error("Auth check failed:", error);
           // Continue without user - public access
         }
       }
-    }
+    };
 
     const fetchJob = async () => {
       try {
-        const response = await fetch(`/api/jobs/${resolvedParams.id}`)
+        const response = await fetch(`/api/jobs/${resolvedParams.id}`);
         if (response.ok) {
-          const data = await response.json()
-          setJob(data)
+          const data = await response.json();
+          setJob(data);
         } else {
-          setError('Job not found')
+          setError("Job not found");
         }
       } catch {
-        setError('Failed to load job')
+        setError("Failed to load job");
       } finally {
-        setLoading(false)
+        setLoading(false);
       }
-    }
+    };
 
-    checkAuth()
-    fetchJob()
-  }, [resolvedParams.id])
+    checkAuth();
+    fetchJob();
+  }, [resolvedParams.id]);
 
   // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (showJobsDropdown) {
-        const target = event.target as Element
-        if (!target.closest('.relative')) {
-          setShowJobsDropdown(false)
+        const target = event.target as Element;
+        if (!target.closest(".relative")) {
+          setShowJobsDropdown(false);
         }
       }
-    }
+    };
 
-    document.addEventListener('mousedown', handleClickOutside)
+    document.addEventListener("mousedown", handleClickOutside);
     return () => {
-      document.removeEventListener('mousedown', handleClickOutside)
-    }
-  }, [showJobsDropdown])
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [showJobsDropdown]);
 
   const handleLogout = async () => {
     try {
-      await fetch('/api/auth/logout', {
-        method: 'POST',
+      await fetch("/api/auth/logout", {
+        method: "POST",
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        }
-      })
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+      });
     } catch (error) {
-      console.error('Logout error:', error)
+      console.error("Logout error:", error);
     } finally {
-      localStorage.removeItem('token')
-      router.push('/login')
+      localStorage.removeItem("token");
+      router.push("/login");
     }
-  }
+  };
 
   const handleShare = async () => {
-    const url = window.location.href
-    
+    const url = window.location.href;
+
     try {
       // Try modern clipboard API first
       if (navigator.clipboard && navigator.clipboard.writeText) {
-        await navigator.clipboard.writeText(url)
-        setShowShareMenu(false)
+        await navigator.clipboard.writeText(url);
+        setShowShareMenu(false);
         // Could add a toast notification here
-        return
+        return;
       }
     } catch {
-      console.log('Clipboard API failed, trying fallback method')
+      console.log("Clipboard API failed, trying fallback method");
     }
-    
+
     // Fallback method for older browsers or when clipboard API is blocked
     try {
-      const textArea = document.createElement('textarea')
-      textArea.value = url
-      textArea.style.position = 'fixed'
-      textArea.style.left = '-999999px'
-      textArea.style.top = '-999999px'
-      document.body.appendChild(textArea)
-      textArea.focus()
-      textArea.select()
-      
-      const successful = document.execCommand('copy')
-      document.body.removeChild(textArea)
-      
+      const textArea = document.createElement("textarea");
+      textArea.value = url;
+      textArea.style.position = "fixed";
+      textArea.style.left = "-999999px";
+      textArea.style.top = "-999999px";
+      document.body.appendChild(textArea);
+      textArea.focus();
+      textArea.select();
+
+      const successful = document.execCommand("copy");
+      document.body.removeChild(textArea);
+
       if (successful) {
-        setShowShareMenu(false)
+        setShowShareMenu(false);
         // Could add a toast notification here
       } else {
         // Final fallback - just show the URL for manual copying
-        prompt('Copy this URL:', url)
-        setShowShareMenu(false)
+        prompt("Copy this URL:", url);
+        setShowShareMenu(false);
       }
     } catch {
       // Ultimate fallback - show URL in prompt
-      prompt('Copy this URL:', url)
-      setShowShareMenu(false)
+      prompt("Copy this URL:", url);
+      setShowShareMenu(false);
     }
-  }
+  };
 
   const getJobStatusColor = (status: string) => {
     switch (status) {
-      case 'ACTIVE':
-        return 'bg-green-100 text-green-800'
-      case 'PAUSED':
-        return 'bg-yellow-100 text-yellow-800'
-      case 'DRAFT':
-        return 'bg-gray-100 text-gray-800'
+      case "ACTIVE":
+        return "bg-green-100 text-green-800";
+      case "PAUSED":
+        return "bg-yellow-100 text-yellow-800";
+      case "DRAFT":
+        return "bg-gray-100 text-gray-800";
       default:
-        return 'bg-gray-100 text-gray-800'
+        return "bg-gray-100 text-gray-800";
     }
-  }
+  };
 
   const getJobStatusText = (status: string) => {
     switch (status) {
-      case 'ACTIVE':
-        return 'Accepting Applications'
-      case 'PAUSED':
-        return 'Temporarily Closed'
-      case 'DRAFT':
-        return 'Draft'
+      case "ACTIVE":
+        return "Accepting Applications";
+      case "PAUSED":
+        return "Temporarily Closed";
+      case "DRAFT":
+        return "Draft";
       default:
-        return status
+        return status;
     }
-  }
+  };
 
   if (loading) {
     return (
@@ -202,21 +222,25 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
           <p className="mt-4 text-gray-600">Loading...</p>
         </div>
       </div>
-    )
+    );
   }
 
   if (error || !job) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">404 - Job Not Found</h2>
-          <p className="text-gray-600 mb-4">{error || 'The requested job does not exist.'}</p>
+          <h2 className="text-2xl font-bold text-gray-900 mb-2">
+            404 - Job Not Found
+          </h2>
+          <p className="text-gray-600 mb-4">
+            {error || "The requested job does not exist."}
+          </p>
           <Link href="/jobs" className="text-indigo-600 hover:text-indigo-500">
             Back to Jobs
           </Link>
         </div>
       </div>
-    )
+    );
   }
 
   return (
@@ -252,39 +276,78 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
                           <Briefcase className="h-4 w-4" />
                           <span>View All Jobs</span>
                         </Link>
-                        <Link
-                          href="/jobs/new"
-                          className="px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center space-x-2"
-                          onClick={() => setShowJobsDropdown(false)}
-                        >
-                          <Plus className="h-4 w-4" />
-                          <span>Create Job</span>
-                        </Link>
-                        <Link
-                          href="/admin/form-builder"
-                          className="px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center space-x-2"
-                          onClick={() => setShowJobsDropdown(false)}
-                        >
-                          <FormInput className="h-4 w-4" />
-                          <span>Create Form</span>
-                        </Link>
+                        {((user.role &&
+                          Array.isArray(user.role.permissions) &&
+                          user.role.permissions.some(
+                            (p) =>
+                              p.module === "jobs" &&
+                              p.action === "create" &&
+                              p.granted,
+                          )) ||
+                          user.role?.name === "Administrator") && (
+                          <Link
+                            href="/jobs/new"
+                            className="px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center space-x-2"
+                            onClick={() => setShowJobsDropdown(false)}
+                          >
+                            <Plus className="h-4 w-4" />
+                            <span>Create Job</span>
+                          </Link>
+                        )}
+                        {((user.role &&
+                          Array.isArray(user.role.permissions) &&
+                          user.role.permissions.some(
+                            (p) =>
+                              p.module === "forms" &&
+                              p.action === "create" &&
+                              p.granted,
+                          )) ||
+                          user.role?.name === "Administrator") && (
+                          <Link
+                            href="/admin/form-builder"
+                            className="px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center space-x-2"
+                            onClick={() => setShowJobsDropdown(false)}
+                          >
+                            <FormInput className="h-4 w-4" />
+                            <span>Create Form</span>
+                          </Link>
+                        )}
                       </div>
                     </div>
                   )}
                 </div>
-                <Link href="/applications" className="text-gray-700 hover:text-gray-900 flex items-center space-x-1">
+                <Link
+                  href="/applications"
+                  className="text-gray-700 hover:text-gray-900 flex items-center space-x-1"
+                >
                   <FileText className="h-4 w-4" />
                   <span>Applications</span>
                 </Link>
-                {(user.role?.name === 'Administrator' || user.role?.name === 'Human Resources') && (
-                  <Link href="/admin" className="text-gray-700 hover:text-gray-900 flex items-center space-x-1">
+                {((user.role &&
+                  Array.isArray(user.role.permissions) &&
+                  user.role.permissions.some(
+                    (p) =>
+                      (p.module === "roles" ||
+                        p.module === "users" ||
+                        p.module === "settings" ||
+                        p.module === "dashboard" ||
+                        p.module === "email" ||
+                        p.module === "forms") &&
+                      p.action === "read" &&
+                      p.granted,
+                  )) ||
+                  user.role?.name === "Administrator") && (
+                  <Link
+                    href="/admin"
+                    className="text-gray-700 hover:text-gray-900 flex items-center space-x-1"
+                  >
                     <Settings className="h-4 w-4" />
                     <span>Admin</span>
                   </Link>
                 )}
                 <div className="flex items-center space-x-3">
                   <span className="text-sm text-gray-700">
-                    {user.name} ({user.role?.name || 'Guest'})
+                    {user.name} ({user.role?.name || "Guest"})
                   </span>
                   <button
                     onClick={handleLogout}
@@ -304,8 +367,17 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Breadcrumb - Show different text based on user status */}
         <div className="mb-6">
-          {user && ['Administrator', 'Human Resources', 'Manager'].includes(user.role?.name || '') ? (
-            <Link href="/jobs" className="inline-flex items-center text-indigo-600 hover:text-indigo-500">
+          {user &&
+          ((user.role &&
+            Array.isArray(user.role.permissions) &&
+            user.role.permissions.some(
+              (p) => p.module === "jobs" && p.action === "read" && p.granted,
+            )) ||
+            user.role?.name === "Administrator") ? (
+            <Link
+              href="/jobs"
+              className="inline-flex items-center text-indigo-600 hover:text-indigo-500"
+            >
               <ArrowLeft className="h-4 w-4 mr-2" />
               Back to Jobs
             </Link>
@@ -326,7 +398,9 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
           <div className="px-6 py-8 bg-gradient-to-r from-indigo-50 to-blue-50 border-b">
             <div className="flex justify-between items-start">
               <div className="flex-1">
-                <h1 className="text-3xl font-bold text-gray-900 mb-3">{job.title}</h1>
+                <h1 className="text-3xl font-bold text-gray-900 mb-3">
+                  {job.title}
+                </h1>
                 <div className="flex items-center space-x-4 text-gray-600 mb-4">
                   <div className="flex items-center">
                     <Briefcase className="h-5 w-5 mr-2" />
@@ -335,27 +409,35 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
                   {(job.location || hasLocationField(job)) && (
                     <div className="flex items-center">
                       <MapPin className="h-5 w-5 mr-2" />
-                      <span>{job.location || 'Location will be specified in application form'}</span>
+                      <span>
+                        {job.location ||
+                          "Location will be specified in application form"}
+                      </span>
                     </div>
                   )}
                   <div className="flex items-center">
                     <Clock className="h-5 w-5 mr-2" />
-                    <span>Posted {new Date(job.createdAt).toLocaleDateString()}</span>
+                    <span>
+                      Posted {new Date(job.createdAt).toLocaleDateString()}
+                    </span>
                   </div>
                 </div>
                 <div className="flex items-center space-x-3">
-                  <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${getJobStatusColor(job.status)}`}>
+                  <span
+                    className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${getJobStatusColor(job.status)}`}
+                  >
                     {getJobStatusText(job.status)}
                   </span>
                   {job.applicationsCount !== undefined && (
                     <span className="inline-flex items-center px-3 py-1 rounded-full text-sm bg-gray-100 text-gray-700">
                       <Users className="h-4 w-4 mr-1" />
-                      {job.applicationsCount} applicant{job.applicationsCount !== 1 ? 's' : ''}
+                      {job.applicationsCount} applicant
+                      {job.applicationsCount !== 1 ? "s" : ""}
                     </span>
                   )}
                 </div>
               </div>
-              
+
               {/* Share Button */}
               <div className="relative">
                 <button
@@ -381,22 +463,28 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
 
           {/* Job Description */}
           <div className="px-6 py-8">
-            <h2 className="text-xl font-semibold text-gray-900 mb-4">Job Description</h2>
-            <div 
+            <h2 className="text-xl font-semibold text-gray-900 mb-4">
+              Job Description
+            </h2>
+            <div
               className="prose max-w-none text-gray-700 leading-relaxed"
               dangerouslySetInnerHTML={{ __html: job.description }}
             />
           </div>
 
           {/* Apply Section - Only show if job is active */}
-          {job.status === 'ACTIVE' && (
+          {job.status === "ACTIVE" && (
             <div className="px-6 py-6 bg-gray-50 border-t">
               <div className="flex flex-col sm:flex-row items-center justify-between">
                 <div className="mb-4 sm:mb-0">
-                  <h3 className="text-lg font-semibold text-gray-900">Ready to Apply?</h3>
-                  <p className="text-gray-600">Join our team and make an impact.</p>
+                  <h3 className="text-lg font-semibold text-gray-900">
+                    Ready to Apply?
+                  </h3>
+                  <p className="text-gray-600">
+                    Join our team and make an impact.
+                  </p>
                 </div>
-                <Link 
+                <Link
                   href={`/jobs/${job.id}/apply`}
                   className="inline-flex items-center px-8 py-3 bg-indigo-600 text-white font-medium rounded-md hover:bg-indigo-700 transition-colors shadow-sm"
                 >
@@ -407,25 +495,23 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
           )}
 
           {/* Job Closed Message */}
-          {job.status !== 'ACTIVE' && (
+          {job.status !== "ACTIVE" && (
             <div className="px-6 py-6 bg-red-50 border-t">
               <div className="text-center">
                 <h3 className="text-lg font-semibold text-red-900 mb-2">
-                  This Position is Currently {job.status === 'PAUSED' ? 'Paused' : 'Closed'}
+                  This Position is Currently{" "}
+                  {job.status === "PAUSED" ? "Paused" : "Closed"}
                 </h3>
                 <p className="text-red-700">
-                  {job.status === 'PAUSED' 
-                    ? 'Applications are temporarily not being accepted for this position.'
-                    : 'This job posting is no longer accepting applications.'
-                  }
+                  {job.status === "PAUSED"
+                    ? "Applications are temporarily not being accepted for this position."
+                    : "This job posting is no longer accepting applications."}
                 </p>
               </div>
             </div>
           )}
         </div>
-
-
       </div>
     </div>
-  )
+  );
 }

@@ -1,10 +1,10 @@
-'use client'
+"use client";
 
-import { useState, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
-import Link from 'next/link'
-import { 
-  Shield, 
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import Link from "next/link";
+import {
+  Shield,
   ShieldCheck,
   Users,
   Plus,
@@ -16,299 +16,319 @@ import {
   Trash2,
   UserPlus,
   Eye,
-  EyeOff
-} from 'lucide-react'
+  EyeOff,
+} from "lucide-react";
 
 interface Permission {
-  id: string
-  module: string
-  action: string
-  name: string
-  description: string
-  granted?: boolean
+  id: string;
+  module: string;
+  action: string;
+  name: string;
+  description: string;
+  granted?: boolean;
 }
 
 interface RoleFormData {
-  name: string
-  description: string
-  permissions: string[]
+  name: string;
+  description: string;
+  permissions: string[];
 }
 
 interface Role {
-  id: string
-  name: string
-  description: string
-  isSystem: boolean
-  isActive: boolean
-  userCount: number
-  createdAt: string
-  updatedAt: string
+  id: string;
+  name: string;
+  description: string;
+  isSystem: boolean;
+  isActive: boolean;
+  userCount: number;
+  createdAt: string;
+  updatedAt: string;
   creator?: {
-    id: string
-    name: string
-    email: string
-  }
-  permissions?: Permission[]
+    id: string;
+    name: string;
+    email: string;
+  };
+  permissions?: Permission[];
 }
 
 interface User {
-  id: string
-  name: string
-  email: string
-  role: string | {
-    name: string
-  }
+  id: string;
+  name: string;
+  email: string;
+  role:
+    | string
+    | {
+        name: string;
+      };
 }
 
 export default function RolesPage() {
-  const [user, setUser] = useState<User | null>(null)
-  const [roles, setRoles] = useState<Role[]>([])
-  const [loading, setLoading] = useState(true)
-  const [showCreateModal, setShowCreateModal] = useState(false)
-  const [showEditModal, setShowEditModal] = useState(false)
-  const [editingRole, setEditingRole] = useState<Role | null>(null)
-  const [allPermissions, setAllPermissions] = useState<Permission[]>([])
+  const [user, setUser] = useState<User | null>(null);
+  const [roles, setRoles] = useState<Role[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editingRole, setEditingRole] = useState<Role | null>(null);
+  const [allPermissions, setAllPermissions] = useState<Permission[]>([]);
   const [roleForm, setRoleForm] = useState<RoleFormData>({
-    name: '',
-    description: '',
-    permissions: []
-  })
-  const [saving, setSaving] = useState(false)
-  const [loadingPermissions, setLoadingPermissions] = useState(false)
-  const [showPermissions, setShowPermissions] = useState<Record<string, boolean>>({})
-  const router = useRouter()
+    name: "",
+    description: "",
+    permissions: [],
+  });
+  const [saving, setSaving] = useState(false);
+  const [loadingPermissions, setLoadingPermissions] = useState(false);
+  const [showPermissions, setShowPermissions] = useState<
+    Record<string, boolean>
+  >({});
+  const router = useRouter();
 
   useEffect(() => {
     const checkAuth = async () => {
-      const token = localStorage.getItem('token')
+      const token = localStorage.getItem("token");
       if (!token) {
-        router.push('/login')
-        return
+        router.push("/login");
+        return;
       }
 
       try {
-        const response = await fetch('/api/auth/me', {
+        const response = await fetch("/api/auth/me", {
           headers: {
-            'Authorization': `Bearer ${token}`
-          }
-        })
+            Authorization: `Bearer ${token}`,
+          },
+        });
 
         if (response.ok) {
-          const userData = await response.json()
-          setUser(userData)
-          await fetchRoles()
-          await fetchAllPermissions() // Load permissions when page loads
+          const userData = await response.json();
+          setUser(userData);
+          await fetchRoles();
+          await fetchAllPermissions(); // Load permissions when page loads
         } else {
-          localStorage.removeItem('token')
-          router.push('/login')
+          localStorage.removeItem("token");
+          router.push("/login");
         }
       } catch (error) {
-        console.error('Auth check failed:', error)
-        router.push('/login')
+        console.error("Auth check failed:", error);
+        router.push("/login");
       } finally {
-        setLoading(false)
+        setLoading(false);
       }
-    }
+    };
 
-    checkAuth()
-  }, [router])
+    checkAuth();
+  }, [router]);
 
   const fetchRoles = async () => {
-    const token = localStorage.getItem('token')
-    if (!token) return
+    const token = localStorage.getItem("token");
+    if (!token) return;
 
     try {
-      const response = await fetch('/api/roles?includePermissions=true', {
+      const response = await fetch("/api/roles?includePermissions=true", {
         headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      })
+          Authorization: `Bearer ${token}`,
+        },
+      });
 
       if (response.ok) {
-        const data = await response.json()
-        setRoles(data.roles || [])
+        const data = await response.json();
+        setRoles(data.roles || []);
       }
     } catch (error) {
-      console.error('Failed to fetch roles:', error)
+      console.error("Failed to fetch roles:", error);
     }
-  }
+  };
 
   const fetchAllPermissions = async () => {
-    const token = localStorage.getItem('token')
-    if (!token) return
+    const token = localStorage.getItem("token");
+    if (!token) return;
 
-    setLoadingPermissions(true)
+    setLoadingPermissions(true);
     try {
-      console.log('Fetching permissions...')
-      const response = await fetch('/api/permissions', {
+      console.log("Fetching permissions...");
+      const response = await fetch("/api/permissions", {
         headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      })
+          Authorization: `Bearer ${token}`,
+        },
+      });
 
-      console.log('Permissions response status:', response.status)
-      
+      console.log("Permissions response status:", response.status);
+
       if (response.ok) {
-        const data = await response.json()
-        console.log('Permissions data:', data)
-        setAllPermissions(data.permissions || [])
+        const data = await response.json();
+        console.log("Permissions data:", data);
+        setAllPermissions(data.permissions || []);
       } else {
-        console.error('Failed to fetch permissions:', response.status)
-        setAllPermissions([])
+        console.error("Failed to fetch permissions:", response.status);
+        setAllPermissions([]);
       }
     } catch (error) {
-      console.error('Failed to fetch permissions:', error)
-      setAllPermissions([])
+      console.error("Failed to fetch permissions:", error);
+      setAllPermissions([]);
     } finally {
-      setLoadingPermissions(false)
+      setLoadingPermissions(false);
     }
-  }
+  };
 
   const openCreateModal = () => {
     setRoleForm({
-      name: '',
-      description: '',
-      permissions: []
-    })
-    setEditingRole(null)
-    setShowCreateModal(true)
-  }
+      name: "",
+      description: "",
+      permissions: [],
+    });
+    setEditingRole(null);
+    setShowCreateModal(true);
+  };
 
   const openEditModal = (role: Role) => {
     setRoleForm({
       name: role.name,
       description: role.description,
-      permissions: role.permissions?.map(p => p.id) || []
-    })
-    setEditingRole(role)
-    setShowEditModal(true)
-  }
+      permissions: role.permissions?.map((p) => p.id) || [],
+    });
+    setEditingRole(role);
+    setShowEditModal(true);
+  };
 
   const closeModals = () => {
-    setShowCreateModal(false)
-    setShowEditModal(false)
-    setEditingRole(null)
+    setShowCreateModal(false);
+    setShowEditModal(false);
+    setEditingRole(null);
     setRoleForm({
-      name: '',
-      description: '',
-      permissions: []
-    })
-  }
+      name: "",
+      description: "",
+      permissions: [],
+    });
+  };
 
   const handleSaveRole = async () => {
-    if (!roleForm.name.trim()) return
+    if (!roleForm.name.trim()) return;
 
-    setSaving(true)
-    const token = localStorage.getItem('token')
-    if (!token) return
+    setSaving(true);
+    const token = localStorage.getItem("token");
+    if (!token) return;
 
     try {
-      const method = editingRole ? 'PUT' : 'POST'
-      const url = editingRole ? `/api/roles/${editingRole.id}` : '/api/roles'
-      
+      const method = editingRole ? "PUT" : "POST";
+      const url = editingRole ? `/api/roles/${editingRole.id}` : "/api/roles";
+
       const response = await fetch(url, {
         method,
         headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify(roleForm)
-      })
+        body: JSON.stringify(roleForm),
+      });
 
       if (response.ok) {
-        await fetchRoles()
-        closeModals()
+        await fetchRoles();
+        closeModals();
       } else {
-        console.error('Failed to save role')
+        console.error("Failed to save role");
       }
     } catch (error) {
-      console.error('Error saving role:', error)
+      console.error("Error saving role:", error);
     } finally {
-      setSaving(false)
+      setSaving(false);
     }
-  }
+  };
 
   const handleDeleteRole = async (roleId: string) => {
-    if (!confirm('Are you sure you want to delete this role? This action cannot be undone.')) {
-      return
+    if (
+      !confirm(
+        "Are you sure you want to delete this role? This action cannot be undone.",
+      )
+    ) {
+      return;
     }
 
-    const token = localStorage.getItem('token')
-    if (!token) return
+    const token = localStorage.getItem("token");
+    if (!token) return;
 
     try {
       const response = await fetch(`/api/roles/${roleId}`, {
-        method: 'DELETE',
+        method: "DELETE",
         headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      })
+          Authorization: `Bearer ${token}`,
+        },
+      });
 
       if (response.ok) {
-        await fetchRoles()
+        await fetchRoles();
       } else {
-        console.error('Failed to delete role')
-        alert('Failed to delete role. Please try again.')
+        console.error("Failed to delete role");
+        alert("Failed to delete role. Please try again.");
       }
     } catch (error) {
-      console.error('Error deleting role:', error)
-      alert('An error occurred while deleting the role.')
+      console.error("Error deleting role:", error);
+      alert("An error occurred while deleting the role.");
     }
-  }
+  };
 
   const togglePermission = (permissionId: string) => {
-    setRoleForm(prev => ({
+    setRoleForm((prev) => ({
       ...prev,
       permissions: prev.permissions.includes(permissionId)
-        ? prev.permissions.filter(id => id !== permissionId)
-        : [...prev.permissions, permissionId]
-    }))
-  }
+        ? prev.permissions.filter((id) => id !== permissionId)
+        : [...prev.permissions, permissionId],
+    }));
+  };
 
   const handleLogout = async () => {
     try {
-      await fetch('/api/auth/logout', {
-        method: 'POST',
+      await fetch("/api/auth/logout", {
+        method: "POST",
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        }
-      })
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+      });
     } catch (error) {
-      console.error('Logout error:', error)
+      console.error("Logout error:", error);
     } finally {
-      localStorage.removeItem('token')
-      router.push('/login')
+      localStorage.removeItem("token");
+      router.push("/login");
     }
-  }
+  };
 
   const togglePermissions = (roleId: string) => {
-    setShowPermissions(prev => ({
+    setShowPermissions((prev) => ({
       ...prev,
-      [roleId]: !prev[roleId]
-    }))
-  }
+      [roleId]: !prev[roleId],
+    }));
+  };
 
   const getModuleIcon = (module: string) => {
     switch (module) {
-      case 'jobs': return <Briefcase className="h-4 w-4" />
-      case 'applications': return <FileText className="h-4 w-4" />
-      case 'users': return <Users className="h-4 w-4" />
-      case 'roles': return <Shield className="h-4 w-4" />
-      case 'settings': return <Settings className="h-4 w-4" />
-      default: return <ShieldCheck className="h-4 w-4" />
+      case "jobs":
+        return <Briefcase className="h-4 w-4" />;
+      case "applications":
+        return <FileText className="h-4 w-4" />;
+      case "users":
+        return <Users className="h-4 w-4" />;
+      case "roles":
+        return <Shield className="h-4 w-4" />;
+      case "settings":
+        return <Settings className="h-4 w-4" />;
+      default:
+        return <ShieldCheck className="h-4 w-4" />;
     }
-  }
+  };
 
   const getActionColor = (action: string) => {
     switch (action) {
-      case 'create': return 'text-green-600 bg-green-100'
-      case 'read': return 'text-blue-600 bg-blue-100'
-      case 'update': return 'text-yellow-600 bg-yellow-100'
-      case 'delete': return 'text-red-600 bg-red-100'
-      case 'archive': return 'text-purple-600 bg-purple-100'
-      default: return 'text-gray-600 bg-gray-100'
+      case "create":
+        return "text-green-600 bg-green-100";
+      case "read":
+        return "text-blue-600 bg-blue-100";
+      case "update":
+        return "text-yellow-600 bg-yellow-100";
+      case "delete":
+        return "text-red-600 bg-red-100";
+      case "archive":
+        return "text-purple-600 bg-purple-100";
+      default:
+        return "text-gray-600 bg-gray-100";
     }
-  }
+  };
 
   if (loading) {
     return (
@@ -318,11 +338,11 @@ export default function RolesPage() {
           <p className="mt-4 text-gray-600">Loading...</p>
         </div>
       </div>
-    )
+    );
   }
 
   if (!user) {
-    return null
+    return null;
   }
 
   return (
@@ -337,25 +357,41 @@ export default function RolesPage() {
               </Link>
             </div>
             <div className="flex items-center space-x-8">
-              <Link href="/jobs" className="text-gray-700 hover:text-gray-900 flex items-center space-x-1">
+              <Link
+                href="/jobs"
+                className="text-gray-700 hover:text-gray-900 flex items-center space-x-1"
+              >
                 <Briefcase className="h-4 w-4" />
                 <span>Jobs</span>
               </Link>
-              <Link href="/applications" className="text-gray-700 hover:text-gray-900 flex items-center space-x-1">
+              <Link
+                href="/applications"
+                className="text-gray-700 hover:text-gray-900 flex items-center space-x-1"
+              >
                 <FileText className="h-4 w-4" />
                 <span>Applications</span>
               </Link>
-              <Link href="/admin/users" className="text-gray-700 hover:text-gray-900 flex items-center space-x-1">
+              <Link
+                href="/admin/users"
+                className="text-gray-700 hover:text-gray-900 flex items-center space-x-1"
+              >
                 <Users className="h-4 w-4" />
                 <span>Users</span>
               </Link>
-              <Link href="/admin/roles" className="text-indigo-600 font-medium flex items-center space-x-1">
+              <Link
+                href="/admin/roles"
+                className="text-indigo-600 font-medium flex items-center space-x-1"
+              >
                 <Shield className="h-4 w-4" />
                 <span>Roles</span>
               </Link>
               <div className="flex items-center space-x-3">
                 <span className="text-sm text-gray-700">
-                  {user.name} ({typeof user.role === 'string' ? user.role : user.role?.name || 'Guest'})
+                  {user.name} (
+                  {typeof user.role === "string"
+                    ? user.role
+                    : user.role?.name || "Guest"}
+                  )
                 </span>
                 <button
                   onClick={handleLogout}
@@ -374,18 +410,27 @@ export default function RolesPage() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="mb-8 flex justify-between items-center">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">Roles & Permissions</h1>
+            <h1 className="text-3xl font-bold text-gray-900">
+              Roles & Permissions
+            </h1>
             <p className="mt-2 text-gray-600">
               Manage user roles and permissions across the system
             </p>
           </div>
-          <button
-            onClick={openCreateModal}
-            className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-          >
-            <Plus className="h-4 w-4 mr-2" />
-            Create Role
-          </button>
+          {((user?.role &&
+            Array.isArray(user.role.permissions) &&
+            user.role.permissions.some(
+              (p) => p.module === "roles" && p.action === "create" && p.granted,
+            )) ||
+            user?.role?.name === "Administrator") && (
+            <button
+              onClick={openCreateModal}
+              className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              Create Role
+            </button>
+          )}
         </div>
 
         {/* Roles Grid */}
@@ -396,16 +441,24 @@ export default function RolesPage() {
                 <div className="flex justify-between items-start">
                   <div className="flex-1">
                     <div className="flex items-center space-x-3">
-                      <div className={`p-2 rounded-lg ${role.isSystem ? 'bg-blue-100' : 'bg-green-100'}`}>
+                      <div
+                        className={`p-2 rounded-lg ${role.isSystem ? "bg-blue-100" : "bg-green-100"}`}
+                      >
                         {role.isSystem ? (
-                          <ShieldCheck className={`h-5 w-5 ${role.isSystem ? 'text-blue-600' : 'text-green-600'}`} />
+                          <ShieldCheck
+                            className={`h-5 w-5 ${role.isSystem ? "text-blue-600" : "text-green-600"}`}
+                          />
                         ) : (
                           <Shield className="h-5 w-5 text-green-600" />
                         )}
                       </div>
                       <div>
-                        <h3 className="text-lg font-medium text-gray-900">{role.name}</h3>
-                        <p className="text-sm text-gray-500">{role.description}</p>
+                        <h3 className="text-lg font-medium text-gray-900">
+                          {role.name}
+                        </h3>
+                        <p className="text-sm text-gray-500">
+                          {role.description}
+                        </p>
                       </div>
                       {role.isSystem && (
                         <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
@@ -418,7 +471,7 @@ export default function RolesPage() {
                         </span>
                       )}
                     </div>
-                    
+
                     <div className="mt-4 flex items-center space-x-6 text-sm text-gray-500">
                       <div className="flex items-center space-x-1">
                         <Users className="h-4 w-4" />
@@ -435,53 +488,97 @@ export default function RolesPage() {
                       </div>
                     </div>
                   </div>
-                  
+
                   <div className="flex items-center space-x-2">
-                    <button
-                      onClick={() => togglePermissions(role.id)}
-                      className="inline-flex items-center px-3 py-1.5 border border-gray-300 text-xs font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-                    >
-                      {showPermissions[role.id] ? <EyeOff className="h-4 w-4 mr-1" /> : <Eye className="h-4 w-4 mr-1" />}
-                      {showPermissions[role.id] ? 'Hide' : 'View'} Permissions
-                    </button>
-                    <button 
-                      onClick={() => openEditModal(role)}
-                      className="inline-flex items-center px-3 py-1.5 border border-gray-300 text-xs font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-                    >
-                      <Edit2 className="h-4 w-4 mr-1" />
-                      Edit
-                    </button>
-                    {role.name !== 'Administrator' && (
-                      <button 
-                        onClick={() => handleDeleteRole(role.id)}
-                        className="inline-flex items-center px-3 py-1.5 border border-red-300 text-xs font-medium rounded-md text-red-700 bg-white hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
-                        title={role.isSystem ? 'System roles can be deleted (except Administrator)' : 'Delete this role'}
+                    {((user?.role &&
+                      Array.isArray(user.role.permissions) &&
+                      user.role.permissions.some(
+                        (p) =>
+                          p.module === "roles" &&
+                          p.action === "read" &&
+                          p.granted,
+                      )) ||
+                      user?.role?.name === "Administrator") && (
+                      <button
+                        onClick={() => togglePermissions(role.id)}
+                        className="inline-flex items-center px-3 py-1.5 border border-gray-300 text-xs font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
                       >
-                        <Trash2 className="h-4 w-4 mr-1" />
-                        Delete
+                        {showPermissions[role.id] ? (
+                          <EyeOff className="h-4 w-4 mr-1" />
+                        ) : (
+                          <Eye className="h-4 w-4 mr-1" />
+                        )}
+                        {showPermissions[role.id] ? "Hide" : "View"} Permissions
                       </button>
                     )}
+                    {((user?.role &&
+                      Array.isArray(user.role.permissions) &&
+                      user.role.permissions.some(
+                        (p) =>
+                          p.module === "roles" &&
+                          p.action === "update" &&
+                          p.granted,
+                      )) ||
+                      user?.role?.name === "Administrator") && (
+                      <button
+                        onClick={() => openEditModal(role)}
+                        className="inline-flex items-center px-3 py-1.5 border border-gray-300 text-xs font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                      >
+                        <Edit2 className="h-4 w-4 mr-1" />
+                        Edit
+                      </button>
+                    )}
+                    {role.name !== "Administrator" &&
+                      ((user?.role &&
+                        Array.isArray(user.role.permissions) &&
+                        user.role.permissions.some(
+                          (p) =>
+                            p.module === "roles" &&
+                            p.action === "delete" &&
+                            p.granted,
+                        )) ||
+                        user?.role?.name === "Administrator") && (
+                        <button
+                          onClick={() => handleDeleteRole(role.id)}
+                          className="inline-flex items-center px-3 py-1.5 border border-red-300 text-xs font-medium rounded-md text-red-700 bg-white hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+                          title={
+                            role.isSystem
+                              ? "System roles can be deleted (except Administrator)"
+                              : "Delete this role"
+                          }
+                        >
+                          <Trash2 className="h-4 w-4 mr-1" />
+                          Delete
+                        </button>
+                      )}
                   </div>
                 </div>
 
                 {/* Permissions Section */}
                 {showPermissions[role.id] && role.permissions && (
                   <div className="mt-6 pt-6 border-t border-gray-200">
-                    <h4 className="text-sm font-medium text-gray-900 mb-4">Permissions</h4>
+                    <h4 className="text-sm font-medium text-gray-900 mb-4">
+                      Permissions
+                    </h4>
                     <div className="space-y-4">
                       {Object.entries(
-                        role.permissions.reduce((acc, permission) => {
-                          if (!acc[permission.module]) {
-                            acc[permission.module] = []
-                          }
-                          acc[permission.module].push(permission)
-                          return acc
-                        }, {} as Record<string, Permission[]>)
+                        role.permissions.reduce(
+                          (acc, permission) => {
+                            if (!acc[permission.module]) {
+                              acc[permission.module] = [];
+                            }
+                            acc[permission.module].push(permission);
+                            return acc;
+                          },
+                          {} as Record<string, Permission[]>,
+                        ),
                       ).map(([module, permissions]) => (
                         <div key={module} className="bg-gray-50 rounded-lg p-4">
                           <div className="flex items-center space-x-2 mb-3">
                             {getModuleIcon(module)}
-                            <h5 className="text-sm font-medium text-gray-900 capitalize">{module}</h5>
+                            <h5 className="text-sm font-medium text-gray-900 capitalize">
+                              {module}
+                            </h5>
                           </div>
                           <div className="flex flex-wrap gap-2">
                             {permissions.map((permission) => (
@@ -507,7 +604,9 @@ export default function RolesPage() {
         {roles.length === 0 && (
           <div className="text-center py-12">
             <Shield className="mx-auto h-12 w-12 text-gray-400" />
-            <h3 className="mt-2 text-sm font-medium text-gray-900">No roles found</h3>
+            <h3 className="mt-2 text-sm font-medium text-gray-900">
+              No roles found
+            </h3>
             <p className="mt-1 text-sm text-gray-500">
               Get started by creating a new role.
             </p>
@@ -530,10 +629,10 @@ export default function RolesPage() {
           <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full mx-4 max-h-[90vh] overflow-hidden">
             <div className="px-6 py-4 border-b border-gray-200">
               <h3 className="text-lg font-medium text-gray-900">
-                {editingRole ? 'Edit Role' : 'Create New Role'}
+                {editingRole ? "Edit Role" : "Create New Role"}
               </h3>
             </div>
-            
+
             <div className="p-6 overflow-y-auto max-h-[calc(90vh-140px)]">
               {/* Basic Info */}
               <div className="space-y-4 mb-6">
@@ -544,20 +643,27 @@ export default function RolesPage() {
                   <input
                     type="text"
                     value={roleForm.name}
-                    onChange={(e) => setRoleForm(prev => ({ ...prev, name: e.target.value }))}
+                    onChange={(e) =>
+                      setRoleForm((prev) => ({ ...prev, name: e.target.value }))
+                    }
                     className="w-full px-3 py-2 border border-gray-300 text-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
                     placeholder="Enter role name"
                     disabled={editingRole?.isSystem}
                   />
                 </div>
-                
+
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Description
                   </label>
                   <textarea
                     value={roleForm.description}
-                    onChange={(e) => setRoleForm(prev => ({ ...prev, description: e.target.value }))}
+                    onChange={(e) =>
+                      setRoleForm((prev) => ({
+                        ...prev,
+                        description: e.target.value,
+                      }))
+                    }
                     rows={3}
                     className="w-full px-3 py-2 border text-gray-700  border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
                     placeholder="Enter role description"
@@ -567,85 +673,110 @@ export default function RolesPage() {
 
               {/* Permissions */}
               <div>
-                <h4 className="text-lg font-medium text-gray-900 mb-4">Permissions</h4>
+                <h4 className="text-lg font-medium text-gray-900 mb-4">
+                  Permissions
+                </h4>
                 {loadingPermissions ? (
                   <div className="flex justify-center py-8">
                     <div className="text-gray-500">Loading permissions...</div>
                   </div>
-                ) : !Array.isArray(allPermissions) || allPermissions.length === 0 ? (
+                ) : !Array.isArray(allPermissions) ||
+                  allPermissions.length === 0 ? (
                   <div className="text-center py-8">
-                    <div className="text-gray-500">No permissions available</div>
+                    <div className="text-gray-500">
+                      No permissions available
+                    </div>
                   </div>
                 ) : (
                   <div className="space-y-6">
                     {Object.entries(
-                      allPermissions.reduce((acc, permission) => {
-                        if (!acc[permission.module]) {
-                          acc[permission.module] = []
-                        }
-                        acc[permission.module].push(permission)
-                        return acc
-                      }, {} as Record<string, Permission[]>)
+                      allPermissions.reduce(
+                        (acc, permission) => {
+                          if (!acc[permission.module]) {
+                            acc[permission.module] = [];
+                          }
+                          acc[permission.module].push(permission);
+                          return acc;
+                        },
+                        {} as Record<string, Permission[]>,
+                      ),
                     ).map(([module, permissions]) => (
-                    <div key={module} className="bg-gray-50 rounded-lg p-4">
-                      <div className="flex items-center space-x-2 mb-3">
-                        {getModuleIcon(module)}
-                        <h5 className="text-sm font-medium text-gray-900 capitalize">{module}</h5>
-                        <div className="flex-1" />
-                        <button
-                          type="button"
-                          onClick={() => {
-                            const modulePermissionIds = permissions.map(p => p.id)
-                            const allSelected = modulePermissionIds.every(id => 
-                              roleForm.permissions.includes(id)
-                            )
-                            if (allSelected) {
-                              setRoleForm(prev => ({
-                                ...prev,
-                                permissions: prev.permissions.filter(id => !modulePermissionIds.includes(id))
-                              }))
-                            } else {
-                              setRoleForm(prev => ({
-                                ...prev,
-                                permissions: [...new Set([...prev.permissions, ...modulePermissionIds])]
-                              }))
-                            }
-                          }}
-                          className="text-xs text-indigo-600 hover:text-indigo-500"
-                        >
-                          {permissions.every(p => roleForm.permissions.includes(p.id)) ? 'Deselect All' : 'Select All'}
-                        </button>
-                      </div>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
-                        {permissions.map((permission) => (
-                          <label
-                            key={permission.id}
-                            className="flex items-center space-x-2 p-2 rounded border cursor-pointer hover:bg-white"
+                      <div key={module} className="bg-gray-50 rounded-lg p-4">
+                        <div className="flex items-center space-x-2 mb-3">
+                          {getModuleIcon(module)}
+                          <h5 className="text-sm font-medium text-gray-900 capitalize">
+                            {module}
+                          </h5>
+                          <div className="flex-1" />
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const modulePermissionIds = permissions.map(
+                                (p) => p.id,
+                              );
+                              const allSelected = modulePermissionIds.every(
+                                (id) => roleForm.permissions.includes(id),
+                              );
+                              if (allSelected) {
+                                setRoleForm((prev) => ({
+                                  ...prev,
+                                  permissions: prev.permissions.filter(
+                                    (id) => !modulePermissionIds.includes(id),
+                                  ),
+                                }));
+                              } else {
+                                setRoleForm((prev) => ({
+                                  ...prev,
+                                  permissions: [
+                                    ...new Set([
+                                      ...prev.permissions,
+                                      ...modulePermissionIds,
+                                    ]),
+                                  ],
+                                }));
+                              }
+                            }}
+                            className="text-xs text-indigo-600 hover:text-indigo-500"
                           >
-                            <input
-                              type="checkbox"
-                              checked={roleForm.permissions.includes(permission.id)}
-                              onChange={() => togglePermission(permission.id)}
-                              className="text-indigo-600 focus:ring-indigo-500"
-                            />
-                            <div className="flex-1 min-w-0">
-                              <p className="text-xs font-medium text-gray-900 truncate">
-                                {permission.name}
-                              </p>
-                              <p className="text-xs text-gray-500 truncate">
-                                {permission.description}
-                              </p>
-                            </div>
-                          </label>
-                        ))}
+                            {permissions.every((p) =>
+                              roleForm.permissions.includes(p.id),
+                            )
+                              ? "Deselect All"
+                              : "Select All"}
+                          </button>
+                        </div>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+                          {permissions.map((permission) => (
+                            <label
+                              key={permission.id}
+                              className="flex items-center space-x-2 p-2 rounded border cursor-pointer hover:bg-white"
+                            >
+                              <input
+                                type="checkbox"
+                                checked={roleForm.permissions.includes(
+                                  permission.id,
+                                )}
+                                onChange={() => togglePermission(permission.id)}
+                                className="text-indigo-600 focus:ring-indigo-500"
+                              />
+                              <div className="flex-1 min-w-0">
+                                <p className="text-xs font-medium text-gray-900 truncate">
+                                  {permission.name}
+                                </p>
+                                <p className="text-xs text-gray-500 truncate">
+                                  {permission.description}
+                                </p>
+                              </div>
+                            </label>
+                          ))}
+                        </div>
                       </div>
-                    </div>
-                  ))}
+                    ))}
                   </div>
                 )}
               </div>
             </div>
-            
+
             <div className="px-6 py-4 border-t border-gray-200 flex justify-end space-x-3">
               <button
                 onClick={closeModals}
@@ -658,12 +789,16 @@ export default function RolesPage() {
                 disabled={saving || !roleForm.name.trim()}
                 className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 border border-transparent rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {saving ? 'Saving...' : (editingRole ? 'Update Role' : 'Create Role')}
+                {saving
+                  ? "Saving..."
+                  : editingRole
+                    ? "Update Role"
+                    : "Create Role"}
               </button>
             </div>
           </div>
         </div>
       )}
     </div>
-  )
+  );
 }
