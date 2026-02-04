@@ -236,6 +236,21 @@ export default function UsersPage() {
         });
         if (res.ok) {
           const data = await res.json();
+          const hasUsersRead =
+            (data.role &&
+              Array.isArray(data.role.permissions) &&
+              data.role.permissions.some(
+                (p: any) =>
+                  p.module === "users" && p.action === "read" && p.granted,
+              )) ||
+            data.role?.name === "Administrator";
+
+          if (!hasUsersRead) {
+            // Redirect away if user lacks access
+            router.push("/");
+            return;
+          }
+
           setCurrentUser(data);
         }
       } catch (e) {
@@ -522,9 +537,7 @@ export default function UsersPage() {
                         className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
                           user.role?.name === "Administrator"
                             ? "bg-purple-100 text-purple-800"
-                            : user.role?.name === "Human Resources"
-                              ? "bg-blue-100 text-blue-800"
-                              : "bg-green-100 text-green-800"
+                            : "bg-green-100 text-green-800"
                         }`}
                       >
                         <Shield className="h-3 w-3 mr-1" />

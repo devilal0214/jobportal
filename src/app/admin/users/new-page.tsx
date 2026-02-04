@@ -1,10 +1,10 @@
-'use client'
+"use client";
 
-import { useState, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
-import Link from 'next/link'
-import { 
-  Users, 
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import Link from "next/link";
+import {
+  Users,
   UserPlus,
   Shield,
   Settings,
@@ -18,135 +18,151 @@ import {
   Phone,
   Calendar,
   Search,
-  Filter
-} from 'lucide-react'
-import { User } from '@/types/user'
+  Filter,
+} from "lucide-react";
+import { User } from "@/types/user";
 
 interface Role {
-  id: string
-  name: string
-  description: string
+  id: string;
+  name: string;
+  description: string;
 }
 
 interface UserData {
-  id: string
-  name: string
-  email: string
-  isActive: boolean
-  avatar?: string
-  phone?: string
-  joinDate: string
-  createdAt: string
-  updatedAt: string
-  role?: Role
+  id: string;
+  name: string;
+  email: string;
+  isActive: boolean;
+  avatar?: string;
+  phone?: string;
+  joinDate: string;
+  createdAt: string;
+  updatedAt: string;
+  role?: Role;
   stats: {
-    createdJobs: number
-    assignedJobs: number
-  }
+    createdJobs: number;
+    assignedJobs: number;
+  };
 }
 
 export default function UsersPage() {
-  const [user, setUser] = useState<User | null>(null)
-  const [users, setUsers] = useState<UserData[]>([])
-  const [loading, setLoading] = useState(true)
-  const [searchTerm, setSearchTerm] = useState('')
-  const [statusFilter, setStatusFilter] = useState('')
-  const [currentPage, setCurrentPage] = useState(1)
-  const [totalPages, setTotalPages] = useState(1)
-  const [totalUsers, setTotalUsers] = useState(0)
-  const itemsPerPage = 10
-  const router = useRouter()
+  const [user, setUser] = useState<User | null>(null);
+  const [users, setUsers] = useState<UserData[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [statusFilter, setStatusFilter] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalUsers, setTotalUsers] = useState(0);
+  const itemsPerPage = 10;
+  const router = useRouter();
 
   useEffect(() => {
     const checkAuth = async () => {
-      const token = localStorage.getItem('token')
+      const token = localStorage.getItem("token");
       if (!token) {
-        router.push('/login')
-        return
+        router.push("/login");
+        return;
       }
 
       try {
-        const response = await fetch('/api/auth/me', {
+        const response = await fetch("/api/auth/me", {
           headers: {
-            'Authorization': `Bearer ${token}`
-          }
-        })
+            Authorization: `Bearer ${token}`,
+          },
+        });
 
         if (response.ok) {
-          const userData = await response.json()
-          setUser(userData)
-          await fetchUsers()
+          const userData = await response.json();
+          const hasCreate =
+            (userData.role &&
+              Array.isArray(userData.role.permissions) &&
+              userData.role.permissions.some(
+                (p: any) =>
+                  p.module === "users" && p.action === "create" && p.granted,
+              )) ||
+            userData.role?.name === "Administrator";
+
+          if (!hasCreate) {
+            router.push("/");
+            return;
+          }
+
+          setUser(userData);
+          await fetchUsers();
         } else {
-          localStorage.removeItem('token')
-          router.push('/login')
+          localStorage.removeItem("token");
+          router.push("/login");
         }
       } catch (error) {
-        console.error('Auth check failed:', error)
-        router.push('/login')
+        console.error("Auth check failed:", error);
+        router.push("/login");
       } finally {
-        setLoading(false)
+        setLoading(false);
       }
-    }
+    };
 
-    checkAuth()
-  }, [router])
+    checkAuth();
+  }, [router]);
 
   const fetchUsers = async (page: number = 1) => {
-    const token = localStorage.getItem('token')
-    if (!token) return
+    const token = localStorage.getItem("token");
+    if (!token) return;
 
     try {
       const params = new URLSearchParams({
         limit: itemsPerPage.toString(),
-        page: page.toString()
-      })
+        page: page.toString(),
+      });
 
       const response = await fetch(`/api/users?${params.toString()}`, {
         headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      })
+          Authorization: `Bearer ${token}`,
+        },
+      });
 
       if (response.ok) {
-        const data = await response.json()
-        setUsers(data.users || [])
-        setTotalPages(data.totalPages || 1)
-        setTotalUsers(data.total || 0)
-        setCurrentPage(page)
+        const data = await response.json();
+        setUsers(data.users || []);
+        setTotalPages(data.totalPages || 1);
+        setTotalUsers(data.total || 0);
+        setCurrentPage(page);
       }
     } catch (error) {
-      console.error('Failed to fetch users:', error)
+      console.error("Failed to fetch users:", error);
     }
-  }
+  };
 
   const handleLogout = async () => {
     try {
-      await fetch('/api/auth/logout', {
-        method: 'POST',
+      await fetch("/api/auth/logout", {
+        method: "POST",
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        }
-      })
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+      });
     } catch (error) {
-      console.error('Logout error:', error)
+      console.error("Logout error:", error);
     } finally {
-      localStorage.removeItem('token')
-      router.push('/login')
+      localStorage.removeItem("token");
+      router.push("/login");
     }
-  }
+  };
 
-  const filteredUsers = users.filter(userData => {
-    const matchesSearch = !searchTerm || 
+  const filteredUsers = users.filter((userData) => {
+    const matchesSearch =
+      !searchTerm ||
       userData.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       userData.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      userData.role?.name.toLowerCase().includes(searchTerm.toLowerCase())
-    
-    const matchesStatus = !statusFilter || 
-      (statusFilter === 'active' && userData.isActive) ||
-      (statusFilter === 'inactive' && !userData.isActive)
-    
-    return matchesSearch && matchesStatus
-  })
+      userData.role?.name.toLowerCase().includes(searchTerm.toLowerCase());
+
+    const matchesStatus =
+      !statusFilter ||
+      (statusFilter === "active" && userData.isActive) ||
+      (statusFilter === "inactive" && !userData.isActive);
+
+    return matchesSearch && matchesStatus;
+  });
 
   if (loading) {
     return (
@@ -156,11 +172,11 @@ export default function UsersPage() {
           <p className="mt-4 text-gray-600">Loading...</p>
         </div>
       </div>
-    )
+    );
   }
 
   if (!user) {
-    return null
+    return null;
   }
 
   return (
@@ -175,29 +191,44 @@ export default function UsersPage() {
               </Link>
             </div>
             <div className="flex items-center space-x-8">
-              <Link href="/jobs" className="text-gray-700 hover:text-gray-900 flex items-center space-x-1">
+              <Link
+                href="/jobs"
+                className="text-gray-700 hover:text-gray-900 flex items-center space-x-1"
+              >
                 <Briefcase className="h-4 w-4" />
                 <span>Jobs</span>
               </Link>
-              <Link href="/applications" className="text-gray-700 hover:text-gray-900 flex items-center space-x-1">
+              <Link
+                href="/applications"
+                className="text-gray-700 hover:text-gray-900 flex items-center space-x-1"
+              >
                 <FileText className="h-4 w-4" />
                 <span>Applications</span>
               </Link>
-              <Link href="/admin/users" className="text-indigo-600 font-medium flex items-center space-x-1">
+              <Link
+                href="/admin/users"
+                className="text-indigo-600 font-medium flex items-center space-x-1"
+              >
                 <Users className="h-4 w-4" />
                 <span>Users</span>
               </Link>
-              <Link href="/admin/roles" className="text-gray-700 hover:text-gray-900 flex items-center space-x-1">
+              <Link
+                href="/admin/roles"
+                className="text-gray-700 hover:text-gray-900 flex items-center space-x-1"
+              >
                 <Shield className="h-4 w-4" />
                 <span>Roles</span>
               </Link>
-              <Link href="/admin" className="text-gray-700 hover:text-gray-900 flex items-center space-x-1">
+              <Link
+                href="/admin"
+                className="text-gray-700 hover:text-gray-900 flex items-center space-x-1"
+              >
                 <Settings className="h-4 w-4" />
                 <span>Admin</span>
               </Link>
               <div className="flex items-center space-x-3">
                 <span className="text-sm text-gray-700">
-                  {user.name} ({user.role?.name || 'Guest'})
+                  {user.name} ({user.role?.name || "Guest"})
                 </span>
                 <button
                   onClick={handleLogout}
@@ -216,7 +247,9 @@ export default function UsersPage() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="mb-8 flex justify-between items-center">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">Users Management</h1>
+            <h1 className="text-3xl font-bold text-gray-900">
+              Users Management
+            </h1>
             <p className="mt-2 text-gray-600">
               Manage user accounts, roles, and permissions
             </p>
@@ -245,7 +278,7 @@ export default function UsersPage() {
                 />
               </div>
             </div>
-            
+
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Filter by Status
@@ -336,17 +369,19 @@ export default function UsersPage() {
                       )}
                     </td>
                     <td className="px-6 py-4">
-                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                        userData.isActive 
-                          ? 'bg-green-100 text-green-800' 
-                          : 'bg-red-100 text-red-800'
-                      }`}>
+                      <span
+                        className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                          userData.isActive
+                            ? "bg-green-100 text-green-800"
+                            : "bg-red-100 text-red-800"
+                        }`}
+                      >
                         {userData.isActive ? (
                           <UserCheck className="h-3 w-3 mr-1" />
                         ) : (
                           <UserX className="h-3 w-3 mr-1" />
                         )}
-                        {userData.isActive ? 'Active' : 'Inactive'}
+                        {userData.isActive ? "Active" : "Inactive"}
                       </span>
                     </td>
                     <td className="px-6 py-4 text-sm text-gray-500">
@@ -358,7 +393,9 @@ export default function UsersPage() {
                     <td className="px-6 py-4 text-sm text-gray-500">
                       <div className="flex items-center space-x-1">
                         <Calendar className="h-3 w-3" />
-                        <span>{new Date(userData.joinDate).toLocaleDateString()}</span>
+                        <span>
+                          {new Date(userData.joinDate).toLocaleDateString()}
+                        </span>
                       </div>
                     </td>
                     <td className="px-6 py-4">
@@ -367,11 +404,13 @@ export default function UsersPage() {
                           <Edit2 className="h-3 w-3 mr-1" />
                           Edit
                         </button>
-                        <button className={`inline-flex items-center px-3 py-1.5 border text-xs font-medium rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 ${
-                          userData.isActive
-                            ? 'border-red-300 text-red-700 bg-white hover:bg-red-50 focus:ring-red-500'
-                            : 'border-green-300 text-green-700 bg-white hover:bg-green-50 focus:ring-green-500'
-                        }`}>
+                        <button
+                          className={`inline-flex items-center px-3 py-1.5 border text-xs font-medium rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 ${
+                            userData.isActive
+                              ? "border-red-300 text-red-700 bg-white hover:bg-red-50 focus:ring-red-500"
+                              : "border-green-300 text-green-700 bg-white hover:bg-green-50 focus:ring-green-500"
+                          }`}
+                        >
                           {userData.isActive ? (
                             <>
                               <UserX className="h-3 w-3 mr-1" />
@@ -391,20 +430,21 @@ export default function UsersPage() {
               </tbody>
             </table>
           </div>
-          
+
           {filteredUsers.length === 0 && (
             <div className="text-center py-12">
               <Users className="mx-auto h-12 w-12 text-gray-400" />
-              <h3 className="mt-2 text-sm font-medium text-gray-900">No users found</h3>
+              <h3 className="mt-2 text-sm font-medium text-gray-900">
+                No users found
+              </h3>
               <p className="mt-1 text-sm text-gray-500">
-                {users.length === 0 
+                {users.length === 0
                   ? "No users have been created yet."
-                  : "Try adjusting your search or filter criteria."
-                }
+                  : "Try adjusting your search or filter criteria."}
               </p>
             </div>
           )}
-          
+
           {/* Pagination */}
           {totalUsers > 0 && (
             <div className="flex items-center justify-between px-4 py-3 bg-white border-t border-gray-200">
@@ -424,20 +464,25 @@ export default function UsersPage() {
                   Next
                 </button>
               </div>
-              
+
               <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
                 <div>
                   <p className="text-sm text-gray-700">
-                    Showing{' '}
-                    <span className="font-medium">{Math.min((currentPage - 1) * itemsPerPage + 1, totalUsers)}</span>
-                    {' '}to{' '}
-                    <span className="font-medium">{Math.min(currentPage * itemsPerPage, totalUsers)}</span>
-                    {' '}of{' '}
-                    <span className="font-medium">{totalUsers}</span>
-                    {' '}users
+                    Showing{" "}
+                    <span className="font-medium">
+                      {Math.min(
+                        (currentPage - 1) * itemsPerPage + 1,
+                        totalUsers,
+                      )}
+                    </span>{" "}
+                    to{" "}
+                    <span className="font-medium">
+                      {Math.min(currentPage * itemsPerPage, totalUsers)}
+                    </span>{" "}
+                    of <span className="font-medium">{totalUsers}</span> users
                   </p>
                 </div>
-                
+
                 <div>
                   <nav className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px">
                     <button
@@ -447,21 +492,23 @@ export default function UsersPage() {
                     >
                       Previous
                     </button>
-                    
-                    {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-                      <button
-                        key={page}
-                        onClick={() => fetchUsers(page)}
-                        className={`relative inline-flex items-center px-4 py-2 border text-sm font-medium ${
-                          page === currentPage
-                            ? 'z-10 bg-indigo-50 border-indigo-500 text-indigo-600'
-                            : 'bg-white border-gray-300 text-gray-500 hover:bg-gray-50'
-                        }`}
-                      >
-                        {page}
-                      </button>
-                    ))}
-                    
+
+                    {Array.from({ length: totalPages }, (_, i) => i + 1).map(
+                      (page) => (
+                        <button
+                          key={page}
+                          onClick={() => fetchUsers(page)}
+                          className={`relative inline-flex items-center px-4 py-2 border text-sm font-medium ${
+                            page === currentPage
+                              ? "z-10 bg-indigo-50 border-indigo-500 text-indigo-600"
+                              : "bg-white border-gray-300 text-gray-500 hover:bg-gray-50"
+                          }`}
+                        >
+                          {page}
+                        </button>
+                      ),
+                    )}
+
                     <button
                       onClick={() => fetchUsers(currentPage + 1)}
                       disabled={currentPage === totalPages}
@@ -477,5 +524,5 @@ export default function UsersPage() {
         </div>
       </div>
     </div>
-  )
+  );
 }

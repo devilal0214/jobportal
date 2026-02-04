@@ -1,11 +1,21 @@
+export interface Permission {
+  id: string;
+  module: string;
+  action: string;
+  name?: string;
+  description?: string;
+  granted?: boolean;
+}
+
 export interface User {
   id: string;
   name: string;
   email: string;
-  role: {
+  role: null | {
     id: string;
     name: string;
-  } | null;
+    permissions?: Permission[];
+  };
 }
 
 export interface UserRole {

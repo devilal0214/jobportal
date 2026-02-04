@@ -310,17 +310,16 @@ function FormBuilderContent() {
         if (response.ok) {
           const userData = await response.json();
           const hasAccess =
-            (userData.role &&
-              Array.isArray(userData.role.permissions) &&
-              userData.role.permissions.some(
-                (p: any) =>
-                  p.module === "forms" &&
-                  (p.action === "read" ||
-                    p.action === "update" ||
-                    p.action === "create") &&
-                  p.granted,
-              )) ||
-            ["Administrator"].includes(userData.role?.name || "");
+            userData.role &&
+            Array.isArray(userData.role.permissions) &&
+            userData.role.permissions.some(
+              (p: any) =>
+                p.module === "forms" &&
+                (p.action === "read" ||
+                  p.action === "update" ||
+                  p.action === "create") &&
+                p.granted,
+            );
           if (!hasAccess) {
             router.push("/admin");
             return;
@@ -340,6 +339,22 @@ function FormBuilderContent() {
     };
     checkAuth();
   }, [router, searchParams, fetchForms]);
+
+  const hasFormsCreate = !!(
+    user &&
+    Array.isArray(user.role?.permissions) &&
+    user.role.permissions.some(
+      (p: any) => p.module === "forms" && p.action === "create" && p.granted,
+    )
+  );
+
+  const hasFormsUpdate = !!(
+    user &&
+    Array.isArray(user.role?.permissions) &&
+    user.role.permissions.some(
+      (p: any) => p.module === "forms" && p.action === "update" && p.granted,
+    )
+  );
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -914,12 +929,14 @@ function FormBuilderContent() {
               <div className="p-4 border-b border-gray-200">
                 <div className="flex justify-between items-center">
                   <h2 className="text-lg font-semibold text-gray-900">Forms</h2>
-                  <button
-                    onClick={createNewForm}
-                    className="p-1 text-indigo-600 hover:text-indigo-500 hover:bg-indigo-50 rounded"
-                  >
-                    <Plus className="h-5 w-5" />
-                  </button>
+                  {hasFormsCreate && (
+                    <button
+                      onClick={createNewForm}
+                      className="p-1 text-indigo-600 hover:text-indigo-500 hover:bg-indigo-50 rounded"
+                    >
+                      <Plus className="h-5 w-5" />
+                    </button>
+                  )}
                 </div>
               </div>
               <div className="p-4 max-h-64 overflow-y-auto">
@@ -1110,6 +1127,7 @@ function FormBuilderContent() {
                       checked={isDefault}
                       onChange={(e) => setIsDefault(e.target.checked)}
                       className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                      disabled={!hasFormsCreate && !hasFormsUpdate}
                     />
                     <span className="ml-2 text-sm text-gray-700">
                       Set as default form
@@ -1129,7 +1147,11 @@ function FormBuilderContent() {
                     </button>
                     <button
                       onClick={saveForm}
-                      disabled={saving}
+                      disabled={
+                        saving ||
+                        (!selectedForm && !hasFormsCreate) ||
+                        (selectedForm && !hasFormsUpdate)
+                      }
                       className="flex items-center px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 disabled:opacity-50 transition-colors"
                     >
                       <Save className="h-4 w-4 mr-2" />

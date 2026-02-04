@@ -48,6 +48,21 @@ export default function ApplicationsContent() {
   const itemsPerPage = 10;
   const router = useRouter();
 
+  const hasPermission = (module: string, action: string) => {
+    try {
+      return (
+        (user?.role &&
+          Array.isArray((user.role as any).permissions) &&
+          (user.role as any).permissions.some(
+            (p: any) => p.module === module && p.action === action && p.granted,
+          )) ||
+        user?.role?.name === "Administrator"
+      );
+    } catch (e) {
+      return false;
+    }
+  };
+
   // Infinite scroll state
   const [applications, setApplications] = useState<Application[]>([]);
   const [loading, setLoading] = useState(false);
@@ -180,6 +195,25 @@ export default function ApplicationsContent() {
 
         if (response.ok) {
           const userData = await response.json();
+
+          // Deny access if the authenticated user doesn't have applications read permission
+          const canReadApps =
+            (userData?.role &&
+              Array.isArray(userData.role.permissions) &&
+              userData.role.permissions.some(
+                (p: any) =>
+                  p.module === "applications" &&
+                  p.action === "read" &&
+                  p.granted,
+              )) ||
+            userData?.role?.name === "Administrator";
+
+          if (!canReadApps) {
+            router.push("/");
+            setInitialLoading(false);
+            return;
+          }
+
           setUser(userData);
 
           // Inline initial data load to avoid dependency issues
@@ -1137,28 +1171,33 @@ export default function ApplicationsContent() {
                           </div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium space-x-2">
-                          <Link
-                            href={`/applications/${application.id}`}
-                            onClick={() => markAsOpened(application.id)}
-                            className="inline-flex items-center px-3 py-1.5 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-                          >
-                            View Details
-                          </Link>
+                          {hasPermission("applications", "read") && (
+                            <Link
+                              href={`/applications/${application.id}`}
+                              onClick={() => markAsOpened(application.id)}
+                              className="inline-flex items-center px-3 py-1.5 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                            >
+                              View Details
+                            </Link>
+                          )}
 
-                          <button
-                            onClick={() =>
-                              handleArchiveApplication(
-                                application.id,
-                                isArchived,
-                              )
-                            }
-                            className="inline-flex items-center px-3 py-1.5 border border-transparent text-sm font-medium rounded-md text-white bg-orange-600 hover:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500"
-                          >
-                            <Archive className="w-4 h-4 mr-1" />
-                            {isArchived ? "Unarchive" : "Archive"}
-                          </button>
+                          {hasPermission("applications", "archive") && (
+                            <button
+                              onClick={() =>
+                                handleArchiveApplication(
+                                  application.id,
+                                  isArchived,
+                                )
+                              }
+                              className="inline-flex items-center px-3 py-1.5 border border-transparent text-sm font-medium rounded-md text-white bg-orange-600 hover:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500"
+                            >
+                              <Archive className="w-4 h-4 mr-1" />
+                              {isArchived ? "Unarchive" : "Archive"}
+                            </button>
+                          )}
 
-                          {user?.id && (
+                          {(hasPermission("applications", "delete") ||
+                            user?.role?.name === "Administrator") && (
                             <button
                               onClick={() =>
                                 handleDeleteApplication(

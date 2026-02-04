@@ -545,24 +545,23 @@ export default function JobsPage() {
                           <span>Create Job</span>
                         </Link>
                       )}
-                      {((user.role &&
+                      {user.role &&
                         Array.isArray(user.role.permissions) &&
                         user.role.permissions.some(
                           (p) =>
                             p.module === "forms" &&
                             p.action === "create" &&
                             p.granted,
-                        )) ||
-                        user.role?.name === "Administrator") && (
-                        <Link
-                          href="/admin/form-builder"
-                          className="px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center space-x-2"
-                          onClick={() => setShowJobsDropdown(false)}
-                        >
-                          <FormInput className="h-4 w-4" />
-                          <span>Create Form</span>
-                        </Link>
-                      )}
+                        ) && (
+                          <Link
+                            href="/admin/form-builder"
+                            className="px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center space-x-2"
+                            onClick={() => setShowJobsDropdown(false)}
+                          >
+                            <FormInput className="h-4 w-4" />
+                            <span>Create Form</span>
+                          </Link>
+                        )}
                     </div>
                   </div>
                 )}
@@ -622,20 +621,19 @@ export default function JobsPage() {
               Manage job postings and track applications
             </p>
           </div>
-          {((user.role &&
+          {user?.role &&
             Array.isArray(user.role.permissions) &&
             user.role.permissions.some(
               (p) => p.module === "jobs" && p.action === "create" && p.granted,
-            )) ||
-            user.role?.name === "Administrator") && (
-            <Link
-              href="/jobs/new"
-              className="bg-indigo-600 text-white px-4 py-2 rounded-md flex items-center space-x-2 hover:bg-indigo-700"
-            >
-              <Plus className="h-4 w-4" />
-              <span>Create Job</span>
-            </Link>
-          )}
+            ) && (
+              <Link
+                href="/jobs/new"
+                className="bg-indigo-600 text-white px-4 py-2 rounded-md flex items-center space-x-2 hover:bg-indigo-700"
+              >
+                <Plus className="h-4 w-4" />
+                <span>Create Job</span>
+              </Link>
+            )}
         </div>
 
         {/* Filters */}
@@ -870,16 +868,15 @@ export default function JobsPage() {
                       >
                         <Code className="h-4 w-4" />
                       </button>
-                      {((user?.role &&
+                      {/* Edit button */}
+                      {user?.role &&
                         Array.isArray(user.role.permissions) &&
                         user.role.permissions.some(
                           (p) =>
                             p.module === "jobs" &&
                             p.action === "update" &&
                             p.granted,
-                        )) ||
-                        user.role?.name === "Administrator") && (
-                        <>
+                        ) && (
                           <Link
                             href={`/jobs/${job.id}/edit`}
                             className="text-yellow-600 hover:text-yellow-900"
@@ -887,15 +884,36 @@ export default function JobsPage() {
                           >
                             <Edit className="h-4 w-4" />
                           </Link>
-                          {job.formId && (
-                            <Link
-                              href={`/admin/form-builder?editId=${job.formId}`}
-                              className="text-purple-600 hover:text-purple-900"
-                              title="Edit Form"
-                            >
-                              <FormInput className="h-4 w-4" />
-                            </Link>
-                          )}
+                        )}
+
+                      {/* Edit form link (requires forms:update) */}
+                      {job.formId &&
+                        user?.role &&
+                        Array.isArray(user.role.permissions) &&
+                        user.role.permissions.some(
+                          (p) =>
+                            p.module === "forms" &&
+                            p.action === "update" &&
+                            p.granted,
+                        ) && (
+                          <Link
+                            href={`/admin/form-builder?editId=${job.formId}`}
+                            className="text-purple-600 hover:text-purple-900"
+                            title="Edit Form"
+                          >
+                            <FormInput className="h-4 w-4" />
+                          </Link>
+                        )}
+
+                      {/* Pause/Activate button (requires jobs:pause) */}
+                      {user?.role &&
+                        Array.isArray(user.role.permissions) &&
+                        user.role.permissions.some(
+                          (p) =>
+                            p.module === "jobs" &&
+                            p.action === "pause" &&
+                            p.granted,
+                        ) && (
                           <button
                             onClick={() =>
                               handleToggleJobStatus(
@@ -917,6 +935,17 @@ export default function JobsPage() {
                               <Play className="h-4 w-4" />
                             )}
                           </button>
+                        )}
+
+                      {/* Delete button (requires jobs:delete) */}
+                      {user?.role &&
+                        Array.isArray(user.role.permissions) &&
+                        user.role.permissions.some(
+                          (p) =>
+                            p.module === "jobs" &&
+                            p.action === "delete" &&
+                            p.granted,
+                        ) && (
                           <button
                             onClick={() => handleDeleteJob(job.id, job.title)}
                             className="text-red-600 hover:text-red-900"
@@ -924,8 +953,7 @@ export default function JobsPage() {
                           >
                             <Trash2 className="h-4 w-4" />
                           </button>
-                        </>
-                      )}
+                        )}
                     </div>
                   </div>
                 </div>
@@ -945,13 +973,12 @@ export default function JobsPage() {
                 ? "No job openings have been created yet."
                 : "Try adjusting your search or filter criteria."}
             </p>
-            {((user?.role &&
+            {user?.role &&
               Array.isArray(user.role.permissions) &&
               user.role.permissions.some(
                 (p) =>
                   p.module === "jobs" && p.action === "create" && p.granted,
-              )) ||
-              user.role?.name === "Administrator") &&
+              ) &&
               jobs.length === 0 && (
                 <div className="mt-6">
                   <Link

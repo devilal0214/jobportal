@@ -210,13 +210,30 @@ export default function RolesPage() {
       const method = editingRole ? "PUT" : "POST";
       const url = editingRole ? `/api/roles/${editingRole.id}` : "/api/roles";
 
+      // Ensure dashboard view and applications view permissions are always included
+      const dashboardRead = allPermissions.find(
+        (p) => p.module === "dashboard" && p.action === "read",
+      );
+      const applicationsRead = allPermissions.find(
+        (p) => p.module === "applications" && p.action === "read",
+      );
+
+      const permissionsToSend = new Set(roleForm.permissions || []);
+      if (dashboardRead) permissionsToSend.add(dashboardRead.id);
+      if (applicationsRead) permissionsToSend.add(applicationsRead.id);
+
+      const payload = {
+        ...roleForm,
+        permissions: Array.from(permissionsToSend),
+      };
+
       const response = await fetch(url, {
         method,
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify(roleForm),
+        body: JSON.stringify(payload),
       });
 
       if (response.ok) {
@@ -329,6 +346,28 @@ export default function RolesPage() {
         return "text-gray-600 bg-gray-100";
     }
   };
+
+  // Build permission lookup by module for ordered/grouped rendering
+  const permsByModule: Record<string, Permission[]> = allPermissions.reduce(
+    (acc, p) => {
+      if (!acc[p.module]) acc[p.module] = [];
+      acc[p.module].push(p);
+      return acc;
+    },
+    {} as Record<string, Permission[]>,
+  );
+
+  const permissionGroups = [
+    { key: "applications", label: "Applications", modules: ["applications"] },
+    { key: "forms", label: "Forms", modules: ["forms"] },
+    { key: "jobs", label: "Jobs", modules: ["jobs"] },
+    {
+      key: "dashboard",
+      label: "Dashboard",
+      // keep dashboard:read enforced by backend/client; don't expose toggle here
+      modules: ["email", "roles", "users", "settings", "careers-settings"],
+    },
+  ];
 
   if (loading) {
     return (
@@ -689,89 +728,155 @@ export default function RolesPage() {
                   </div>
                 ) : (
                   <div className="space-y-6">
-                    {Object.entries(
-                      allPermissions.reduce(
-                        (acc, permission) => {
-                          if (!acc[permission.module]) {
-                            acc[permission.module] = [];
-                          }
-                          acc[permission.module].push(permission);
-                          return acc;
-                        },
-                        {} as Record<string, Permission[]>,
-                      ),
-                    ).map(([module, permissions]) => (
-                      <div key={module} className="bg-gray-50 rounded-lg p-4">
-                        <div className="flex items-center space-x-2 mb-3">
-                          {getModuleIcon(module)}
-                          <h5 className="text-sm font-medium text-gray-900 capitalize">
-                            {module}
-                          </h5>
-                          <div className="flex-1" />
-                          <button
-                            type="button"
-                            onClick={() => {
-                              const modulePermissionIds = permissions.map(
-                                (p) => p.id,
-                              );
-                              const allSelected = modulePermissionIds.every(
-                                (id) => roleForm.permissions.includes(id),
-                              );
-                              if (allSelected) {
-                                setRoleForm((prev) => ({
-                                  ...prev,
-                                  permissions: prev.permissions.filter(
-                                    (id) => !modulePermissionIds.includes(id),
-                                  ),
-                                }));
-                              } else {
-                                setRoleForm((prev) => ({
-                                  ...prev,
-                                  permissions: [
-                                    ...new Set([
-                                      ...prev.permissions,
-                                      ...modulePermissionIds,
-                                    ]),
-                                  ],
-                                }));
-                              }
-                            }}
-                            className="text-xs text-indigo-600 hover:text-indigo-500"
-                          >
-                            {permissions.every((p) =>
-                              roleForm.permissions.includes(p.id),
-                            )
-                              ? "Deselect All"
-                              : "Select All"}
-                          </button>
-                        </div>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
-                          {permissions.map((permission) => (
-                            <label
-                              key={permission.id}
-                              className="flex items-center space-x-2 p-2 rounded border cursor-pointer hover:bg-white"
+                    {permissionGroups.map((group) => {
+                      // include modules even if they currently have no permissions (so labels appear)
+                      // Filter out applications:read as it's always granted by default
+                      const groupModules = group.modules.map((m) => ({
+                        module: m,
+                        perms: (permsByModule[m] || []).filter(
+                          (p) => !(p.module === "applications" && p.action === "read")
+                        ),
+                      }));
+
+                      return (
+                        <div
+                          key={group.key}
+                          className="bg-gray-50 rounded-lg p-4"
+                        >
+                          <div className="flex items-center space-x-2 mb-3">
+                            {getModuleIcon(group.key)}
+                            <h5 className="text-sm font-medium text-gray-900">
+                              {group.label}
+                            </h5>
+                            <div className="flex-1" />
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const modulePermissionIds =
+                                  groupModules.flatMap((gm) =>
+                                    gm.perms.map((p) => p.id),
+                                  );
+                                const allSelected = modulePermissionIds.every(
+                                  (id) => roleForm.permissions.includes(id),
+                                );
+                                if (allSelected) {
+                                  setRoleForm((prev) => ({
+                                    ...prev,
+                                    permissions: prev.permissions.filter(
+                                      (id) => !modulePermissionIds.includes(id),
+                                    ),
+                                  }));
+                                } else {
+                                  setRoleForm((prev) => ({
+                                    ...prev,
+                                    permissions: Array.from(
+                                      new Set([
+                                        ...(prev.permissions || []),
+                                        ...modulePermissionIds,
+                                      ]),
+                                    ),
+                                  }));
+                                }
+                              }}
+                              className="text-xs text-indigo-600 hover:text-indigo-500"
                             >
-                              <input
-                                type="checkbox"
-                                checked={roleForm.permissions.includes(
-                                  permission.id,
-                                )}
-                                onChange={() => togglePermission(permission.id)}
-                                className="text-indigo-600 focus:ring-indigo-500"
-                              />
-                              <div className="flex-1 min-w-0">
-                                <p className="text-xs font-medium text-gray-900 truncate">
-                                  {permission.name}
-                                </p>
-                                <p className="text-xs text-gray-500 truncate">
-                                  {permission.description}
-                                </p>
-                              </div>
-                            </label>
-                          ))}
+                              {groupModules
+                                .flatMap((gm) => gm.perms)
+                                .every((p) =>
+                                  roleForm.permissions.includes(p.id),
+                                )
+                                ? "Deselect All"
+                                : "Select All"}
+                            </button>
+                          </div>
+
+                          {groupModules.length > 1 ? (
+                            <div className="space-y-4">
+                              {groupModules.map((gm) => (
+                                <div key={gm.module}>
+                                  <div className="flex items-center mb-2">
+                                    {getModuleIcon(gm.module)}
+                                    <h6 className="text-xs font-medium text-gray-800 ml-2 capitalize">
+                                      {gm.module === "email"
+                                        ? "Email Templates"
+                                        : gm.module === "careers-settings"
+                                          ? "Careers Settings"
+                                          : gm.module}
+                                    </h6>
+                                  </div>
+                                  {gm.perms.length === 0 ? (
+                                    <div className="text-sm text-gray-500 ml-8">
+                                      No permissions available
+                                    </div>
+                                  ) : (
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+                                      {gm.perms.map((permission) => (
+                                        <label
+                                          key={permission.id}
+                                          className="flex items-center space-x-2 p-2 rounded border cursor-pointer hover:bg-white"
+                                        >
+                                          <input
+                                            type="checkbox"
+                                            checked={roleForm.permissions.includes(
+                                              permission.id,
+                                            )}
+                                            onChange={() =>
+                                              togglePermission(permission.id)
+                                            }
+                                            className="text-indigo-600 focus:ring-indigo-500"
+                                          />
+                                          <div className="flex-1 min-w-0">
+                                            <p className="text-xs font-medium text-gray-900 truncate">
+                                              {permission.name}
+                                            </p>
+                                            <p className="text-xs text-gray-500 truncate">
+                                              {permission.description}
+                                            </p>
+                                          </div>
+                                        </label>
+                                      ))}
+                                    </div>
+                                  )}
+                                </div>
+                              ))}
+                            </div>
+                          ) : groupModules[0].perms &&
+                            groupModules[0].perms.length > 0 ? (
+                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+                              {groupModules[0].perms.map((permission) => (
+                                <label
+                                  key={permission.id}
+                                  className="flex items-center space-x-2 p-2 rounded border cursor-pointer hover:bg-white"
+                                >
+                                  <input
+                                    type="checkbox"
+                                    checked={roleForm.permissions.includes(
+                                      permission.id,
+                                    )}
+                                    onChange={() =>
+                                      togglePermission(permission.id)
+                                    }
+                                    className="text-indigo-600 focus:ring-indigo-500"
+                                  />
+                                  <div className="flex-1 min-w-0">
+                                    <p className="text-xs font-medium text-gray-900 truncate">
+                                      {permission.name}
+                                    </p>
+                                    <p className="text-xs text-gray-500 truncate">
+                                      {permission.description}
+                                    </p>
+                                  </div>
+                                </label>
+                              ))}
+                            </div>
+                          ) : (
+                            <div className="text-sm text-gray-500 ml-4">
+                              No permissions available
+                            </div>
+                          )}
                         </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 )}
               </div>

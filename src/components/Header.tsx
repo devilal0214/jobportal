@@ -1,166 +1,187 @@
-'use client'
+"use client";
 
-import { useState, useEffect } from 'react'
-import { useRouter, usePathname } from 'next/navigation'
-import Link from 'next/link'
-import Head from 'next/head'
-import Script from 'next/script'
-import Image from 'next/image'
-import { 
-  LogOut, 
-  Briefcase, 
-  FileText, 
-  Settings, 
-  ChevronDown, 
-  Plus, 
+import { useState, useEffect } from "react";
+import { useRouter, usePathname } from "next/navigation";
+import Link from "next/link";
+import Head from "next/head";
+import Script from "next/script";
+import Image from "next/image";
+import {
+  LogOut,
+  Briefcase,
+  FileText,
+  Settings,
+  ChevronDown,
+  Plus,
   FormInput,
   Menu,
-  X
-} from 'lucide-react'
+  X,
+} from "lucide-react";
 
 interface User {
-  id: string
-  name: string
-  email: string
+  id: string;
+  name: string;
+  email: string;
   role: {
-    id: string
-    name: string
-  } | null
+    id: string;
+    name: string;
+    permissions?: Array<{
+      id: string;
+      module: string;
+      action: string;
+      granted?: boolean;
+    }>;
+  } | null;
 }
 
 interface HeaderProps {
-  title?: string
-  description?: string
-  keywords?: string
-  ogImage?: string
-  canonicalUrl?: string
-  noIndex?: boolean
+  title?: string;
+  description?: string;
+  keywords?: string;
+  ogImage?: string;
+  canonicalUrl?: string;
+  noIndex?: boolean;
 }
 
 interface LogoSettings {
-  logoImage?: string
-  logoHeight: string
-  logoWidth: string
-  companyName: string
+  logoImage?: string;
+  logoHeight: string;
+  logoWidth: string;
+  companyName: string;
 }
 
 const Header = ({
-  title = 'Job Portal - Find Your Dream Job',
-  description = 'Professional job portal for finding and posting job opportunities. Connect with top employers and talented candidates.',
-  keywords = 'jobs, careers, employment, job portal, hiring, recruitment',
-  ogImage = '/og-image.jpg',
+  title = "Job Portal - Find Your Dream Job",
+  description = "Professional job portal for finding and posting job opportunities. Connect with top employers and talented candidates.",
+  keywords = "jobs, careers, employment, job portal, hiring, recruitment",
+  ogImage = "/og-image.jpg",
   canonicalUrl,
-  noIndex = false
+  noIndex = false,
 }: HeaderProps) => {
-  const [user, setUser] = useState<User | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [showJobsDropdown, setShowJobsDropdown] = useState(false)
-  const [showMobileMenu, setShowMobileMenu] = useState(false)
+  const [user, setUser] = useState<User | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [showJobsDropdown, setShowJobsDropdown] = useState(false);
+  const [showMobileMenu, setShowMobileMenu] = useState(false);
   const [logoSettings, setLogoSettings] = useState<LogoSettings>({
-    logoHeight: '40px',
-    logoWidth: '40px',
-    companyName: 'Job Portal'
-  })
-  const router = useRouter()
-  const pathname = usePathname()
+    logoHeight: "40px",
+    logoWidth: "40px",
+    companyName: "Job Portal",
+  });
+  const router = useRouter();
+  const pathname = usePathname();
+
+  const hasPermission = (module: string, action: string) => {
+    try {
+      return (
+        (user?.role &&
+          Array.isArray((user.role as any).permissions) &&
+          (user.role as any).permissions.some(
+            (p: any) => p.module === module && p.action === action && p.granted,
+          )) ||
+        user?.role?.name === "Administrator"
+      );
+    } catch (e) {
+      return false;
+    }
+  };
 
   useEffect(() => {
     const checkAuth = async () => {
       try {
-        const token = localStorage.getItem('token')
+        const token = localStorage.getItem("token");
         if (!token) {
-          if (pathname !== '/login' && pathname !== '/') {
-            router.push('/login')
+          if (pathname !== "/login" && pathname !== "/") {
+            router.push("/login");
           }
-          setLoading(false)
-          return
+          setLoading(false);
+          return;
         }
 
-        const response = await fetch('/api/auth/me', {
+        const response = await fetch("/api/auth/me", {
           headers: {
-            'Authorization': `Bearer ${token}`
-          }
-        })
+            Authorization: `Bearer ${token}`,
+          },
+        });
 
         if (response.ok) {
-          const userData = await response.json()
-          setUser(userData)
+          const userData = await response.json();
+          setUser(userData);
         } else {
-          localStorage.removeItem('token')
-          if (pathname !== '/login' && pathname !== '/') {
-            router.push('/login')
+          localStorage.removeItem("token");
+          if (pathname !== "/login" && pathname !== "/") {
+            router.push("/login");
           }
         }
       } catch (error) {
-        console.error('Auth check failed:', error)
-        localStorage.removeItem('token')
-        if (pathname !== '/login' && pathname !== '/') {
-          router.push('/login')
+        console.error("Auth check failed:", error);
+        localStorage.removeItem("token");
+        if (pathname !== "/login" && pathname !== "/") {
+          router.push("/login");
         }
       } finally {
-        setLoading(false)
+        setLoading(false);
       }
-    }
+    };
 
     const fetchLogoSettings = async () => {
       try {
-        const response = await fetch('/api/careers-settings/public')
+        const response = await fetch("/api/careers-settings/public");
         if (response.ok) {
-          const data = await response.json()
+          const data = await response.json();
           if (data.settings) {
             setLogoSettings({
               logoImage: data.settings.logoImage,
-              logoHeight: data.settings.logoHeight || '40px',
-              logoWidth: data.settings.logoWidth || '40px',
-              companyName: data.settings.companyName || 'Job Portal'
-            })
+              logoHeight: data.settings.logoHeight || "40px",
+              logoWidth: data.settings.logoWidth || "40px",
+              companyName: data.settings.companyName || "Job Portal",
+            });
           }
         }
       } catch (error) {
-        console.error('Failed to fetch logo settings:', error)
+        console.error("Failed to fetch logo settings:", error);
       }
-    }
+    };
 
-    checkAuth()
-    fetchLogoSettings()
-  }, [router, pathname])
+    checkAuth();
+    fetchLogoSettings();
+  }, [router, pathname]);
 
   // Close dropdowns when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      const target = event.target as Element
-      if (showJobsDropdown && !target.closest('.jobs-dropdown')) {
-        setShowJobsDropdown(false)
+      const target = event.target as Element;
+      if (showJobsDropdown && !target.closest(".jobs-dropdown")) {
+        setShowJobsDropdown(false);
       }
-      if (showMobileMenu && !target.closest('.mobile-menu')) {
-        setShowMobileMenu(false)
+      if (showMobileMenu && !target.closest(".mobile-menu")) {
+        setShowMobileMenu(false);
       }
-    }
+    };
 
-    document.addEventListener('mousedown', handleClickOutside)
+    document.addEventListener("mousedown", handleClickOutside);
     return () => {
-      document.removeEventListener('mousedown', handleClickOutside)
-    }
-  }, [showJobsDropdown, showMobileMenu])
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [showJobsDropdown, showMobileMenu]);
 
   const handleLogout = async () => {
     try {
-      await fetch('/api/auth/logout', {
-        method: 'POST',
+      await fetch("/api/auth/logout", {
+        method: "POST",
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        }
-      })
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+      });
     } catch (error) {
-      console.error('Logout error:', error)
+      console.error("Logout error:", error);
     } finally {
-      localStorage.removeItem('token')
-      router.push('/login')
+      localStorage.removeItem("token");
+      router.push("/login");
     }
-  }
+  };
 
   // Don't render navigation for login page
-  if (pathname === '/login' || loading) {
+  if (pathname === "/login" || loading) {
     return (
       <>
         <Head>
@@ -168,31 +189,53 @@ const Header = ({
           <meta name="description" content={description} />
           <meta name="keywords" content={keywords} />
           <meta name="viewport" content="width=device-width, initial-scale=1" />
-          <meta name="robots" content={noIndex ? 'noindex,nofollow' : 'index,follow'} />
-          
+          <meta
+            name="robots"
+            content={noIndex ? "noindex,nofollow" : "index,follow"}
+          />
+
           {/* Open Graph / Facebook */}
           <meta property="og:type" content="website" />
           <meta property="og:title" content={title} />
           <meta property="og:description" content={description} />
           <meta property="og:image" content={ogImage} />
-          <meta property="og:url" content={canonicalUrl || `${process.env.NEXT_PUBLIC_SITE_URL}${pathname}`} />
-          
+          <meta
+            property="og:url"
+            content={
+              canonicalUrl || `${process.env.NEXT_PUBLIC_SITE_URL}${pathname}`
+            }
+          />
+
           {/* Twitter */}
           <meta name="twitter:card" content="summary_large_image" />
           <meta name="twitter:title" content={title} />
           <meta name="twitter:description" content={description} />
           <meta name="twitter:image" content={ogImage} />
-          
+
           {/* Canonical URL */}
           {canonicalUrl && <link rel="canonical" href={canonicalUrl} />}
-          
+
           {/* Favicons - App Router handles favicon.ico automatically, but adding fallback for production */}
           <link rel="icon" type="image/x-icon" href="/favicon.ico" />
-          <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
-          <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
-          <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+          <link
+            rel="icon"
+            type="image/png"
+            sizes="32x32"
+            href="/favicon-32x32.png"
+          />
+          <link
+            rel="icon"
+            type="image/png"
+            sizes="16x16"
+            href="/favicon-16x16.png"
+          />
+          <link
+            rel="apple-touch-icon"
+            sizes="180x180"
+            href="/apple-touch-icon.png"
+          />
           <link rel="manifest" href="/manifest.json" />
-          
+
           {/* Google Analytics - Replace with your GA ID */}
           {process.env.NEXT_PUBLIC_GA_ID && (
             <>
@@ -210,7 +253,7 @@ const Header = ({
               </Script>
             </>
           )}
-          
+
           {/* Google Tag Manager - Replace with your GTM ID */}
           {process.env.NEXT_PUBLIC_GTM_ID && (
             <Script id="google-tag-manager">
@@ -224,7 +267,7 @@ const Header = ({
             </Script>
           )}
         </Head>
-        
+
         {/* Google Tag Manager (noscript) */}
         {process.env.NEXT_PUBLIC_GTM_ID && (
           <noscript>
@@ -232,16 +275,16 @@ const Header = ({
               src={`https://www.googletagmanager.com/ns.html?id=${process.env.NEXT_PUBLIC_GTM_ID}`}
               height="0"
               width="0"
-              style={{ display: 'none', visibility: 'hidden' }}
+              style={{ display: "none", visibility: "hidden" }}
             />
           </noscript>
         )}
       </>
-    )
+    );
   }
 
   if (!user) {
-    return null
+    return null;
   }
 
   return (
@@ -251,31 +294,53 @@ const Header = ({
         <meta name="description" content={description} />
         <meta name="keywords" content={keywords} />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
-        <meta name="robots" content={noIndex ? 'noindex,nofollow' : 'index,follow'} />
-        
+        <meta
+          name="robots"
+          content={noIndex ? "noindex,nofollow" : "index,follow"}
+        />
+
         {/* Open Graph / Facebook */}
         <meta property="og:type" content="website" />
         <meta property="og:title" content={title} />
         <meta property="og:description" content={description} />
         <meta property="og:image" content={ogImage} />
-        <meta property="og:url" content={canonicalUrl || `${process.env.NEXT_PUBLIC_SITE_URL}${pathname}`} />
-        
+        <meta
+          property="og:url"
+          content={
+            canonicalUrl || `${process.env.NEXT_PUBLIC_SITE_URL}${pathname}`
+          }
+        />
+
         {/* Twitter */}
         <meta name="twitter:card" content="summary_large_image" />
         <meta name="twitter:title" content={title} />
         <meta name="twitter:description" content={description} />
         <meta name="twitter:image" content={ogImage} />
-        
+
         {/* Canonical URL */}
         {canonicalUrl && <link rel="canonical" href={canonicalUrl} />}
-        
+
         {/* Favicons - App Router handles favicon.ico automatically, but adding fallback for production */}
         <link rel="icon" type="image/x-icon" href="/favicon.ico" />
-        <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
-        <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
-        <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+        <link
+          rel="icon"
+          type="image/png"
+          sizes="32x32"
+          href="/favicon-32x32.png"
+        />
+        <link
+          rel="icon"
+          type="image/png"
+          sizes="16x16"
+          href="/favicon-16x16.png"
+        />
+        <link
+          rel="apple-touch-icon"
+          sizes="180x180"
+          href="/apple-touch-icon.png"
+        />
         <link rel="manifest" href="/manifest.json" />
-        
+
         {/* Google Analytics */}
         {process.env.NEXT_PUBLIC_GA_ID && (
           <>
@@ -293,7 +358,7 @@ const Header = ({
             </Script>
           </>
         )}
-        
+
         {/* Google Tag Manager */}
         {process.env.NEXT_PUBLIC_GTM_ID && (
           <Script id="google-tag-manager-main">
@@ -307,7 +372,7 @@ const Header = ({
           </Script>
         )}
       </Head>
-      
+
       {/* Google Tag Manager (noscript) */}
       {process.env.NEXT_PUBLIC_GTM_ID && (
         <noscript>
@@ -315,7 +380,7 @@ const Header = ({
             src={`https://www.googletagmanager.com/ns.html?id=${process.env.NEXT_PUBLIC_GTM_ID}`}
             height="0"
             width="0"
-            style={{ display: 'none', visibility: 'hidden' }}
+            style={{ display: "none", visibility: "hidden" }}
           />
         </noscript>
       )}
@@ -327,11 +392,11 @@ const Header = ({
             {/* Logo */}
             <div className="flex items-center space-x-3">
               {logoSettings.logoImage && (
-                <div 
+                <div
                   className="relative"
                   style={{
                     width: logoSettings.logoWidth,
-                    height: logoSettings.logoHeight
+                    height: logoSettings.logoHeight,
                   }}
                 >
                   <Image
@@ -378,35 +443,60 @@ const Header = ({
                         <Plus className="h-4 w-4" />
                         <span>Create Job</span>
                       </Link>
-                      <Link
-                        href="/admin/form-builder"
-                        className="px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center space-x-2"
-                        onClick={() => setShowJobsDropdown(false)}
-                      >
-                        <FormInput className="h-4 w-4" />
-                        <span>Create Form</span>
-                      </Link>
+                      {hasPermission("forms", "create") && (
+                        <Link
+                          href="/admin/form-builder"
+                          className="px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center space-x-2"
+                          onClick={() => setShowJobsDropdown(false)}
+                        >
+                          <FormInput className="h-4 w-4" />
+                          <span>Create Form</span>
+                        </Link>
+                      )}
                     </div>
                   </div>
                 )}
               </div>
 
               {/* Applications */}
-              <Link href="/applications" className="text-gray-700 hover:text-gray-900 flex items-center space-x-1">
-                <FileText className="h-4 w-4" />
-                <span>Applications</span>
-              </Link>
+              {hasPermission("applications", "read") && (
+                <Link
+                  href="/applications"
+                  className="text-gray-700 hover:text-gray-900 flex items-center space-x-1"
+                >
+                  <FileText className="h-4 w-4" />
+                  <span>Applications</span>
+                </Link>
+              )}
 
               {/* Admin */}
-              <Link href="/admin" className="text-gray-700 hover:text-gray-900 flex items-center space-x-1">
-                <Settings className="h-4 w-4" />
-                <span>Admin</span>
-              </Link>
+              {((user?.role &&
+                Array.isArray((user.role as any).permissions) &&
+                (user.role as any).permissions.some(
+                  (p: any) =>
+                    (p.module === "roles" ||
+                      p.module === "users" ||
+                      p.module === "settings" ||
+                      p.module === "dashboard" ||
+                      p.module === "email" ||
+                      p.module === "forms") &&
+                    p.action === "read" &&
+                    p.granted,
+                )) ||
+                user?.role?.name === "Administrator") && (
+                <Link
+                  href="/admin"
+                  className="text-gray-700 hover:text-gray-900 flex items-center space-x-1"
+                >
+                  <Settings className="h-4 w-4" />
+                  <span>Admin</span>
+                </Link>
+              )}
 
               {/* User Info & Logout */}
               <div className="flex items-center space-x-3">
                 <span className="text-sm text-gray-700">
-                  {user.name} ({user.role?.name || 'Guest'})
+                  {user.name} ({user.role?.name || "Guest"})
                 </span>
                 <button
                   onClick={handleLogout}
@@ -424,7 +514,11 @@ const Header = ({
                 onClick={() => setShowMobileMenu(!showMobileMenu)}
                 className="text-gray-700 hover:text-gray-900 focus:outline-none"
               >
-                {showMobileMenu ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+                {showMobileMenu ? (
+                  <X className="h-6 w-6" />
+                ) : (
+                  <Menu className="h-6 w-6" />
+                )}
               </button>
             </div>
           </div>
@@ -436,7 +530,9 @@ const Header = ({
             <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3 bg-white border-t">
               {/* Jobs Section */}
               <div className="px-3 py-2">
-                <div className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Jobs</div>
+                <div className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                  Jobs
+                </div>
                 <div className="mt-2 space-y-1">
                   <Link
                     href="/jobs"
@@ -458,48 +554,69 @@ const Header = ({
                       <span>Create Job</span>
                     </div>
                   </Link>
-                  <Link
-                    href="/admin/form-builder"
-                    className="block px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-md"
-                    onClick={() => setShowMobileMenu(false)}
-                  >
-                    <div className="flex items-center space-x-2">
-                      <FormInput className="h-4 w-4" />
-                      <span>Create Form</span>
-                    </div>
-                  </Link>
+                  {hasPermission("forms", "create") && (
+                    <Link
+                      href="/admin/form-builder"
+                      className="block px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-md"
+                      onClick={() => setShowMobileMenu(false)}
+                    >
+                      <div className="flex items-center space-x-2">
+                        <FormInput className="h-4 w-4" />
+                        <span>Create Form</span>
+                      </div>
+                    </Link>
+                  )}
                 </div>
               </div>
 
               {/* Other Links */}
-              <Link
-                href="/applications"
-                className="block px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-md"
-                onClick={() => setShowMobileMenu(false)}
-              >
-                <div className="flex items-center space-x-2">
-                  <FileText className="h-4 w-4" />
-                  <span>Applications</span>
-                </div>
-              </Link>
+              {hasPermission("applications", "read") && (
+                <Link
+                  href="/applications"
+                  className="block px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-md"
+                  onClick={() => setShowMobileMenu(false)}
+                >
+                  <div className="flex items-center space-x-2">
+                    <FileText className="h-4 w-4" />
+                    <span>Applications</span>
+                  </div>
+                </Link>
+              )}
 
-              <Link
-                href="/admin"
-                className="block px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-md"
-                onClick={() => setShowMobileMenu(false)}
-              >
-                <div className="flex items-center space-x-2">
-                  <Settings className="h-4 w-4" />
-                  <span>Admin</span>
-                </div>
-              </Link>
+              {((user?.role &&
+                Array.isArray((user.role as any).permissions) &&
+                (user.role as any).permissions.some(
+                  (p: any) =>
+                    (p.module === "roles" ||
+                      p.module === "users" ||
+                      p.module === "settings" ||
+                      p.module === "dashboard" ||
+                      p.module === "email" ||
+                      p.module === "forms") &&
+                    p.action === "read" &&
+                    p.granted,
+                )) ||
+                user?.role?.name === "Administrator") && (
+                <Link
+                  href="/admin"
+                  className="block px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-md"
+                  onClick={() => setShowMobileMenu(false)}
+                >
+                  <div className="flex items-center space-x-2">
+                    <Settings className="h-4 w-4" />
+                    <span>Admin</span>
+                  </div>
+                </Link>
+              )}
 
               {/* User Info */}
               <div className="px-3 py-2 border-t">
-                <div className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Account</div>
+                <div className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                  Account
+                </div>
                 <div className="mt-2">
                   <div className="text-sm text-gray-700 px-3 py-2">
-                    {user.name} ({user.role?.name || 'Guest'})
+                    {user.name} ({user.role?.name || "Guest"})
                   </div>
                   <button
                     onClick={handleLogout}
@@ -517,7 +634,7 @@ const Header = ({
         )}
       </nav>
     </>
-  )
-}
+  );
+};
 
-export default Header
+export default Header;

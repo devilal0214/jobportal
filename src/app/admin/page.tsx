@@ -185,6 +185,21 @@ export default function AdminPage() {
     }
   };
 
+  const hasPermission = (module: string, action: string) => {
+    try {
+      return (
+        (user &&
+          Array.isArray((user as any).role?.permissions) &&
+          (user as any).role.permissions.some(
+            (p: any) => p.module === module && p.action === action && p.granted,
+          )) ||
+        user?.role?.name === "Administrator"
+      );
+    } catch (e) {
+      return false;
+    }
+  };
+
   const formatActivityTime = (timestamp: string) => {
     const date = new Date(timestamp);
     const now = new Date();
@@ -297,6 +312,30 @@ export default function AdminPage() {
     },
   ];
 
+  const cardVisible = (card: { href: string }) => {
+    const map: Record<string, Array<[string, string]>> = {
+      "/admin/users": [["users", "read"]],
+      "/admin/roles": [["roles", "read"]],
+      "/admin/email-templates": [["email", "read"]],
+      "/admin/email-test": [["email", "read"]],
+      "/admin/smtp-test": [
+        ["settings", "read"],
+        ["email", "read"],
+      ],
+      "/admin/send-email": [["email", "read"]],
+      "/admin/activity": [["dashboard", "read"]],
+      "/admin/form-builder": [["forms", "read"]],
+      "/admin/settings": [["settings", "read"]],
+      "/admin/database": [["settings", "read"]],
+      "/admin/security": [["roles", "read"]],
+      "/admin/careers-settings": [["careers-settings", "read"]],
+    };
+
+    const required = map[card.href];
+    if (!required) return true; // default show if unknown
+    return required.some(([m, a]) => hasPermission(m, a));
+  };
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Navigation */}
@@ -384,36 +423,46 @@ export default function AdminPage() {
       <div className="bg-gray-50 border-b">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex space-x-8">
-            <Link
-              href="/admin"
-              className="text-indigo-600 border-b-2 border-indigo-600 py-4 px-1 text-sm font-medium"
-            >
-              Dashboard
-            </Link>
-            <Link
-              href="/admin/users"
-              className="text-gray-500 hover:text-gray-700 border-b-2 border-transparent hover:border-gray-300 py-4 px-1 text-sm font-medium"
-            >
-              Users
-            </Link>
-            <Link
-              href="/admin/roles"
-              className="text-gray-500 hover:text-gray-700 border-b-2 border-transparent hover:border-gray-300 py-4 px-1 text-sm font-medium"
-            >
-              Roles & Permissions
-            </Link>
-            <Link
-              href="/admin/form-builder"
-              className="text-gray-500 hover:text-gray-700 border-b-2 border-transparent hover:border-gray-300 py-4 px-1 text-sm font-medium"
-            >
-              Form Builder
-            </Link>
-            <Link
-              href="/admin/careers-settings"
-              className="text-gray-500 hover:text-gray-700 border-b-2 border-transparent hover:border-gray-300 py-4 px-1 text-sm font-medium"
-            >
-              Careers Settings
-            </Link>
+            {hasPermission("dashboard", "read") && (
+              <Link
+                href="/admin"
+                className="text-indigo-600 border-b-2 border-indigo-600 py-4 px-1 text-sm font-medium"
+              >
+                Dashboard
+              </Link>
+            )}
+            {hasPermission("users", "read") && (
+              <Link
+                href="/admin/users"
+                className="text-gray-500 hover:text-gray-700 border-b-2 border-transparent hover:border-gray-300 py-4 px-1 text-sm font-medium"
+              >
+                Users
+              </Link>
+            )}
+            {hasPermission("roles", "read") && (
+              <Link
+                href="/admin/roles"
+                className="text-gray-500 hover:text-gray-700 border-b-2 border-transparent hover:border-gray-300 py-4 px-1 text-sm font-medium"
+              >
+                Roles & Permissions
+              </Link>
+            )}
+            {hasPermission("forms", "read") && (
+              <Link
+                href="/admin/form-builder"
+                className="text-gray-500 hover:text-gray-700 border-b-2 border-transparent hover:border-gray-300 py-4 px-1 text-sm font-medium"
+              >
+                Form Builder
+              </Link>
+            )}
+            {hasPermission("careers-settings", "read") && (
+              <Link
+                href="/admin/careers-settings"
+                className="text-gray-500 hover:text-gray-700 border-b-2 border-transparent hover:border-gray-300 py-4 px-1 text-sm font-medium"
+              >
+                Careers Settings
+              </Link>
+            )}
           </div>
         </div>
       </div>
@@ -524,7 +573,7 @@ export default function AdminPage() {
 
         {/* Admin Tools */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {adminCards.map((card) => (
+          {adminCards.filter(cardVisible).map((card) => (
             <div
               key={card.title}
               className="bg-white rounded-lg shadow hover:shadow-md transition-shadow"

@@ -1,76 +1,93 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@/lib/prisma'
-import { EmailService } from '@/lib/email'
+import { NextRequest, NextResponse } from "next/server";
+import { prisma } from "@/lib/prisma";
+import { EmailService } from "@/lib/email";
 
-const emailService = new EmailService()
+const emailService = new EmailService();
 
 interface ExtendedApplication {
-  candidateName?: string
-  candidateEmail?: string
-  candidatePhone?: string
-  resume?: string
-  resumePath?: string
-  candidateCity?: string
-  candidateState?: string
-  candidateCountry?: string
-  candidateLatitude?: number
-  candidateLongitude?: number
-  candidateIP?: string
+  candidateName?: string;
+  candidateEmail?: string;
+  candidatePhone?: string;
+  resume?: string;
+  resumePath?: string;
+  candidateCity?: string;
+  candidateState?: string;
+  candidateCountry?: string;
+  candidateLatitude?: number;
+  candidateLongitude?: number;
+  candidateIP?: string;
 }
 
-export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+export async function GET(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> },
+) {
   try {
-    const { id } = await params
-    
+    const { id } = await params;
+
     const application = await prisma.application.findUnique({
       where: { id },
       include: {
-        job: true
-      }
-    })
+        job: true,
+      },
+    });
 
     if (!application) {
-      return NextResponse.json({ error: 'Application not found' }, { status: 404 })
+      return NextResponse.json(
+        { error: "Application not found" },
+        { status: 404 },
+      );
     }
 
     // Parse form data (now stored with labels as keys)
-    let formData: Record<string, unknown> = {}
+    let formData: Record<string, unknown> = {};
     try {
-      formData = JSON.parse(application.formData)
+      formData = JSON.parse(application.formData);
     } catch (error) {
-      console.error('Error parsing form data:', error)
-      formData = {}
+      console.error("Error parsing form data:", error);
+      formData = {};
     }
 
     // Extract candidate info from application fields and form data
-    let candidateName = 'Unknown'
-    let candidateEmail = 'unknown@email.com'
-    let candidatePhone = ''
+    let candidateName = "Unknown";
+    let candidateEmail = "unknown@email.com";
+    let candidatePhone = "";
 
-    const extendedApp = application as ExtendedApplication
+    const extendedApp = application as ExtendedApplication;
 
     // Try to extract from stored fields first
-    if (extendedApp.candidateName) candidateName = extendedApp.candidateName
-    if (extendedApp.candidateEmail) candidateEmail = extendedApp.candidateEmail
-    if (extendedApp.candidatePhone) candidatePhone = extendedApp.candidatePhone
+    if (extendedApp.candidateName) candidateName = extendedApp.candidateName;
+    if (extendedApp.candidateEmail) candidateEmail = extendedApp.candidateEmail;
+    if (extendedApp.candidatePhone) candidatePhone = extendedApp.candidatePhone;
 
     // For new labeled data format, extract from well-known labels
-    if (candidateName === 'Unknown' || candidateEmail === 'unknown@email.com') {
+    if (candidateName === "Unknown" || candidateEmail === "unknown@email.com") {
       for (const [label, value] of Object.entries(formData)) {
-        if (typeof value === 'string') {
-          const lowerLabel = label.toLowerCase()
-          
+        if (typeof value === "string") {
+          const lowerLabel = label.toLowerCase();
+
           // Match name fields
-          if ((lowerLabel.includes('name') || lowerLabel.includes('full name')) && candidateName === 'Unknown') {
-            candidateName = value
+          if (
+            (lowerLabel.includes("name") || lowerLabel.includes("full name")) &&
+            candidateName === "Unknown"
+          ) {
+            candidateName = value;
           }
           // Match email fields
-          else if ((lowerLabel.includes('email') || value.includes('@')) && candidateEmail === 'unknown@email.com') {
-            candidateEmail = value
+          else if (
+            (lowerLabel.includes("email") || value.includes("@")) &&
+            candidateEmail === "unknown@email.com"
+          ) {
+            candidateEmail = value;
           }
           // Match phone fields
-          else if ((lowerLabel.includes('phone') || lowerLabel.includes('mobile') || lowerLabel.includes('contact')) && candidatePhone === '') {
-            candidatePhone = value
+          else if (
+            (lowerLabel.includes("phone") ||
+              lowerLabel.includes("mobile") ||
+              lowerLabel.includes("contact")) &&
+            candidatePhone === ""
+          ) {
+            candidatePhone = value;
           }
         }
       }
@@ -79,63 +96,74 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     // Create properly formatted form data for display
     // Since data is now stored with labels as keys, we can use them directly
     let formattedFormData: Array<{
-      id: string
-      label: string
-      fieldType: string
-      value: string | string[]
-    }> = []
-    
+      id: string;
+      label: string;
+      fieldType: string;
+      value: string | string[];
+    }> = [];
+
     if (Object.keys(formData).length > 0) {
       formattedFormData = Object.entries(formData)
-        .filter(([key]) => !['Portfolio Links'].includes(key))
+        .filter(([key]) => !["Portfolio Links"].includes(key))
         .map(([label, value], index) => {
-          let fieldType = 'TEXT'
-          
-          if (typeof value === 'string') {
-            const lowerLabel = label.toLowerCase()
-            
-            if (value.includes('@')) {
-              fieldType = 'EMAIL'
+          let fieldType = "TEXT";
+
+          if (typeof value === "string") {
+            const lowerLabel = label.toLowerCase();
+
+            if (value.includes("@")) {
+              fieldType = "EMAIL";
             } else if (/^\+?[\d\s\-\(\)]+$/.test(value) && value.length >= 10) {
-              fieldType = 'TEL'
-            } else if (lowerLabel.includes('skill') && value.startsWith('[')) {
-              fieldType = 'SKILLS'
+              fieldType = "TEL";
+            } else if (lowerLabel.includes("skill") && value.startsWith("[")) {
+              fieldType = "SKILLS";
             } else if (value.length > 100) {
-              fieldType = 'TEXTAREA'
-            } else if (lowerLabel.includes('experience') || lowerLabel.includes('years')) {
-              fieldType = 'SELECT'
-            } else if (value.startsWith('{') && value.includes('fileName')) {
-              fieldType = 'FILE'
-            } else if (value.startsWith('http')) {
-              fieldType = 'URL'
+              fieldType = "TEXTAREA";
+            } else if (
+              lowerLabel.includes("experience") ||
+              lowerLabel.includes("years")
+            ) {
+              fieldType = "SELECT";
+            } else if (value.startsWith("{") && value.includes("fileName")) {
+              fieldType = "FILE";
+            } else if (value.startsWith("http")) {
+              fieldType = "URL";
             }
           } else if (Array.isArray(value)) {
-            fieldType = 'TAGS'
+            fieldType = "TAGS";
           }
-          
+
           return {
             id: `field_${index}`,
             label,
             fieldType,
-            value: value as string | string[]
-          }
-        })
+            value: value as string | string[],
+          };
+        });
     }
 
     // Extract portfolio links separately - handle both old format (strings) and new format (objects)
     let portfolioLinks: (string | { name: string; url: string })[] = [];
-    if (formData['Portfolio Links'] && Array.isArray(formData['Portfolio Links'])) {
-      portfolioLinks = formData['Portfolio Links']
+    if (
+      formData["Portfolio Links"] &&
+      Array.isArray(formData["Portfolio Links"])
+    ) {
+      portfolioLinks = formData["Portfolio Links"]
         .filter((link: string | { name: string; url: string }) => {
-          if (typeof link === 'string') {
-            return link && link.trim() !== '';
-          } else if (typeof link === 'object' && link !== null) {
-            return link.name && link.url && link.name.trim() !== '' && link.url.trim() !== '';
+          if (typeof link === "string") {
+            return link && link.trim() !== "";
+          } else if (typeof link === "object" && link !== null) {
+            return (
+              link.name &&
+              link.url &&
+              link.name.trim() !== "" &&
+              link.url.trim() !== ""
+            );
           }
           return false;
         })
         .map((link: string | { name: string; url: string }) => {
-          if (typeof link === 'string') {
+          if (typeof link === "string") {
             return link; // Return old format as-is for backward compatibility
           } else {
             return link; // Return new format object
@@ -150,7 +178,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       phone: candidatePhone,
       position: application.job.position || application.job.title,
       jobTitle: application.job.title,
-      company: 'Job Portal',
+      company: "Job Portal",
       status: application.status,
       createdAt: application.createdAt.toISOString(),
       formData: formattedFormData,
@@ -162,88 +190,158 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       candidateCountry: extendedApp.candidateCountry || null,
       candidateLatitude: extendedApp.candidateLatitude || null,
       candidateLongitude: extendedApp.candidateLongitude || null,
-      candidateIP: extendedApp.candidateIP || null
-    }
+      candidateIP: extendedApp.candidateIP || null,
+    };
 
-    return NextResponse.json(response)
+    return NextResponse.json(response);
   } catch (error) {
-    console.error('Application detail API error:', error)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    console.error("Application detail API error:", error);
+    return NextResponse.json(
+      { error: "Internal server error" },
+      { status: 500 },
+    );
   }
 }
 
-export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+export async function PATCH(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> },
+) {
   try {
-    const { id } = await params
-    const { status } = await request.json()
+    const { id } = await params;
+    const { status } = await request.json();
 
     if (!status) {
-      return NextResponse.json({ error: 'Status is required' }, { status: 400 })
+      return NextResponse.json(
+        { error: "Status is required" },
+        { status: 400 },
+      );
     }
 
     // Validate status
-    const validStatuses = ['PENDING', 'UNDER_REVIEW', 'SHORTLISTED', 'SELECTED', 'REJECTED']
+    const validStatuses = [
+      "PENDING",
+      "UNDER_REVIEW",
+      "SHORTLISTED",
+      "SELECTED",
+      "REJECTED",
+    ];
     if (!validStatuses.includes(status)) {
-      return NextResponse.json({ error: `Invalid status. Must be one of: ${validStatuses.join(', ')}` }, { status: 400 })
+      return NextResponse.json(
+        {
+          error: `Invalid status. Must be one of: ${validStatuses.join(", ")}`,
+        },
+        { status: 400 },
+      );
+    }
+
+    // Authorization: verify user permissions for updating applications
+    const authHeader = request.headers.get("authorization");
+    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const token = authHeader.substring(7);
+    const { verifyToken } = await import("@/lib/auth");
+    const decoded = verifyToken(token);
+    if (!decoded || typeof decoded === "string") {
+      return NextResponse.json({ error: "Invalid token" }, { status: 401 });
+    }
+
+    const authUser = await prisma.user.findUnique({
+      where: { id: decoded.userId },
+      include: {
+        role: {
+          include: { permissions: { include: { permission: true } } },
+        },
+      },
+    });
+
+    if (!authUser) {
+      return NextResponse.json({ error: "User not found" }, { status: 404 });
+    }
+
+    const canUpdate =
+      authUser.role &&
+      Array.isArray(authUser.role.permissions) &&
+      authUser.role.permissions.some(
+        (rp: any) =>
+          rp.permission.module === "applications" &&
+          rp.permission.action === "update" &&
+          rp.granted,
+      );
+    if (!canUpdate && authUser.role?.name !== "Administrator") {
+      return NextResponse.json(
+        { error: "Insufficient permissions" },
+        { status: 403 },
+      );
     }
 
     // Get application with job details for email
     const application = await prisma.application.findUnique({
       where: { id },
       include: {
-        job: true
-      }
-    })
+        job: true,
+      },
+    });
 
     if (!application) {
-      return NextResponse.json({ error: 'Application not found' }, { status: 404 })
+      return NextResponse.json(
+        { error: "Application not found" },
+        { status: 404 },
+      );
     }
 
     // Update the application status and auto-archive if rejected
     const updateData = {
-      status: status as 'PENDING' | 'UNDER_REVIEW' | 'SHORTLISTED' | 'SELECTED' | 'REJECTED',
-      ...(status === 'REJECTED' && {
+      status: status as
+        | "PENDING"
+        | "UNDER_REVIEW"
+        | "SHORTLISTED"
+        | "SELECTED"
+        | "REJECTED",
+      ...(status === "REJECTED" && {
         isArchived: true,
         archivedAt: new Date(),
-        archivedBy: 'system' // Could be enhanced to track actual user
-      })
-    }
-    
+        archivedBy: "system", // Could be enhanced to track actual user
+      }),
+    };
+
     const updatedApplication = await prisma.application.update({
       where: { id },
-      data: updateData
-    })
+      data: updateData,
+    });
 
     // Extract candidate information for email
-    let formData: Record<string, unknown> = {}
+    let formData: Record<string, unknown> = {};
     try {
-      formData = JSON.parse(application.formData)
+      formData = JSON.parse(application.formData);
     } catch (error) {
-      console.error('Error parsing form data:', error)
+      console.error("Error parsing form data:", error);
     }
 
     // Get candidate name and email
-    const extendedApp = application as ExtendedApplication
-    const candidateName = extendedApp.candidateName || 'Candidate'
-    let candidateEmail = extendedApp.candidateEmail || ''
-    
+    const extendedApp = application as ExtendedApplication;
+    const candidateName = extendedApp.candidateName || "Candidate";
+    let candidateEmail = extendedApp.candidateEmail || "";
+
     // Extract email from form data if not in application
     if (!candidateEmail) {
       for (const [, value] of Object.entries(formData)) {
-        if (typeof value === 'string' && value.includes('@')) {
-          candidateEmail = value
-          break
+        if (typeof value === "string" && value.includes("@")) {
+          candidateEmail = value;
+          break;
         }
       }
     }
 
     // Create email content based on status
-    let emailSubject = ''
-    let emailBody = ''
-    
+    let emailSubject = "";
+    let emailBody = "";
+
     switch (status) {
-      case 'SHORTLISTED':
-        emailSubject = `Good news! You've been shortlisted for ${application.job.title}`
+      case "SHORTLISTED":
+        emailSubject = `Good news! You've been shortlisted for ${application.job.title}`;
         emailBody = `
           <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
             <h2 style="color: #10b981;">Great News!</h2>
@@ -265,10 +363,10 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
             
             <p style="margin-top: 24px;">Best regards,<br><strong>HR Team</strong></p>
           </div>
-        `
-        break
-      case 'SELECTED':
-        emailSubject = `Congratulations! Your application for ${application.job.title} has been accepted`
+        `;
+        break;
+      case "SELECTED":
+        emailSubject = `Congratulations! Your application for ${application.job.title} has been accepted`;
         emailBody = `
           <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
             <h2 style="color: #10b981;">Congratulations! 🎉</h2>
@@ -290,10 +388,10 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
             
             <p style="margin-top: 24px;">Best regards,<br><strong>HR Team</strong></p>
           </div>
-        `
-        break
-      case 'REJECTED':
-        emailSubject = `Update on your application for ${application.job.title}`
+        `;
+        break;
+      case "REJECTED":
+        emailSubject = `Update on your application for ${application.job.title}`;
         emailBody = `
           <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
             <h2 style="color: #1f2937;">Application Update</h2>
@@ -315,10 +413,10 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
             
             <p style="margin-top: 24px;">Best regards,<br><strong>HR Team</strong></p>
           </div>
-        `
-        break
-      case 'UNDER_REVIEW':
-        emailSubject = `Your application for ${application.job.title} is under review`
+        `;
+        break;
+      case "UNDER_REVIEW":
+        emailSubject = `Your application for ${application.job.title} is under review`;
         emailBody = `
           <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
             <h2 style="color: #3b82f6;">Application Under Review</h2>
@@ -340,111 +438,137 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
             
             <p style="margin-top: 24px;">Best regards,<br><strong>HR Team</strong></p>
           </div>
-        `
-        break
+        `;
+        break;
     }
 
     // Send email notification if we have content and email address
-    let emailSent = false
+    let emailSent = false;
     if (candidateEmail && emailSubject && emailBody) {
       try {
-        console.log(`Sending status update email to: ${candidateEmail} for status: ${status}`)
+        console.log(
+          `Sending status update email to: ${candidateEmail} for status: ${status}`,
+        );
         emailSent = await emailService.sendEmail({
           to: candidateEmail,
           subject: emailSubject,
           html: emailBody,
           applicationId: application.id,
-          userId: undefined
-        })
-        console.log(`Email sending result: ${emailSent ? 'Success' : 'Failed'}`)
+          userId: undefined,
+        });
+        console.log(
+          `Email sending result: ${emailSent ? "Success" : "Failed"}`,
+        );
       } catch (emailError) {
-        console.error('Email sending failed:', emailError)
+        console.error("Email sending failed:", emailError);
         if (emailError instanceof Error) {
-          console.error('Error details:', {
+          console.error("Error details:", {
             message: emailError.message,
-            stack: emailError.stack
-          })
+            stack: emailError.stack,
+          });
         }
         // Don't fail the status update if email fails
-        emailSent = false
+        emailSent = false;
       }
     } else {
-      console.log('No email sent - missing email address or content for status:', status)
-      console.log('Debug info:', { candidateEmail, hasSubject: !!emailSubject, hasBody: !!emailBody })
+      console.log(
+        "No email sent - missing email address or content for status:",
+        status,
+      );
+      console.log("Debug info:", {
+        candidateEmail,
+        hasSubject: !!emailSubject,
+        hasBody: !!emailBody,
+      });
     }
 
-    return NextResponse.json({ 
+    return NextResponse.json({
       id: updatedApplication.id,
       status: updatedApplication.status,
-      message: 'Status updated successfully',
+      message: "Status updated successfully",
       emailSent: emailSent,
-      candidateEmail: candidateEmail ? candidateEmail : 'Not found'
-    })
+      candidateEmail: candidateEmail ? candidateEmail : "Not found",
+    });
   } catch (error) {
-    console.error('Application status update error:', error)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    console.error("Application status update error:", error);
+    return NextResponse.json(
+      { error: "Internal server error" },
+      { status: 500 },
+    );
   }
 }
 
-export async function DELETE(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> },
+) {
   try {
-    const { id } = await params
+    const { id } = await params;
 
     // Check for authorization header
-    const authHeader = request.headers.get('authorization')
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    const authHeader = request.headers.get("authorization");
+    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const token = authHeader.substring(7)
-    
+    const token = authHeader.substring(7);
+
     // Import verifyToken here to avoid middleware issues
-    const { verifyToken } = await import('@/lib/auth')
-    const decoded = verifyToken(token)
-    
-    if (!decoded || typeof decoded === 'string') {
-      return NextResponse.json({ error: 'Invalid token' }, { status: 401 })
+    const { verifyToken } = await import("@/lib/auth");
+    const decoded = verifyToken(token);
+
+    if (!decoded || typeof decoded === "string") {
+      return NextResponse.json({ error: "Invalid token" }, { status: 401 });
     }
 
     // Get user with role to check permissions
     const user = await prisma.user.findUnique({
       where: { id: decoded.userId },
-      include: { role: true }
-    })
+      include: { role: true },
+    });
 
     if (!user) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 })
+      return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
     // Check if user is Administrator
-    if (user.role?.name !== 'Administrator') {
-      return NextResponse.json({ error: 'Only administrators can delete applications' }, { status: 403 })
+    if (user.role?.name !== "Administrator") {
+      return NextResponse.json(
+        { error: "Only administrators can delete applications" },
+        { status: 403 },
+      );
     }
 
     // Check if application exists
     const application = await prisma.application.findUnique({
       where: { id },
-      select: { id: true, candidateName: true }
-    })
+      select: { id: true, candidateName: true },
+    });
 
     if (!application) {
-      return NextResponse.json({ error: 'Application not found' }, { status: 404 })
+      return NextResponse.json(
+        { error: "Application not found" },
+        { status: 404 },
+      );
     }
 
     // Delete the application
     await prisma.application.delete({
-      where: { id }
-    })
+      where: { id },
+    });
 
-    return NextResponse.json({ 
-      message: 'Application deleted successfully',
+    return NextResponse.json({
+      message: "Application deleted successfully",
       deletedApplication: {
         id: application.id,
-        candidateName: application.candidateName
-      }
-    })
+        candidateName: application.candidateName,
+      },
+    });
   } catch (error) {
-    console.error('Application deletion error:', error)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    console.error("Application deletion error:", error);
+    return NextResponse.json(
+      { error: "Internal server error" },
+      { status: 500 },
+    );
   }
 }

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Mail, Plus, Edit, Trash2 } from "lucide-react";
 import HTMLEditor from "@/components/HTMLEditor";
@@ -55,6 +56,8 @@ export default function EmailTemplatesPage() {
     "{{startDate}}",
   ];
 
+  const router = useRouter();
+
   useEffect(() => {
     fetchTemplates();
     fetchCurrentUser();
@@ -65,6 +68,20 @@ export default function EmailTemplatesPage() {
       const res = await fetch("/api/auth/me");
       if (res.ok) {
         const data = await res.json();
+        const hasEmailRead =
+          (data.role &&
+            Array.isArray(data.role.permissions) &&
+            data.role.permissions.some(
+              (p: any) =>
+                p.module === "email" && p.action === "read" && p.granted,
+            )) ||
+          data.role?.name === "Administrator";
+
+        if (!hasEmailRead) {
+          router.push("/");
+          return;
+        }
+
         setCurrentUser(data);
       }
     } catch (err) {
