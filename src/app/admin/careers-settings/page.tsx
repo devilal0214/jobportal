@@ -1345,7 +1345,7 @@ export default function CareersSettingsPage() {
                 <button
                   onClick={() => {
                     const ni: MenuItem = {
-                      id: `menu-${Date.now()}`,
+                      id: generateMenuItemId(),
                       label: "",
                       url: "",
                       order: settings.menuItems.length,
@@ -3213,7 +3213,7 @@ export default function CareersSettingsPage() {
                       <button
                         onClick={() => {
                           const newLink: SocialLink = {
-                            id: `social-${Date.now()}`,
+                            id: generateSocialLinkId(),
                             platform: "Facebook",
                             url: "",
                             order: (settings.socialLinks?.length || 0) + 1,

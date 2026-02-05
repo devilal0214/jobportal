@@ -25,13 +25,19 @@ interface Props {
   onLogoUpload: (widgetId: string, file: File) => void
 }
 
+let widgetIdCounter = 0;
+const generateWidgetId = () => {
+  widgetIdCounter += 1;
+  return `widget_${widgetIdCounter}`;
+};
+
 export default function FooterWidgetBuilder({ columns, widgets, onChange, onLogoUpload }: Props) {
   const [draggedWidget, setDraggedWidget] = useState<FooterWidget | null>(null)
   const [editingWidget, setEditingWidget] = useState<string | null>(null)
 
   const addWidget = (columnIndex: number, type: FooterWidget['type']) => {
     const newWidget: FooterWidget = {
-      id: `widget-${Date.now()}`,
+      id: generateWidgetId(),
       type,
       title: type === 'menu' ? 'Quick Links' : type === 'text' ? 'About Us' : '',
       content: type === 'text' ? 'Enter your content here...' : type === 'html' ? '<p>Custom HTML here</p>' : '',

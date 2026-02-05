@@ -31,6 +31,7 @@ import {
 } from "lucide-react";
 import TagsInput from "@/components/TagsInput";
 import { User } from "@/types/user";
+import { useAlert } from "@/contexts/AlertContext";
 
 interface FormField {
   id: string;
@@ -167,6 +168,12 @@ const DEFAULT_AUTOSEED: string[] = [
   "PHONE:Phone number",
 ];
 
+let fieldIdCounter = 0;
+const generateFieldId = () => {
+  fieldIdCounter += 1;
+  return `field_${fieldIdCounter}`;
+};
+
 function groupByPageBreak(fields: FormField[]) {
   const steps: FormField[][] = [];
   let buf: FormField[] = [];
@@ -198,7 +205,7 @@ function makeField(fieldType: string, label: string, order: number): FormField {
   if (label.toLowerCase().includes("phone")) fieldId = "candidatePhone";
 
   return {
-    id: `field_${Date.now()}_${Math.random().toString(36).slice(2)}`,
+    id: generateFieldId(),
     label,
     fieldType,
     placeholder,
@@ -212,6 +219,7 @@ function makeField(fieldType: string, label: string, order: number): FormField {
 }
 
 function FormBuilderContent() {
+  const { showConfirm, showSuccess, showError } = useAlert();
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -356,6 +364,14 @@ function FormBuilderContent() {
     )
   );
 
+  const hasFormsDelete = !!(
+    user &&
+    Array.isArray(user.role?.permissions) &&
+    user.role.permissions.some(
+      (p: any) => p.module === "forms" && p.action === "delete" && p.granted,
+    )
+  );
+
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (showJobsDropdown) {
@@ -407,8 +423,7 @@ function FormBuilderContent() {
     setSuccess("");
   };
 
-  const generateFieldId = () =>
-    `field_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+
 
   const updateField = (fieldId: string, updates: Partial<FormField>) => {
     setFields(
@@ -562,6 +577,60 @@ function FormBuilderContent() {
     } finally {
       setSaving(false);
     }
+  };
+
+  const deleteForm = async () => {
+    if (!selectedForm) return;
+
+    showConfirm(
+      `Are you sure you want to delete the form "${selectedForm.name}"? This action cannot be undone.`,
+      async () => {
+        setSaving(true);
+        setError("");
+        setSuccess("");
+
+        try {
+          const token = localStorage.getItem("token");
+          if (!token) {
+            showError("Authentication required. Please log in again.");
+            router.push("/login");
+            return;
+          }
+
+          const resp = await fetch(`/api/admin/forms/${selectedForm.id}`, {
+            method: "DELETE",
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          });
+
+          if (!resp.ok) {
+            const text = await resp.text();
+            let msg = "Failed to delete form";
+            try {
+              const j = JSON.parse(text);
+              if (j?.error) msg = j.error;
+            } catch {}
+            showError(msg);
+            return;
+          }
+
+          showSuccess("Form deleted successfully!");
+          await fetchForms();
+          createNewForm();
+        } catch (err) {
+          console.error("Delete form error:", err);
+          showError("An error occurred while deleting the form");
+        } finally {
+          setSaving(false);
+        }
+      },
+      {
+        title: "Delete Form",
+        confirmText: "Delete",
+        cancelText: "Cancel",
+      }
+    );
   };
 
   const renderField = (field: FormField) => {
@@ -944,21 +1013,35 @@ function FormBuilderContent() {
                   {forms.map((form) => (
                     <div
                       key={form.id}
-                      onClick={() => selectForm(form)}
-                      className={`p-3 rounded-md cursor-pointer transition-colors ${
+                      className={`p-3 rounded-md cursor-pointer transition-colors group relative ${
                         selectedForm?.id === form.id
                           ? "bg-indigo-50 border-indigo-200 border text-indigo-900"
                           : "hover:bg-gray-50 border border-transparent text-gray-900"
                       }`}
                     >
-                      <div className="font-medium">{form.name}</div>
-                      <div className="text-sm text-gray-500">
-                        {form.fields.length} fields
+                      <div onClick={() => selectForm(form)}>
+                        <div className="font-medium pr-8">{form.name}</div>
+                        <div className="text-sm text-gray-500">
+                          {form.fields.length} fields
+                        </div>
+                        {form.isDefault && (
+                          <span className="inline-flex px-2 py-1 text-xs font-medium bg-green-100 text-green-800 rounded-full mt-1">
+                            Default
+                          </span>
+                        )}
                       </div>
-                      {form.isDefault && (
-                        <span className="inline-flex px-2 py-1 text-xs font-medium bg-green-100 text-green-800 rounded-full mt-1">
-                          Default
-                        </span>
+                      {hasFormsDelete && (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setSelectedForm(form);
+                            setTimeout(() => deleteForm(), 0);
+                          }}
+                          className="absolute top-3 right-3 p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded opacity-0 group-hover:opacity-100 transition-opacity"
+                          title="Delete form"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
                       )}
                     </div>
                   ))}

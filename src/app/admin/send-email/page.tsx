@@ -35,6 +35,12 @@ interface EmailTemplate {
   content: string
 }
 
+let recipientIdCounter = 0;
+const generateRecipientId = () => {
+  recipientIdCounter += 1;
+  return `recipient_${recipientIdCounter}`;
+};
+
 export default function EmailSendPage() {
   const router = useRouter()
   const [recipients, setRecipients] = useState<Recipient[]>([])
@@ -134,7 +140,7 @@ export default function EmailSendPage() {
     }
 
     const newRecipient: Recipient = {
-      id: Date.now().toString(),
+      id: generateRecipientId(),
       email: email,
       name: email.split('@')[0] // Use part before @ as name
     }

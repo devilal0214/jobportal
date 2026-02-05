@@ -53,7 +53,7 @@ export default function SecurityPage() {
           userId: 'user2',
           userEmail: 'hr@example.com',
           ipAddress: '192.168.1.2',
-          timestamp: new Date(Date.now() - 3600000).toISOString(),
+          timestamp: new Date(new Date().getTime() - 3600000).toISOString(),
           details: 'Invalid password attempt'
         }
       ])
@@ -74,7 +74,7 @@ export default function SecurityPage() {
           userEmail: 'hr@example.com',
           ipAddress: '192.168.1.2',
           userAgent: 'Mozilla/5.0 (iPhone; CPU iPhone OS 14_0 like Mac OS X)',
-          lastActivity: new Date(Date.now() - 1800000).toISOString(),
+          lastActivity: new Date(new Date().getTime() - 1800000).toISOString(),
           isCurrentSession: false
         }
       ])
