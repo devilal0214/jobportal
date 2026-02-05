@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { useAlert } from "@/contexts/AlertContext";
 import {
   FileText,
   Search,
@@ -33,6 +34,7 @@ interface Application {
 }
 
 export default function ApplicationsContent() {
+  const { showError, showWarning, showConfirm } = useAlert();
   const [user, setUser] = useState<User | null>(null);
   const [initialLoading, setInitialLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
@@ -443,36 +445,33 @@ export default function ApplicationsContent() {
     applicationId: string,
     candidateName: string,
   ) => {
-    if (
-      !confirm(
-        `Are you sure you want to delete the application from "${candidateName}"? This action cannot be undone.`,
-      )
-    ) {
-      return;
-    }
+    showConfirm(
+      `Are you sure you want to delete the application from "${candidateName}"? This action cannot be undone.`,
+      async () => {
+        const token = localStorage.getItem("token");
+        if (!token) return;
 
-    const token = localStorage.getItem("token");
-    if (!token) return;
+        try {
+          const response = await fetch(`/api/applications/${applicationId}`, {
+            method: "DELETE",
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          });
 
-    try {
-      const response = await fetch(`/api/applications/${applicationId}`, {
-        method: "DELETE",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-
-      if (response.ok) {
-        // Refresh the applications list
-        await refreshApplications();
-      } else {
-        console.error("Failed to delete application");
-        alert("Failed to delete application. Please try again.");
+          if (response.ok) {
+            // Refresh the applications list
+            await refreshApplications();
+          } else {
+            console.error("Failed to delete application");
+            showError("Failed to delete application. Please try again.");
+          }
+        } catch (error) {
+          console.error("Error deleting application:", error);
+          showError("An error occurred while deleting the application.");
+        }
       }
-    } catch (error) {
-      console.error("Error deleting application:", error);
-      alert("An error occurred while deleting the application.");
-    }
+    );
   };
 
   const handleArchiveApplication = async (
@@ -500,11 +499,11 @@ export default function ApplicationsContent() {
         await refreshApplications();
       } else {
         console.error("Failed to archive/unarchive application");
-        alert("Failed to update application. Please try again.");
+        showError("Failed to update application. Please try again.");
       }
     } catch (error) {
       console.error("Error archiving application:", error);
-      alert("An error occurred while updating the application.");
+      showError("An error occurred while updating the application.");
     }
   };
 
@@ -512,7 +511,7 @@ export default function ApplicationsContent() {
     action: "archive" | "unarchive" | "delete",
   ) => {
     if (selectedApplications.length === 0) {
-      alert("Please select applications first.");
+      showWarning("Please select applications first.");
       return;
     }
 
@@ -523,53 +522,51 @@ export default function ApplicationsContent() {
           ? `Are you sure you want to unarchive ${selectedApplications.length} application(s)?`
           : `Are you sure you want to delete ${selectedApplications.length} application(s)? This action cannot be undone.`;
 
-    if (!confirm(message)) {
-      return;
-    }
+    showConfirm(message, async () => {
+      setBulkActionLoading(true);
+      const token = localStorage.getItem("token");
+      if (!token) return;
 
-    setBulkActionLoading(true);
-    const token = localStorage.getItem("token");
-    if (!token) return;
+      try {
+        const promises = selectedApplications.map((id) => {
+          if (action === "archive") {
+            return fetch(`/api/applications/${id}/archive`, {
+              method: "PUT",
+              headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${token}`,
+              },
+              body: JSON.stringify({ isArchived: true }),
+            });
+          } else if (action === "unarchive") {
+            return fetch(`/api/applications/${id}/archive`, {
+              method: "PUT",
+              headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${token}`,
+              },
+              body: JSON.stringify({ isArchived: false }),
+            });
+          } else {
+            return fetch(`/api/applications/${id}`, {
+              method: "DELETE",
+              headers: {
+                Authorization: `Bearer ${token}`,
+              },
+            });
+          }
+        });
 
-    try {
-      const promises = selectedApplications.map((id) => {
-        if (action === "archive") {
-          return fetch(`/api/applications/${id}/archive`, {
-            method: "PUT",
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: `Bearer ${token}`,
-            },
-            body: JSON.stringify({ isArchived: true }),
-          });
-        } else if (action === "unarchive") {
-          return fetch(`/api/applications/${id}/archive`, {
-            method: "PUT",
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: `Bearer ${token}`,
-            },
-            body: JSON.stringify({ isArchived: false }),
-          });
-        } else {
-          return fetch(`/api/applications/${id}`, {
-            method: "DELETE",
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          });
-        }
-      });
-
-      await Promise.all(promises);
-      setSelectedApplications([]);
-      await refreshApplications();
-    } catch (error) {
-      console.error(`Error ${action}ing applications:`, error);
-      alert(`An error occurred while ${action}ing applications.`);
-    } finally {
-      setBulkActionLoading(false);
-    }
+        await Promise.all(promises);
+        setSelectedApplications([]);
+        await refreshApplications();
+      } catch (error) {
+        console.error(`Error ${action}ing applications:`, error);
+        showError(`An error occurred while ${action}ing applications.`);
+      } finally {
+        setBulkActionLoading(false);
+      }
+    });
   };
 
   // Mark application as opened when viewed - changes status from pending to under_review

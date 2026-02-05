@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { useAlert } from "@/contexts/AlertContext";
 import {
   Briefcase,
   Plus,
@@ -52,6 +53,7 @@ interface Job {
 }
 
 export default function JobsPage() {
+  const { showError, showConfirm } = useAlert();
   const [user, setUser] = useState<User | null>(null);
   const [jobs, setJobs] = useState<Job[]>([]);
   const [loading, setLoading] = useState(true);
@@ -250,36 +252,33 @@ export default function JobsPage() {
   };
 
   const handleDeleteJob = async (jobId: string, jobTitle: string) => {
-    if (
-      !confirm(
-        `Are you sure you want to delete "${jobTitle}"? This action cannot be undone.`,
-      )
-    ) {
-      return;
-    }
+    showConfirm(
+      `Are you sure you want to delete "${jobTitle}"? This action cannot be undone.`,
+      async () => {
+        const token = localStorage.getItem("token");
+        if (!token) return;
 
-    const token = localStorage.getItem("token");
-    if (!token) return;
+        try {
+          const response = await fetch(`/api/jobs/${jobId}/delete`, {
+            method: "DELETE",
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          });
 
-    try {
-      const response = await fetch(`/api/jobs/${jobId}/delete`, {
-        method: "DELETE",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-
-      if (response.ok) {
-        // Refresh the jobs list
-        await refreshJobs();
-      } else {
-        console.error("Failed to delete job");
-        alert("Failed to delete job. Please try again.");
+          if (response.ok) {
+            // Refresh the jobs list
+            await refreshJobs();
+          } else {
+            console.error("Failed to delete job");
+            showError("Failed to delete job. Please try again.");
+          }
+        } catch (error) {
+          console.error("Error deleting job:", error);
+          showError("An error occurred while deleting the job.");
+        }
       }
-    } catch (error) {
-      console.error("Error deleting job:", error);
-      alert("An error occurred while deleting the job.");
-    }
+    );
   };
 
   const handleToggleJobStatus = async (
@@ -290,39 +289,40 @@ export default function JobsPage() {
     const newStatus = currentStatus === "ACTIVE" ? "PAUSED" : "ACTIVE";
     const action = currentStatus === "ACTIVE" ? "pause" : "activate";
 
-    if (!confirm(`Are you sure you want to ${action} "${jobTitle}"?`)) {
-      return;
-    }
+    showConfirm(
+      `Are you sure you want to ${action} "${jobTitle}"?`,
+      async () => {
+        const token = localStorage.getItem("token");
+        if (!token) return;
 
-    const token = localStorage.getItem("token");
-    if (!token) return;
+        try {
+          const response = await fetch(`/api/jobs/${jobId}/edit`, {
+            method: "PUT",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify({
+              status: newStatus,
+              // We need to send existing data to avoid overwriting
+              title: jobs.find((j) => j.id === jobId)?.title || "",
+              description: jobs.find((j) => j.id === jobId)?.description || "",
+            }),
+          });
 
-    try {
-      const response = await fetch(`/api/jobs/${jobId}/edit`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          status: newStatus,
-          // We need to send existing data to avoid overwriting
-          title: jobs.find((j) => j.id === jobId)?.title || "",
-          description: jobs.find((j) => j.id === jobId)?.description || "",
-        }),
-      });
-
-      if (response.ok) {
-        // Refresh the jobs list
-        await refreshJobs();
-      } else {
-        console.error("Failed to update job status");
-        alert("Failed to update job status. Please try again.");
+          if (response.ok) {
+            // Refresh the jobs list
+            await refreshJobs();
+          } else {
+            console.error("Failed to update job status");
+            showError("Failed to update job status. Please try again.");
+          }
+        } catch (error) {
+          console.error("Error updating job status:", error);
+          showError("An error occurred while updating the job status.");
+        }
       }
-    } catch (error) {
-      console.error("Error updating job status:", error);
-      alert("An error occurred while updating the job status.");
-    }
+    );
   };
 
   const getStatusColor = (status: string) => {

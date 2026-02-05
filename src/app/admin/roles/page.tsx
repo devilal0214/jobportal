@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { useAlert } from "@/contexts/AlertContext";
 import {
   Shield,
   ShieldCheck,
@@ -63,6 +64,7 @@ interface User {
 }
 
 export default function RolesPage() {
+  const { showError, showConfirm } = useAlert();
   const [user, setUser] = useState<User | null>(null);
   const [roles, setRoles] = useState<Role[]>([]);
   const [loading, setLoading] = useState(true);
@@ -250,35 +252,32 @@ export default function RolesPage() {
   };
 
   const handleDeleteRole = async (roleId: string) => {
-    if (
-      !confirm(
-        "Are you sure you want to delete this role? This action cannot be undone.",
-      )
-    ) {
-      return;
-    }
+    showConfirm(
+      "Are you sure you want to delete this role? This action cannot be undone.",
+      async () => {
+        const token = localStorage.getItem("token");
+        if (!token) return;
 
-    const token = localStorage.getItem("token");
-    if (!token) return;
+        try {
+          const response = await fetch(`/api/roles/${roleId}`, {
+            method: "DELETE",
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          });
 
-    try {
-      const response = await fetch(`/api/roles/${roleId}`, {
-        method: "DELETE",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-
-      if (response.ok) {
-        await fetchRoles();
-      } else {
-        console.error("Failed to delete role");
-        alert("Failed to delete role. Please try again.");
+          if (response.ok) {
+            await fetchRoles();
+          } else {
+            console.error("Failed to delete role");
+            showError("Failed to delete role. Please try again.");
+          }
+        } catch (error) {
+          console.error("Error deleting role:", error);
+          showError("An error occurred while deleting the role.");
+        }
       }
-    } catch (error) {
-      console.error("Error deleting role:", error);
-      alert("An error occurred while deleting the role.");
-    }
+    );
   };
 
   const togglePermission = (permissionId: string) => {
@@ -638,6 +637,15 @@ export default function RolesPage() {
               </div>
             </div>
           ))}
+
+          <div className="px-6 py-4 border-t border-gray-200">
+            <Link
+              href="/admin"
+              className="text-indigo-600 hover:text-indigo-500"
+            >
+              &larr; Back to Admin Dashboard
+            </Link>
+          </div>
         </div>
 
         {roles.length === 0 && (
@@ -661,7 +669,6 @@ export default function RolesPage() {
           </div>
         )}
       </div>
-
       {/* Create/Edit Role Modal */}
       {(showCreateModal || showEditModal) && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
