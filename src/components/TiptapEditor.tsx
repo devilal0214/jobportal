@@ -4,7 +4,103 @@ import { useEditor, EditorContent } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import Underline from "@tiptap/extension-underline";
 import TextAlign from "@tiptap/extension-text-align";
+import { Extension } from "@tiptap/core";
 import { useEffect, useState } from "react";
+
+// Custom Indent Extension
+const IndentExtension = Extension.create({
+  name: "indent",
+
+  addOptions() {
+    return {
+      types: ["paragraph", "heading"],
+      minLevel: 0,
+      maxLevel: 8,
+    };
+  },
+
+  addGlobalAttributes() {
+    return [
+      {
+        types: this.options.types,
+        attributes: {
+          indent: {
+            default: 0,
+            parseHTML: (element) => {
+              const level = element.getAttribute("data-indent");
+              return level ? parseInt(level, 10) : 0;
+            },
+            renderHTML: (attributes) => {
+              if (!attributes.indent) {
+                return {};
+              }
+              return {
+                "data-indent": attributes.indent,
+                style: `margin-left: ${attributes.indent * 2}rem;`,
+              };
+            },
+          },
+        },
+      },
+    ];
+  },
+
+  addCommands() {
+    return {
+      indent:
+        () =>
+        ({ tr, state, dispatch, editor }) => {
+          const { selection } = state;
+          const { from, to } = selection;
+
+          state.doc.nodesBetween(from, to, (node, pos) => {
+            if (this.options.types.includes(node.type.name)) {
+              const currentIndent = node.attrs.indent || 0;
+              if (currentIndent < this.options.maxLevel) {
+                if (dispatch) {
+                  tr.setNodeMarkup(pos, undefined, {
+                    ...node.attrs,
+                    indent: currentIndent + 1,
+                  });
+                }
+              }
+            }
+          });
+
+          return true;
+        },
+      outdent:
+        () =>
+        ({ tr, state, dispatch }) => {
+          const { selection } = state;
+          const { from, to } = selection;
+
+          state.doc.nodesBetween(from, to, (node, pos) => {
+            if (this.options.types.includes(node.type.name)) {
+              const currentIndent = node.attrs.indent || 0;
+              if (currentIndent > this.options.minLevel) {
+                if (dispatch) {
+                  tr.setNodeMarkup(pos, undefined, {
+                    ...node.attrs,
+                    indent: currentIndent - 1,
+                  });
+                }
+              }
+            }
+          });
+
+          return true;
+        },
+    };
+  },
+
+  addKeyboardShortcuts() {
+    return {
+      Tab: () => this.editor.commands.indent(),
+      "Shift-Tab": () => this.editor.commands.outdent(),
+    };
+  },
+});
 
 interface TiptapEditorProps {
   value: string;
@@ -40,6 +136,7 @@ const TiptapEditor = ({
       TextAlign.configure({
         types: ["heading", "paragraph"],
       }),
+      IndentExtension,
     ],
     content: value,
     onUpdate: ({ editor }) => {
@@ -246,6 +343,27 @@ const TiptapEditor = ({
                 title="Bullet List"
               >
                 •
+              </button>
+
+              <div className="w-px h-6 bg-gray-400 mx-1"></div>
+
+              {/* Indent More / Indent Less */}
+              <button
+                type="button"
+                onClick={() => editor.chain().focus().outdent().run()}
+                className="px-3 py-2 text-xs font-medium bg-white text-gray-700 border border-gray-400 rounded hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 shadow-sm"
+                title="Decrease Indent (Shift+Tab)"
+              >
+                ←
+              </button>
+
+              <button
+                type="button"
+                onClick={() => editor.chain().focus().indent().run()}
+                className="px-3 py-2 text-xs font-medium bg-white text-gray-700 border border-gray-400 rounded hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 shadow-sm"
+                title="Increase Indent (Tab)"
+              >
+                →
               </button>
 
               <div className="w-px h-6 bg-gray-400 mx-1"></div>
