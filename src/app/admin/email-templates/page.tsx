@@ -431,42 +431,21 @@ export default function EmailTemplatesPage() {
                       {new Date(template.createdAt).toLocaleDateString()}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                      <div className="flex gap-2">
-                        {((currentUser?.role &&
-                          Array.isArray(currentUser.role.permissions) &&
-                          currentUser.role.permissions.some(
-                            (p: any) =>
-                              p.module === "email" &&
-                              p.action === "update" &&
-                              p.granted,
-                          )) ||
-                          currentUser?.role?.name === "Administrator") && (
-                          <>
-                            <button
-                              onClick={() => handleEdit(template)}
-                              className="text-indigo-600 hover:text-indigo-900"
-                            >
-                              <Edit className="h-4 w-4" />
-                            </button>
-                            <button
-                              onClick={() =>
-                                toggleTemplateStatus(
-                                  template.id,
-                                  template.isActive,
-                                )
-                              }
-                              className={`${template.isActive ? "text-red-600 hover:text-red-900" : "text-green-600 hover:text-green-900"}`}
-                            >
-                              {template.isActive ? "Deactivate" : "Activate"}
-                            </button>
-                            <button
-                              onClick={() => handleDelete(template.id)}
-                              className="text-red-600 hover:text-red-900"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </button>
-                          </>
-                        )}
+                      <div className="flex gap-3">
+                        <button
+                          onClick={() => handleEdit(template)}
+                          className="text-indigo-600 hover:text-indigo-900"
+                          title="Edit template"
+                        >
+                          <Edit className="h-4 w-4" />
+                        </button>
+                        <button
+                          onClick={() => handleDelete(template.id)}
+                          className="text-red-600 hover:text-red-900"
+                          title="Delete template"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
                       </div>
                     </td>
                   </tr>
