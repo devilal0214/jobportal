@@ -79,6 +79,9 @@ SMTP_TEST_GUIDE.md
 # Shell scripts in root (should be in scripts/ if needed)
 *.sh
 *.ps1
+# But allow database sync scripts
+!fetch-live-db.ps1
+!push-db-to-live.ps1
 
 # Temporary directories
 /temp/
