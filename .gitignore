@@ -90,3 +90,7 @@ SMTP_TEST_GUIDE.md
 # Uploads folder - don't commit uploaded files, only directory structure
 /public/uploads/**
 !/public/uploads/**/.gitkeep
+
+# Root uploads directory - user-uploaded files (resumes, documents, etc.)
+/uploads/**
+!/uploads/.gitkeep
