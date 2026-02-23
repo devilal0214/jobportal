@@ -737,11 +737,17 @@ export default function RolesPage() {
                   <div className="space-y-6">
                     {permissionGroups.map((group) => {
                       // include modules even if they currently have no permissions (so labels appear)
-                      // Filter out applications:read as it's always granted by default
+                      // Filter out permissions that are always granted by default
                       const groupModules = group.modules.map((m) => ({
                         module: m,
                         perms: (permsByModule[m] || []).filter(
-                          (p) => !(p.module === "applications" && p.action === "read")
+                          (p) =>
+                            // Remove View Jobs - everyone can view jobs by default
+                            !(p.module === "jobs" && p.action === "read") &&
+                            // Remove View Applications - everyone can view applications by default
+                            !(p.module === "applications" && p.action === "read") &&
+                            // Remove Export Applications - not needed
+                            !(p.module === "applications" && p.action === "export")
                         ),
                       }));
 

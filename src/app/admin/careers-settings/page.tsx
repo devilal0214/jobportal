@@ -1,12 +1,15 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useAlert } from "@/contexts/AlertContext";
 import Image from "next/image";
 import {
   Save,
   Upload,
   X,
+  ArrowLeft,
   Plus,
   Trash2,
   Image as ImageIcon,
@@ -250,9 +253,12 @@ const shadowMap: Record<ShadowKey, string> = {
   xl: "0 20px 25px rgba(0,0,0,0.12)",
 };
 
+const fileSizeToMB = (bytes: number) => (bytes / (1024 * 1024)).toFixed(2);
+
 /* ========== Component ========== */
 
-export default function CareersSettingsPage() {
+export default function AdminCareersSettings() {
+  const { showSuccess, showError } = useAlert();
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -349,6 +355,7 @@ export default function CareersSettingsPage() {
     footerColumns: 4,
     footerWidth: "1280px",
     footerWidgets: [],
+    columnCustomClasses: [],
     footerBgColor: "#1f2937",
     footerTextColor: "#f3f4f6",
     footerPadding: "48px",
@@ -376,7 +383,7 @@ export default function CareersSettingsPage() {
     copyrightDividerBorderStyle: "solid",
     socialLinks: [],
 
-    /* custom styling defaults */
+    /* tab 5: custom styling */
     customCss: "",
     jobDetailsButtonClass: "",
     jobDetailsButtonBg: "#4f46e5",
@@ -522,7 +529,7 @@ export default function CareersSettingsPage() {
     // Validate file type
     const allowedTypes = ['image/png', 'image/jpeg', 'image/jpg', 'image/svg+xml'];
     if (!allowedTypes.includes(file.type)) {
-      alert('Invalid file type. Only PNG, JPG, JPEG, and SVG images are allowed.');
+      showError('Invalid file type. Only PNG, JPG, JPEG, and SVG images are allowed.');
       e.target.value = '';
       return;
     }
@@ -530,7 +537,7 @@ export default function CareersSettingsPage() {
     // Validate file size (1MB)
     const maxSize = 1 * 1024 * 1024;
     if (file.size > maxSize) {
-      alert(`Banner file is too large (${(file.size / 1024 / 1024).toFixed(2)}MB). Maximum size is 1MB. Please compress the image before uploading.`);
+      showError(`Banner file is too large (${fileSizeToMB(file.size)}MB). Maximum size is 1MB. Please compress the image before uploading.`);
       e.target.value = '';
       return;
     }
@@ -547,7 +554,7 @@ export default function CareersSettingsPage() {
     // Validate file size (1MB = 1024 * 1024 bytes)
     const maxSize = 1 * 1024 * 1024;
     if (file.size > maxSize) {
-      alert(`Logo file is too large (${(file.size / 1024 / 1024).toFixed(2)}MB). Maximum size is 1MB. Please compress the image before uploading.`);
+      showError(`Logo file is too large (${fileSizeToMB(file.size)}MB). Maximum size is 1MB. Please compress the image before uploading.`);
       e.target.value = ''; // Reset input
       return;
     }
@@ -607,7 +614,7 @@ export default function CareersSettingsPage() {
       case 'styling':
         return handleSaveStyling();
       default:
-        alert('Please select a tab to save');
+        showError('Please select a tab to save');
     }
   };
 
@@ -639,14 +646,13 @@ export default function CareersSettingsPage() {
 
       const data = await res.json();
       if (!res.ok) {
-        alert(`Failed to save: ${data.error || "Unknown error"}`);
+        showError(`Failed to save: ${data.error || "Unknown error"}`);
         return;
       }
-      alert(data.message || "Logo settings saved!");
-      window.location.reload();
+      showSuccess(data.message || "Logo settings saved!");
     } catch (err) {
       console.error('Save error:', err);
-      alert("Failed to save logo settings");
+      showError("Failed to save logo settings");
     } finally {
       setSaving(false);
     }
@@ -683,14 +689,13 @@ export default function CareersSettingsPage() {
 
       const data = await res.json();
       if (!res.ok) {
-        alert(`Failed to save: ${data.error || "Unknown error"}`);
+        showError(`Failed to save: ${data.error || "Unknown error"}`);
         return;
       }
-      alert(data.message || "Banner settings saved!");
-      window.location.reload();
+      showSuccess(data.message || "Banner settings saved!");
     } catch (err) {
       console.error('Save error:', err);
-      alert("Failed to save banner settings");
+      showError("Failed to save banner settings");
     } finally {
       setSaving(false);
     }
@@ -730,14 +735,13 @@ export default function CareersSettingsPage() {
 
       const data = await res.json();
       if (!res.ok) {
-        alert(`Failed to save: ${data.error || "Unknown error"}`);
+        showError(`Failed to save: ${data.error || "Unknown error"}`);
         return;
       }
-      alert(data.message || "Card settings saved!");
-      window.location.reload();
+      showSuccess(data.message || "Card settings saved!");
     } catch (err) {
       console.error('Save error:', err);
-      alert("Failed to save card settings");
+      showError("Failed to save card settings");
     } finally {
       setSaving(false);
     }
@@ -767,7 +771,7 @@ export default function CareersSettingsPage() {
       }
     } catch (error) {
       console.error(`Failed to upload ${iconType} icon:`, error);
-      alert(`Failed to upload ${iconType} icon`);
+      showError(`Failed to upload ${iconType} icon`);
     }
     return null;
   };
@@ -812,14 +816,13 @@ export default function CareersSettingsPage() {
 
       const data = await res.json();
       if (!res.ok) {
-        alert(`Failed to save: ${data.error || "Unknown error"}`);
+        showError(`Failed to save: ${data.error || "Unknown error"}`);
         return;
       }
-      alert(data.message || "Career Page Details settings saved!");
-      window.location.reload();
+      showSuccess(data.message || "Career Page Details settings saved!");
     } catch (err) {
       console.error('Save error:', err);
-      alert("Failed to save details settings");
+      showError("Failed to save details settings");
     } finally {
       setSaving(false);
     }
@@ -877,7 +880,7 @@ export default function CareersSettingsPage() {
                 
                 // Validate size (1MB limit)
                 if (blob.size > 1024 * 1024) {
-                  throw new Error(`Widget logo for ${widget.title || widget.id} is too large (${(blob.size / 1024 / 1024).toFixed(2)}MB). Max 1MB.`);
+                  throw new Error(`Widget logo for ${widget.title || widget.id} is too large (${fileSizeToMB(blob.size)}MB). Max 1MB.`);
                 }
                 
                 // Validate file type - only allow png, jpg, jpeg, svg
@@ -928,14 +931,13 @@ export default function CareersSettingsPage() {
 
       const data = await res.json();
       if (!res.ok) {
-        alert(`Failed to save: ${data.error || "Unknown error"}`);
+        showError(`Failed to save: ${data.error || "Unknown error"}`);
         return;
       }
-      alert(data.message || "Footer settings saved!");
-      window.location.reload();
+      showSuccess(data.message || "Footer settings saved!");
     } catch (err) {
       console.error('Save error:', err);
-      alert("Failed to save footer settings");
+      showError("Failed to save footer settings");
     } finally {
       setSaving(false);
     }
@@ -983,14 +985,13 @@ export default function CareersSettingsPage() {
 
       const data = await res.json();
       if (!res.ok) {
-        alert(`Failed to save: ${data.error || "Unknown error"}`);
+        showError(`Failed to save: ${data.error || "Unknown error"}`);
         return;
       }
-      alert(data.message || "Custom styling saved!");
-      window.location.reload();
+      showSuccess(data.message || "Custom styling saved!");
     } catch (err) {
       console.error('Save error:', err);
-      alert("Failed to save styling settings");
+      showError("Failed to save styling settings");
     } finally {
       setSaving(false);
     }
@@ -1094,8 +1095,16 @@ export default function CareersSettingsPage() {
     >
       <style dangerouslySetInnerHTML={{ __html: dynamicFontCss }} />
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Title */}
         <div className="mb-6">
+          <Link
+            href="/admin"
+            className="inline-flex items-center text-sm text-gray-600 hover:text-gray-900 transition-colors"
+          >
+            <ArrowLeft className="w-4 h-4 mr-2" />
+            Back to Admin Dashboard
+          </Link>
+        </div>
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
           <h1 className="text-3xl font-bold text-gray-900 mb-1">
             Careers Page Settings
           </h1>
@@ -1219,16 +1228,19 @@ export default function CareersSettingsPage() {
                       </button>
                     </div>
                   )}
-                  <label className="cursor-pointer inline-flex items-center px-4 py-2 border rounded-md text-sm bg-white hover:bg-gray-50">
-                    <Upload className="h-4 w-4 mr-2" />
-                    Upload Logo
-                    <input
-                      type="file"
-                      accept="image/*"
-                      onChange={handleLogoImageChange}
-                      className="hidden"
-                    />
-                  </label>
+                  <div className="flex flex-col items-start gap-1">
+                    <label className="cursor-pointer inline-flex items-center px-4 py-2 border rounded-md text-sm bg-white hover:bg-gray-50">
+                      <Upload className="h-4 w-4 mr-2" />
+                      Upload Logo
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={handleLogoImageChange}
+                        className="hidden"
+                      />
+                    </label>
+                    <p className="text-xs text-gray-500 mt-1">Max file size: 1MB</p>
+                  </div>
                 </div>
               </div>
 
@@ -1512,6 +1524,7 @@ export default function CareersSettingsPage() {
                       className="hidden"
                     />
                   </label>
+                  <p className="text-xs text-gray-500 mt-1">Max file size: 1MB</p>
                 </div>
               </div>
 
@@ -2560,7 +2573,7 @@ export default function CareersSettingsPage() {
                               // Validate file type
                               const allowedTypes = ['image/png', 'image/jpeg', 'image/jpg', 'image/svg+xml'];
                               if (!allowedTypes.includes(file.type)) {
-                                alert('Invalid file type. Only PNG, JPG, JPEG, and SVG images are allowed.');
+                                showError('Invalid file type. Only PNG, JPG, JPEG, and SVG images are allowed.');
                                 e.target.value = '';
                                 return;
                               }
@@ -2646,7 +2659,7 @@ export default function CareersSettingsPage() {
                               // Validate file type
                               const allowedTypes = ['image/png', 'image/jpeg', 'image/jpg', 'image/svg+xml'];
                               if (!allowedTypes.includes(file.type)) {
-                                alert('Invalid file type. Only PNG, JPG, JPEG, and SVG images are allowed.');
+                                showError('Invalid file type. Only PNG, JPG, JPEG, and SVG images are allowed.');
                                 e.target.value = '';
                                 return;
                               }
@@ -2717,7 +2730,7 @@ export default function CareersSettingsPage() {
                               // Validate file type
                               const allowedTypes = ['image/png', 'image/jpeg', 'image/jpg', 'image/svg+xml'];
                               if (!allowedTypes.includes(file.type)) {
-                                alert('Invalid file type. Only PNG, JPG, JPEG, and SVG images are allowed.');
+                                showError('Invalid file type. Only PNG, JPG, JPEG, and SVG images are allowed.');
                                 e.target.value = '';
                                 return;
                               }
@@ -2788,7 +2801,7 @@ export default function CareersSettingsPage() {
                               // Validate file type
                               const allowedTypes = ['image/png', 'image/jpeg', 'image/jpg', 'image/svg+xml'];
                               if (!allowedTypes.includes(file.type)) {
-                                alert('Invalid file type. Only PNG, JPG, JPEG, and SVG images are allowed.');
+                                showError('Invalid file type. Only PNG, JPG, JPEG, and SVG images are allowed.');
                                 e.target.value = '';
                                 return;
                               }

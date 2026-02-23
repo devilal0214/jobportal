@@ -28,6 +28,7 @@ import {
   FormInput,
   Globe,
   Minus,
+  AlertCircle,
 } from "lucide-react";
 import TagsInput from "@/components/TagsInput";
 import { User } from "@/types/user";
@@ -237,6 +238,10 @@ function FormBuilderContent() {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [showJobsDropdown, setShowJobsDropdown] = useState(false);
+  const [toast, setToast] = useState<{
+    show: boolean;
+    message: string;
+  }>({ show: false, message: "" });
 
   const [autoSeed, setAutoSeed] = useState<string[]>([]);
 
@@ -384,6 +389,19 @@ function FormBuilderContent() {
   }, [showJobsDropdown]);
 
   const selectForm = (form: Form) => {
+    // Check if user has update permission
+    if (!hasFormsUpdate) {
+      setToast({
+        show: true,
+        message: "You don't have permission to edit this form",
+      });
+      // Hide toast after 3 seconds
+      setTimeout(() => {
+        setToast({ show: false, message: "" });
+      }, 3000);
+      return;
+    }
+
     setSelectedForm(form);
     setFormName(form.name);
     setIsDefault(form.isDefault);
@@ -893,6 +911,16 @@ function FormBuilderContent() {
 
   return (
     <div className="min-h-screen bg-gray-50">
+      {/* Toast Notification */}
+      {toast.show && (
+        <div className="fixed top-4 right-4 z-50 p-4 rounded-lg shadow-lg max-w-md bg-red-50 border border-red-200 text-red-800">
+          <div className="flex items-center">
+            <AlertCircle className="h-5 w-5 mr-2" />
+            <span className="text-sm font-medium">{toast.message}</span>
+          </div>
+        </div>
+      )}
+
       {/* Nav */}
       <nav className="bg-white shadow-sm border-b">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -1013,10 +1041,12 @@ function FormBuilderContent() {
                   {forms.map((form) => (
                     <div
                       key={form.id}
-                      className={`p-3 rounded-md cursor-pointer transition-colors group relative ${
+                      className={`p-3 rounded-md transition-colors group relative ${
                         selectedForm?.id === form.id
                           ? "bg-indigo-50 border-indigo-200 border text-indigo-900"
                           : "hover:bg-gray-50 border border-transparent text-gray-900"
+                      } ${
+                        hasFormsUpdate ? "cursor-pointer" : "cursor-not-allowed opacity-60"
                       }`}
                     >
                       <div onClick={() => selectForm(form)}>

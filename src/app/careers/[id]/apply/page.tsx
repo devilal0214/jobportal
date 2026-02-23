@@ -12,7 +12,9 @@ import {
   Calendar,
   ArrowLeft,
   CheckCircle,
+  Upload,
 } from "lucide-react";
+import BrandButton from "@/components/BrandButton";
 
 /* ---------- Types ---------- */
 
@@ -240,17 +242,54 @@ export default function CareerApplyPage() {
 
   const validateStep = (): string | null => {
     for (const f of currentFields) {
-      if (!f.isRequired || f.fieldType === "PAGE_BREAK") continue;
+      if (f.fieldType === "PAGE_BREAK") continue;
 
       const v = getVal(f);
-      const empty =
+      const isEmpty =
         v === undefined ||
         v === null ||
         (typeof v === "string" && v.trim() === "") ||
         (Array.isArray(v) && v.length === 0);
 
-      if (empty) {
+      // 1. Required check
+      if (f.isRequired && isEmpty) {
         return `${f.label} is required`;
+      }
+
+      // 2. Format checks (only if not empty)
+      if (!isEmpty) {
+        if (f.fieldType === "EMAIL") {
+          const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+          if (!emailRegex.test(v)) {
+            return `Please enter a valid email address for ${f.label}`;
+          }
+        }
+        if (f.fieldType === "PHONE") {
+          // Allow simplified phone formats: digits, spaces, +, -, parens, min 7 chars
+          const phoneRegex = /^[\d\s+\-()]{7,25}$/;
+          if (!phoneRegex.test(v)) {
+            return `Please enter a valid phone number for ${f.label}`;
+          }
+        }
+        if (f.fieldType === "URL") {
+          try {
+            new URL(v.startsWith("http") ? v : `https://${v}`);
+          } catch {
+            return `Please enter a valid URL for ${f.label}`;
+          }
+        }
+        if (f.fieldType === "NUMBER") {
+          const num = Number(v);
+          if (isNaN(num)) {
+            return `${f.label} must be a number`;
+          }
+          if (num < 0) {
+            return `${f.label} cannot be negative`;
+          }
+          if (num === 0) {
+            return `${f.label} must be greater than zero`;
+          }
+        }
       }
     }
     return null;
@@ -347,6 +386,7 @@ export default function CareerApplyPage() {
             placeholder={f.placeholder || ""}
             value={getVal(f)}
             onChange={(e) => setVal(f, e.target.value)}
+            min={f.fieldType === "NUMBER" ? 0 : undefined}
           />
         );
       }
@@ -437,21 +477,26 @@ export default function CareerApplyPage() {
         );
       }
 
-      case "FILE":
+      case "FILE": {
+        const file = getVal(f) as File | null;
         return (
-          <div className="border-2 border-dashed border-gray-300 rounded-md p-3 text-center text-xs text-gray-600">
-            <p className="mb-1 font-medium">{f.placeholder || "Upload file"}</p>
+          <label className="border-2 border-dashed border-gray-300 rounded-md p-6 flex flex-col items-center justify-center cursor-pointer hover:border-indigo-500 hover:bg-gray-50 transition-all min-h-[120px]">
+            <Upload className="h-8 w-8 text-gray-400 mb-3" />
+            <p className="text-sm font-medium text-gray-900">
+              {file ? file.name : f.placeholder || "Choose file..."}
+            </p>
+            <p className="mt-1 text-xs text-gray-500">
+              PDF, DOC, DOCX (Max 2MB)
+            </p>
             <input
               type="file"
-              className="block w-full text-xs text-gray-700"
+              className="hidden"
               onChange={(e) => setVal(f, e.target.files?.[0] || null)}
+              accept=".pdf,.doc,.docx"
             />
-            <p className="mt-1 text-[10px] text-gray-500">
-              (This demo stores the File object in state. Hook it to your upload
-              API as needed.)
-            </p>
-          </div>
+          </label>
         );
+      }
 
       case "PAGE_BREAK":
         return null;
@@ -647,32 +692,34 @@ export default function CareerApplyPage() {
 
           {/* Actions */}
           <div className="mt-6 flex items-center justify-between gap-3">
-            <button
+            <BrandButton
               type="button"
               onClick={goPrev}
               disabled={step === 0}
-              className="px-4 py-2 text-xs rounded-full border border-gray-300 text-gray-700 disabled:opacity-40"
+              variant="secondary"
             >
               Previous
-            </button>
+            </BrandButton>
 
             {step < steps.length - 1 ? (
-              <button
+              <BrandButton
                 type="button"
                 onClick={goNext}
-                className="ml-auto px-5 py-2 text-xs rounded-full bg-indigo-600 text-white hover:bg-indigo-700"
+                variant="primary"
+                className="ml-auto"
               >
                 Next
-              </button>
+              </BrandButton>
             ) : (
-              <button
+              <BrandButton
                 type="button"
                 onClick={handleSubmit}
                 disabled={submitting}
-                className="ml-auto px-5 py-2 text-xs rounded-full bg-green-600 text-white hover:bg-green-700 disabled:opacity-60"
+                variant="primary"
+                className="ml-auto"
               >
                 {submitting ? "Submitting..." : "Submit Application"}
-              </button>
+              </BrandButton>
             )}
           </div>
         </div>

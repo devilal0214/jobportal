@@ -156,6 +156,19 @@ export default function NewJobPage() {
     setSaving(true);
     setError("");
 
+    // Validate form data
+    if (
+      !formData.title.trim() ||
+      !formData.position ||
+      !formData.description.trim() ||
+      !formData.formId
+    ) {
+      setError("Please fill in all required fields");
+      setSaving(false);
+      window.scrollTo({ top: 0, behavior: "smooth" });
+      return;
+    }
+
     try {
       const token = localStorage.getItem("token");
 
@@ -344,7 +357,7 @@ export default function NewJobPage() {
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Job Card Image
+                  Job Card Image <span className="text-gray-500 font-normal ml-1">(1579 x 1053 px)</span>
                 </label>
                 {imagePreview && (
                   <div className="relative w-full h-48 mb-3 border-2 border-gray-300 rounded-lg overflow-hidden">
@@ -407,7 +420,7 @@ export default function NewJobPage() {
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Job Details Banner Image
+                  Job Details Banner Image <span className="text-gray-500 font-normal ml-1">(1200 x 160 px)</span>
                 </label>
                 {bannerImagePreview && (
                   <div className="relative w-full h-48 mb-3 border-2 border-gray-300 rounded-lg overflow-hidden">
