@@ -24,52 +24,6 @@ body {
   font-family: "Archivo", sans-serif;
 }
 
-.btn-animated {
-  position: relative;
-  overflow: hidden;
-  z-index: 1;
-}
-
-.btn-animated::before {
-  content: "";
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 41px;
-  background: linear-gradient(
-    270deg,
-    #ee4038,
-    #fbbc16,
-    #00994d,
-    #29256a,
-    #ee4038
-  );
-  background-size: 800% 800%;
-  z-index: -1;
-  opacity: 0;
-  border-radius: 50px;
-  transition: opacity 0.4s ease;
-  animation: rainbowMove 6s ease infinite;
-}
-
-.btn-animated:hover::before {
-  opacity: 1;
-}
-
-/* Gradient movement animation */
-@keyframes rainbowMove {
-  0% {
-    background-position: 0% 50%;
-  }
-  50% {
-    background-position: 100% 50%;
-  }
-  100% {
-    background-position: 0% 50%;
-  }
-}
-
 .shareiconbtnfb {
     padding-right: 0;
     padding-left: 0;

@@ -4,6 +4,8 @@ import { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { gsap } from 'gsap'
+import { useRouter } from 'next/navigation'
+import BrandButton from '@/components/BrandButton'
 import { 
   Briefcase,
   Facebook,
@@ -178,6 +180,7 @@ interface CareersSettings {
 }
 
 export default function CareersPage() {
+  const router = useRouter()
   const [jobs, setJobs] = useState<Job[]>([])
   const [loading, setLoading] = useState(true)
   const [settings, setSettings] = useState<CareersSettings>({
@@ -702,13 +705,13 @@ export default function CareersPage() {
 
                     {/* Actions */}
                     <div className="flex items-center justify-between pt-4 border-t border-gray-100">
-                      <Link
-                        href={`/careers/${job.id}`}
-                        className="btn-animated inline-flex items-center px-4 py-1 border border-solid border-[#29256a] text-[#29256a] text-[15px] font-semibold rounded-3xl bg-white transition-all duration-300"
+                      <BrandButton
+                        onClick={() => router.push(`/careers/${job.id}`)}
+                        className="flex items-center gap-1 !px-4 !py-1"
                       > 
                         Know More
-                        <span className="ml-2 text-2xl ">›</span>
-                      </Link>
+                        <span className="text-xl leading-none mt-[-2px]">›</span>
+                      </BrandButton>
 
                       {/* Share Icons */}
                       <div className="flex items-center space-x-[-5px]">

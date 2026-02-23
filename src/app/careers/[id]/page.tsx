@@ -17,6 +17,7 @@ import {
   Mail,
   CheckCircle,
 } from "lucide-react";
+import BrandButton from "@/components/BrandButton";
 
 /* ---------- Helper Functions ---------- */
 
@@ -495,35 +496,24 @@ export default function CareerDetailPage() {
               )}
 
               {hasForm ? (
-                <Link
-                  href={`/careers/${job.id}/apply`}
-                  className={`block w-full text-center font-semibold py-[10px] px-6 transition-colors mb-3 ${settings.applyButtonClass || ''}`}
+                <BrandButton
+                  onClick={() => router.push(`/careers/${job.id}/apply`)}
+                  className={`w-full mb-3 ${settings.applyButtonClass || ''}`}
                   style={{
-                    backgroundColor: settings.applyButtonBg || '#10b981',
-                    color: settings.applyButtonText || '#ffffff',
-                    border: settings.applyButtonBorder ? `solid ${settings.applyButtonBorderColor || '#10b981'}` : 'none',
-                    borderWidth: settings.applyButtonBorder || '0px',
-                    borderRadius: settings.applyButtonRadius || '8px',
                     fontFamily: settings.applyButtonFontFamily && settings.applyButtonFontFamily !== 'System Default' ? settings.applyButtonFontFamily : 'inherit',
-                    fontSize: settings.applyButtonFontSize || '14px',
-                    fontWeight: settings.applyButtonFontWeight || '500',
+                    fontSize: settings.applyButtonFontSize || '15px',
                   }}
                 >
                   Apply Now
-                </Link>
+                </BrandButton>
               ) : (
                 <>
-                  <button
-                    type="button"
-                    onClick={() =>
-                      alert(
-                        "Application form is not configured for this job. Please contact HR."
-                      )
-                    }
-                    className="block w-full bg-gray-300 text-gray-700 text-center font-semibold py-3 px-6 rounded-lg cursor-not-allowed mb-2"
+                  <BrandButton
+                    disabled
+                    className="w-full mb-2"
                   >
                     Apply Now
-                  </button>
+                  </BrandButton>
                   <p className="text-xs text-red-500">
                     Application form is not configured for this job.
                   </p>
