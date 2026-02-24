@@ -476,9 +476,9 @@ export default function CareerDetailPage() {
           </div>
 
           {/* Sidebar */}
-          <div className="lg:col-span-1 space-y-6">
+          <div className="lg:col-span-1">
             {/* Apply Card + Share */}
-            <div className="bg-white rounded-lg shadow-md p-6 sticky top-12">
+            <div className="bg-white rounded-lg shadow-md p-6 space-y-8 sticky top-24 self-start">
               <h3 className="text-xl font-bold text-gray-900 mb-4">
                 Interested?
               </h3>
