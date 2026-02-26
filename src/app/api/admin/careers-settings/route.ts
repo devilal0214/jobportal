@@ -783,7 +783,7 @@ export async function POST(request: NextRequest) {
     // Detect correct public folder path (public for local, htdocs for VPS)
     const fileOpsStartTime = Date.now()
     const publicFolderName = existsSync(join(process.cwd(), 'htdocs')) ? 'htdocs' : 'public'
-    const uploadsDir = join(process.cwd(), publicFolderName, 'uploads', 'careers')
+    const uploadsDir = join('/home/jobs.jaiveeru.site/uploads', 'careers')
     console.log('📁 Current working directory:', process.cwd())
     console.log('📁 Public folder name:', publicFolderName)
     console.log('📁 Uploads directory path:', uploadsDir)

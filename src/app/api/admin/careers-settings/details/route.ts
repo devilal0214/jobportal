@@ -31,7 +31,7 @@ export async function POST(request: NextRequest) {
     const formData = await request.formData()
     
     // Always use public folder for uploads
-    const uploadsDir = join(process.cwd(), 'public', 'uploads', 'careers')
+    const uploadsDir = join('/home/jobs.jaiveeru.site/uploads', 'careers')
     
     if (!existsSync(uploadsDir)) {
       await mkdir(uploadsDir, { recursive: true })

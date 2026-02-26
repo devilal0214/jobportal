@@ -34,7 +34,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Create uploads directory if it doesn't exist
-    const uploadsDir = path.join(process.cwd(), 'public', 'uploads', 'jobs')
+    const uploadsDir = path.join('/home/jobs.jaiveeru.site/uploads', 'jobs')
     try {
       await mkdir(uploadsDir, { recursive: true })
     } catch (error) {
