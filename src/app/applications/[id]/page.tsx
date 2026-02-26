@@ -2,7 +2,7 @@
 
 import { useState, useEffect, use } from "react";
 import Link from "next/link";
-import { Star, Download, CheckCircle, AlertCircle } from "lucide-react";
+import { Star, Download, CheckCircle, AlertCircle, ArrowLeft } from "lucide-react";
 
 interface FormFieldData {
   id: string;
@@ -917,6 +917,13 @@ export default function ApplicationDetailPage({
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex items-center justify-between">
             <div>
+              <Link
+                href="/applications"
+                className="inline-flex items-center text-sm font-medium text-gray-500 hover:text-gray-900 mb-3 transition-colors"
+              >
+                <ArrowLeft className="h-4 w-4 mr-1.5" />
+                Back to Job Applications
+              </Link>
               <p className="text-gray-800">
                 Apply for:{" "}
                 <span className="font-semibold">{application.jobTitle}</span> |{" "}

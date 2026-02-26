@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { verifyToken } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { emailService } from "@/lib/email";
 
 export async function GET(request: NextRequest) {
   try {
@@ -430,6 +431,74 @@ export async function POST(request: NextRequest) {
         candidateIP: clientIp,
       },
     });
+
+    // Send notification emails
+    try {
+      // Email to candidate
+      if (candidateEmail) {
+        await emailService.sendEmail({
+          to: candidateEmail,
+          subject: `Application Received - ${job.title}`,
+          html: `
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+              <h2 style="color: #2563eb;">Application Received</h2>
+              <p>Dear ${candidateName},</p>
+              <p>Thank you for your interest in the <strong>${job.title}</strong> position.</p>
+              <p>We have received your application and will review it shortly. You will hear from us within the next few business days.</p>
+              <div style="background-color: #f3f4f6; padding: 16px; border-radius: 8px; margin: 16px 0;">
+                <h3 style="margin-top: 0; color: #374151;">Application Details:</h3>
+                <p><strong>Position:</strong> ${job.title}</p>
+                <p><strong>Department:</strong> ${job.department || 'Not specified'}</p>
+                <p><strong>Application ID:</strong> ${application.id}</p>
+                <p><strong>Submitted:</strong> ${new Date().toLocaleString()}</p>
+              </div>
+              <p>Best regards,<br>HR Team</p>
+            </div>
+          `,
+          applicationId: application.id
+        });
+      }
+
+      // Email to assigned HR/Manager
+      // Requires fetching the assignee email if present on the job object
+      const fullJobData = await prisma.job.findUnique({
+        where: { id: jobId },
+        include: { assignee: true }
+      });
+      
+      if (fullJobData?.assignee?.email) {
+        await emailService.sendEmail({
+          to: fullJobData.assignee.email,
+          subject: `New Application - ${job.title}`,
+          html: `
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+              <h2 style="color: #2563eb;">New Application Received</h2>
+              <p>A new application has been submitted for the <strong>${job.title}</strong> position.</p>
+              <div style="background-color: #f3f4f6; padding: 16px; border-radius: 8px; margin: 16px 0;">
+                <h3 style="margin-top: 0; color: #374151;">Candidate Information:</h3>
+                <p><strong>Name:</strong> ${candidateName}</p>
+                <p><strong>Email:</strong> ${candidateEmail}</p>
+                <p><strong>Phone:</strong> ${candidatePhone}</p>
+                <p><strong>Application ID:</strong> ${application.id}</p>
+                <p><strong>Submitted:</strong> ${new Date().toLocaleString()}</p>
+                ${sourceDomain ? `<p><strong>Source:</strong> ${sourceDomain}</p>` : ''}
+                ${sourceUrl ? `<p><strong>Page URL:</strong> ${sourceUrl}</p>` : ''}
+              </div>
+              <div style="margin: 24px 0;">
+                <a href="${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/applications/${application.id}" 
+                   style="background-color: #2563eb; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block;">
+                  View Application
+                </a>
+              </div>
+            </div>
+          `,
+          applicationId: application.id
+        });
+      }
+    } catch (emailError) {
+      console.error('Failed to send notification emails:', emailError);
+      // Don't fail the application submission due to email issues
+    }
 
     return NextResponse.json({
       success: true,

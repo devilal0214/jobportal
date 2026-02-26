@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { Shield, Users, Lock, Activity, CheckCircle } from 'lucide-react'
+import { useAlert } from '@/contexts/AlertContext'
 
 interface SecurityLog {
   id: string
@@ -29,6 +30,7 @@ export default function SecurityPage() {
   const [activeSessions, setActiveSessions] = useState<ActiveSession[]>([])
   const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState('logs')
+  const { showConfirm, showSuccess } = useAlert()
 
   useEffect(() => {
     fetchSecurityData()
@@ -85,15 +87,19 @@ export default function SecurityPage() {
     }
   }
 
-  const terminateSession = async (sessionId: string) => {
-    if (confirm('Are you sure you want to terminate this session?')) {
-      try {
-        // Remove from state for now
-        setActiveSessions(prev => prev.filter(session => session.id !== sessionId))
-      } catch (error) {
-        console.error('Failed to terminate session:', error)
+  const terminateSession = (sessionId: string) => {
+    showConfirm(
+      'Are you sure you want to terminate this session?',
+      async () => {
+        try {
+          // Remove from state for now
+          setActiveSessions(prev => prev.filter(session => session.id !== sessionId))
+          showSuccess('Session terminated successfully.')
+        } catch (error) {
+          console.error('Failed to terminate session:', error)
+        }
       }
-    }
+    )
   }
 
   const getActionColor = (action: string) => {

@@ -23,6 +23,7 @@ import {
   Plus,
   Edit,
 } from "lucide-react";
+import { useAlert } from "@/contexts/AlertContext";
 
 interface Role {
   id: string;
@@ -57,7 +58,9 @@ interface User {
 }
 
 export default function UsersPage() {
+  const router = useRouter();
   const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const { showConfirm, showSuccess, showError } = useAlert();
   // State for infinite scroll users
   const [users, setUsers] = useState<User[]>([]);
   const [roles, setRoles] = useState<Role[]>([]);
@@ -305,23 +308,30 @@ export default function UsersPage() {
     setShowAddForm(true);
   };
 
-  const handleDelete = async (userId: string) => {
-    if (confirm("Are you sure you want to delete this user?")) {
-      try {
-        const token = localStorage.getItem("token");
-        const response = await fetch(`/api/admin/users/${userId}`, {
-          method: "DELETE",
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
-        if (response.ok) {
-          refreshUsers();
+  const handleDelete = (userId: string) => {
+    showConfirm(
+      "Are you sure you want to delete this user?",
+      async () => {
+        try {
+          const token = localStorage.getItem("token");
+          const response = await fetch(`/api/admin/users/${userId}`, {
+            method: "DELETE",
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          });
+          if (response.ok) {
+            refreshUsers();
+            showSuccess("User deleted successfully.");
+          } else {
+            showError("Failed to delete user.");
+          }
+        } catch (error) {
+          console.error("Failed to delete user:", error);
+          showError("An error occurred while deleting the user.");
         }
-      } catch (error) {
-        console.error("Failed to delete user:", error);
       }
-    }
+    );
   };
 
   const toggleUserStatus = async (userId: string, isActive: boolean) => {

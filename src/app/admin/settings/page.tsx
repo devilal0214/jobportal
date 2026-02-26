@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { Settings, Save, Mail, Server, Shield, Database } from 'lucide-react'
+import { useAlert } from '@/contexts/AlertContext'
 
 interface Setting {
   id: string
@@ -14,6 +15,7 @@ interface Setting {
 export default function SettingsPage() {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
+  const { showSuccess, showError } = useAlert()
   const [settingsData, setSettingsData] = useState({
     // Email Settings
     emailHost: '',
@@ -73,14 +75,14 @@ export default function SettingsPage() {
       })
 
       if (response.ok) {
-        alert('Settings saved successfully!')
+        showSuccess('Settings saved successfully!')
         fetchSettings()
       } else {
-        alert('Failed to save settings. Please try again.')
+        showError('Failed to save settings. Please try again.')
       }
     } catch (error) {
       console.error('Failed to save settings:', error)
-      alert('An error occurred while saving settings.')
+      showError('An error occurred while saving settings.')
     } finally {
       setSaving(false)
     }

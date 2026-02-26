@@ -129,7 +129,7 @@ export default function ActivityPage() {
             className="flex items-center text-gray-600 hover:text-gray-900 mb-4"
           >
             <ChevronLeft className="h-5 w-5 mr-1" />
-            Back to Dashboard
+            &larr; Back to Admin Dashboard
           </button>
           <h1 className="text-3xl font-bold text-gray-900">System Activity</h1>
           <p className="mt-2 text-gray-600">Monitor recent system events and user activities</p>

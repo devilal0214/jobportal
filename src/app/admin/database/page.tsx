@@ -3,16 +3,18 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { ArrowLeft, Database, Download, Upload, AlertTriangle } from 'lucide-react'
+import { useAlert } from '@/contexts/AlertContext'
 
 export default function DatabasePage() {
   const [loading, setLoading] = useState(false)
+  const { showInfo } = useAlert()
 
   const handleBackup = async () => {
     setLoading(true)
     // TODO: Implement database backup functionality
     setTimeout(() => {
       setLoading(false)
-      alert('Database backup feature will be implemented in a future update.')
+      showInfo('Database backup feature will be implemented in a future update.')
     }, 1000)
   }
 
@@ -21,7 +23,7 @@ export default function DatabasePage() {
     // TODO: Implement database restore functionality
     setTimeout(() => {
       setLoading(false)
-      alert('Database restore feature will be implemented in a future update.')
+      showInfo('Database restore feature will be implemented in a future update.')
     }, 1000)
   }
 
@@ -30,7 +32,7 @@ export default function DatabasePage() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <Link href="/admin" className="inline-flex items-center text-indigo-600 hover:text-indigo-500 mb-6">
           <ArrowLeft className="h-4 w-4 mr-2" />
-          Back to Admin Dashboard
+          &larr; Back to Admin Dashboard
         </Link>
 
         <div className="mb-8">

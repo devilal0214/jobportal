@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Mail, Plus, Edit, Trash2 } from "lucide-react";
 import HTMLEditor from "@/components/HTMLEditor";
+import { useAlert } from '@/contexts/AlertContext';
 
 interface EmailTemplate {
   id: string;
@@ -25,6 +26,7 @@ export default function EmailTemplatesPage() {
   const [editingTemplate, setEditingTemplate] = useState<EmailTemplate | null>(
     null,
   );
+  const { showConfirm, showSuccess } = useAlert();
   const [formData, setFormData] = useState({
     name: "",
     type: "APPLICATION_RECEIVED",
@@ -150,22 +152,26 @@ export default function EmailTemplatesPage() {
     setShowEditor(true);
   };
 
-  const handleDelete = async (templateId: string) => {
-    if (confirm("Are you sure you want to delete this template?")) {
-      try {
-        const response = await fetch(
-          `/api/admin/email-templates/${templateId}`,
-          {
-            method: "DELETE",
-          },
-        );
-        if (response.ok) {
-          fetchTemplates();
+  const handleDelete = (templateId: string) => {
+    showConfirm(
+      "Are you sure you want to delete this template?",
+      async () => {
+        try {
+          const response = await fetch(
+            `/api/admin/email-templates/${templateId}`,
+            {
+              method: "DELETE",
+            },
+          );
+          if (response.ok) {
+            showSuccess('Template deleted successfully.')
+            fetchTemplates();
+          }
+        } catch (error) {
+          console.error("Failed to delete template:", error);
         }
-      } catch (error) {
-        console.error("Failed to delete template:", error);
       }
-    }
+    )
   };
 
   const toggleTemplateStatus = async (

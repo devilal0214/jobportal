@@ -1010,7 +1010,7 @@ function FormBuilderContent() {
             className="inline-flex items-center text-indigo-600 hover:text-indigo-500 mb-4"
           >
             <ArrowLeft className="h-4 w-4 mr-2" />
-            Back to Admin
+            &larr; Back to Admin Dashboard
           </Link>
           <h1 className="text-3xl font-bold text-gray-900">Form Builder</h1>
           <p className="mt-2 text-gray-600">

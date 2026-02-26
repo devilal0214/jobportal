@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import Link from 'next/link'
 import { Mail, Send, CheckCircle, AlertCircle, Users, Settings, Edit3 } from 'lucide-react'
+import { useAlert } from '@/contexts/AlertContext'
 
 interface Role {
   id: string
@@ -30,8 +31,8 @@ interface User {
 export default function EmailTestPage() {
   const [loading, setLoading] = useState(true)
   const [sending, setSending] = useState(false)
-  const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null)
-  
+  const { showSuccess, showError } = useAlert()
+
   // Form data
   const [selectedStatus, setSelectedStatus] = useState('SHORTLISTED')
   const [selectedRoles, setSelectedRoles] = useState<string[]>(['Administrator'])
@@ -41,7 +42,7 @@ export default function EmailTestPage() {
   const [customSubject, setCustomSubject] = useState('')
   const [isEditingTemplate, setIsEditingTemplate] = useState(false)
   const [selectedUserEmails, setSelectedUserEmails] = useState<string[]>([])
-  
+
   // Data from API
   const [roles, setRoles] = useState<Role[]>([])
   const [templates, setTemplates] = useState<EmailTemplate[]>([])
@@ -91,10 +92,7 @@ export default function EmailTestPage() {
       // Get the auth token
       const token = localStorage.getItem('token')
       if (!token) {
-        setMessage({ 
-          type: 'error', 
-          text: 'Authentication token not found. Please login again.' 
-        })
+        showError('Authentication token not found. Please login again.')
         return
       }
 
@@ -114,10 +112,7 @@ export default function EmailTestPage() {
       } else {
         console.error('Failed to fetch roles:', rolesResponse.status, rolesResponse.statusText)
         if (rolesResponse.status === 401) {
-          setMessage({ 
-            type: 'error', 
-            text: 'Authentication expired. Please refresh the page or login again.' 
-          })
+          showError('Authentication expired. Please refresh the page or login again.')
         }
       }
 
@@ -131,12 +126,8 @@ export default function EmailTestPage() {
         setUsers(usersData.users || [])
       } else {
         console.error('Failed to fetch users:', usersResponse.status, usersResponse.statusText)
-        // Don't set another error message if we already have one
-        if (usersResponse.status === 401 && !message) {
-          setMessage({ 
-            type: 'error', 
-            text: 'Authentication expired. Please refresh the page or login again.' 
-          })
+        if (usersResponse.status === 401) {
+          showError('Authentication expired. Please refresh the page or login again.')
         }
       }
 
@@ -151,7 +142,7 @@ export default function EmailTestPage() {
 
     } catch (error) {
       console.error('Error fetching data:', error)
-      setMessage({ type: 'error', text: 'Failed to load data' })
+      showError('Failed to load data')
     } finally {
       setLoading(false)
     }
@@ -222,28 +213,27 @@ export default function EmailTestPage() {
   const handleSendTestEmail = async () => {
     // Validate based on recipient mode
     if (!selectedStatus) {
-      setMessage({ type: 'error', text: 'Please select an application status' })
+      showError('Please select an application status')
       return
     }
 
     if (recipientMode === 'roles' && selectedUsers.length === 0) {
-      setMessage({ type: 'error', text: 'Please select at least one user' })
+      showError('Please select at least one user')
       return
     }
 
     if (recipientMode === 'email' && !testEmail) {
-      setMessage({ type: 'error', text: 'Please enter an email address' })
+      showError('Please enter an email address')
       return
     }
 
     setSending(true)
-    setMessage(null)
 
     try {
       const template = getTemplateForStatus()
 
       if (!template) {
-        setMessage({ type: 'error', text: 'No email template found for selected status' })
+        showError('No email template found for selected status')
         return
       }
 
@@ -252,7 +242,7 @@ export default function EmailTestPage() {
       if (recipientMode === 'roles') {
         const selectedUsersList = getSelectedUsers()
         if (selectedUsersList.length === 0) {
-          setMessage({ type: 'error', text: 'No users selected' })
+          showError('No users selected')
           return
         }
         emailRecipients = selectedUsersList.map(r => ({ id: r.id, email: r.email, name: r.name }))
@@ -282,17 +272,14 @@ export default function EmailTestPage() {
 
       if (response.ok) {
         const recipientCount = emailRecipients.length
-        setMessage({ 
-          type: 'success', 
-          text: `✅ Test emails sent successfully! ${result.emailsSent || recipientCount} emails sent to ${recipientCount} recipients.` 
-        })
+        showSuccess(`✅ Test emails sent successfully! ${result.emailsSent || recipientCount} emails sent to ${recipientCount} recipients.`)
       } else {
-        setMessage({ type: 'error', text: result.error || 'Failed to send test emails' })
+        showError(result.error || 'Failed to send test emails')
       }
 
     } catch (error) {
       console.error('Error sending test emails:', error)
-      setMessage({ type: 'error', text: 'Network error while sending emails' })
+      showError('Network error while sending emails')
     } finally {
       setSending(false)
     }
@@ -350,31 +337,6 @@ export default function EmailTestPage() {
             </div>
           </div>
 
-          {/* Alert Message */}
-          {message && (
-            <div className={`mx-6 mt-6 p-4 rounded-md ${
-              message.type === 'success' 
-                ? 'bg-green-50 border border-green-200' 
-                : 'bg-red-50 border border-red-200'
-            }`}>
-              <div className="flex">
-                {message.type === 'success' ? (
-                  <CheckCircle className="h-5 w-5 text-green-400" />
-                ) : (
-                  <AlertCircle className="h-5 w-5 text-red-400" />
-                )}
-                <div className="ml-3">
-                  <p className={`text-sm ${
-                    message.type === 'success' ? 'text-green-800' : 'text-red-800'
-                  }`}>
-                    {message.text}
-                  </p>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Form */}
           <div className="p-6 space-y-8">
             {/* Recipient Selection Method */}
             <div>
@@ -657,7 +619,7 @@ export default function EmailTestPage() {
                 href="/admin"
                 className="text-indigo-600 hover:text-indigo-500 text-sm font-medium"
               >
-                ← Back to Admin Dashboard
+                &larr; Back to Admin Dashboard
               </Link>
               
               <div className="flex items-center space-x-3">

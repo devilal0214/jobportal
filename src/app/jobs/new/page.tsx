@@ -8,6 +8,7 @@ import TiptapEditor from "@/components/TiptapEditor";
 import Header from "@/components/Header";
 import { User } from "@/types/user";
 import { useCallback } from "react";
+import { useAlert } from "@/contexts/AlertContext";
 
 export default function NewJobPage() {
   interface Form {
@@ -28,6 +29,7 @@ export default function NewJobPage() {
     bannerImageUrl: "",
     salary: "",
   });
+  const { showWarning } = useAlert();
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string>("");
   const [bannerImageFile, setBannerImageFile] = useState<File | null>(null);
@@ -108,7 +110,7 @@ export default function NewJobPage() {
         "image/svg+xml",
       ];
       if (!allowedTypes.includes(file.type)) {
-        alert(
+        showWarning(
           "Invalid file type. Only PNG, JPG, JPEG, and SVG images are allowed.",
         );
         e.target.value = "";
@@ -135,7 +137,7 @@ export default function NewJobPage() {
         "image/svg+xml",
       ];
       if (!allowedTypes.includes(file.type)) {
-        alert(
+        showWarning(
           "Invalid file type. Only PNG, JPG, JPEG, and SVG images are allowed.",
         );
         e.target.value = "";

@@ -12,6 +12,7 @@ import {
   Linkedin,
   Mail
 } from 'lucide-react'
+import { useAlert } from '@/contexts/AlertContext'
 
 interface Job {
   id: string
@@ -207,8 +208,13 @@ export default function CareersPage() {
   const [searchQuery, setSearchQuery] = useState('')
   const [displayCount, setDisplayCount] = useState(9)
   const [isLoadingMore, setIsLoadingMore] = useState(false)
+  const [isLoadingJobs, setIsLoadingJobs] = useState(true)
+  const menuRef = useRef<HTMLDivElement>(null)
   const jobCardsRef = useRef<HTMLDivElement>(null)
   const loadMoreRef = useRef<HTMLDivElement>(null)
+  const { showSuccess } = useAlert()
+
+  // Intersection Observer for animations
 
   useEffect(() => {
     fetchJobs()
@@ -368,7 +374,7 @@ export default function CareersPage() {
         break
       case 'copy':
         navigator.clipboard.writeText(url)
-        alert('Link copied to clipboard!')
+        showSuccess('Link copied to clipboard!')
         break
     }
   }

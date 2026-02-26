@@ -1,6 +1,7 @@
 'use client'
 
 import * as React from 'react'
+import { useAlert } from '@/contexts/AlertContext'
 
 /** Match your Prisma shape coming from /api (string enum, options as JSON string) */
 export type FormFieldDB = {
@@ -80,6 +81,7 @@ export default function ApplicationFormStepper({
   onStepChange,
   initialStep = 0
 }: ApplicationFormStepperProps) {
+  const { showError } = useAlert();
   const steps = React.useMemo(
     () => groupByPageBreak((form?.fields ?? []).sort((a, b) => a.order - b.order)),
     [form?.fields]
@@ -100,7 +102,7 @@ export default function ApplicationFormStepper({
       if (!f.isRequired) continue
       const v = values[f.fieldName]
       if (v === undefined || v === null || String(v).trim?.() === '') {
-        alert(`Please fill required field: ${f.label}`)
+        showError(`Please fill required field: ${f.label}`)
         return false
       }
     }

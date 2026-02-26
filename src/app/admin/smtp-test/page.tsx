@@ -1,22 +1,19 @@
 'use client'
 
 import { useState } from 'react'
-import { Mail, Send, AlertCircle, CheckCircle } from 'lucide-react'
+import Link from 'next/link'
+import { Mail, Send, AlertCircle } from 'lucide-react'
+import { useAlert } from '@/contexts/AlertContext'
 
 export default function SMTPTestPage() {
   const [email, setEmail] = useState('')
   const [message, setMessage] = useState('')
   const [isLoading, setIsLoading] = useState(false)
-  const [result, setResult] = useState<{
-    success: boolean
-    message: string
-    details?: unknown
-  } | null>(null)
+  const { showSuccess, showError } = useAlert()
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsLoading(true)
-    setResult(null)
 
     try {
       const response = await fetch('/api/admin/smtp-test', {
@@ -31,13 +28,15 @@ export default function SMTPTestPage() {
       })
 
       const data = await response.json()
-      setResult(data)
+      
+      if (data.success) {
+        showSuccess('Test Email Sent Successfully!\n\n' + data.message)
+      } else {
+        const details = data.details ? (typeof data.details === 'object' && data.details !== null ? JSON.stringify(data.details, null, 2) : String(data.details)) : ''
+        showError('Test Email Failed\n\n' + data.message + (details ? '\n\nDetails: ' + details : ''))
+      }
     } catch (error) {
-      setResult({
-        success: false,
-        message: 'Failed to send test email',
-        details: error instanceof Error ? error.message : 'Unknown error'
-      })
+      showError('Failed to send test email\n\n' + (error instanceof Error ? error.message : 'Unknown error'))
     } finally {
       setIsLoading(false)
     }
@@ -47,6 +46,12 @@ export default function SMTPTestPage() {
     <div className="p-6 max-w-2xl mx-auto">
       <div className="bg-white rounded-lg shadow-md p-6">
         {/* Header */}
+        <Link
+          href="/admin"
+          className="text-indigo-600 hover:text-indigo-500 text-sm font-medium inline-flex items-center mb-6"
+        >
+          &larr; Back to Admin Dashboard
+        </Link>
         <div className="flex items-center gap-3 mb-6">
           <div className="p-2 bg-blue-100 rounded-lg">
             <Mail className="h-6 w-6 text-blue-600" />
@@ -117,56 +122,6 @@ export default function SMTPTestPage() {
             </button>
           </div>
         </form>
-
-        {/* Result */}
-        {result && (
-          <div className={`mt-6 p-4 rounded-md ${
-            result.success 
-              ? 'bg-green-50 border border-green-200' 
-              : 'bg-red-50 border border-red-200'
-          }`}>
-            <div className="flex items-start gap-2">
-              {result.success ? (
-                <CheckCircle className="h-5 w-5 text-green-600 mt-0.5" />
-              ) : (
-                <AlertCircle className="h-5 w-5 text-red-600 mt-0.5" />
-              )}
-              <div className="flex-1">
-                <h3 className={`font-medium ${
-                  result.success ? 'text-green-800' : 'text-red-800'
-                }`}>
-                  {result.success ? 'Test Email Sent Successfully!' : 'Test Email Failed'}
-                </h3>
-                <p className={`text-sm mt-1 ${
-                  result.success ? 'text-green-700' : 'text-red-700'
-                }`}>
-                  {result.message}
-                </p>
-                {result.details && (
-                  <div className="mt-2">
-                    <details className="text-sm">
-                      <summary className={`cursor-pointer font-medium ${
-                        result.success ? 'text-green-700' : 'text-red-700'
-                      }`}>
-                        Technical Details
-                      </summary>
-                      <pre className={`mt-2 p-2 rounded text-xs ${
-                        result.success 
-                          ? 'bg-green-100 text-green-800' 
-                          : 'bg-red-100 text-red-800'
-                      } overflow-auto`}>
-                        {typeof result.details === 'object' && result.details !== null
-                          ? JSON.stringify(result.details, null, 2)
-                          : String(result.details)
-                        }
-                      </pre>
-                    </details>
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-        )}
 
         {/* Info Box */}
         <div className="mt-6 bg-blue-50 border border-blue-200 rounded-md p-4">

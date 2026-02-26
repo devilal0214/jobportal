@@ -365,7 +365,7 @@ export default function EmailSendPage() {
             className="flex items-center text-gray-600 hover:text-gray-900 mb-4"
           >
             <ChevronLeft className="h-5 w-5 mr-1" />
-            Back to Dashboard
+            &larr; Back to Admin Dashboard
           </button>
           <h1 className="text-3xl font-bold text-gray-900">Send Email</h1>
           <p className="mt-2 text-gray-600">Send emails to multiple recipients using the system SMTP settings</p>

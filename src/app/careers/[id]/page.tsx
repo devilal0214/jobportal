@@ -18,6 +18,7 @@ import {
   CheckCircle,
 } from "lucide-react";
 import BrandButton from "@/components/BrandButton";
+import { useAlert } from "@/contexts/AlertContext";
 
 /* ---------- Helper Functions ---------- */
 
@@ -199,6 +200,9 @@ export default function CareerDetailPage() {
 
   const [job, setJob] = useState<Job | null>(null);
   const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
+  const { showSuccess } = useAlert();
   const [settings, setSettings] = useState<CareersSettings>({
     bannerOverlay:
       "linear-gradient(135deg, rgba(99, 102, 241, 0.9) 0%, rgba(139, 92, 246, 0.9) 100%)",
@@ -290,7 +294,7 @@ export default function CareerDetailPage() {
         break;
       case "copy":
         navigator.clipboard.writeText(url);
-        alert("Link copied to clipboard!");
+        showSuccess("Link copied to clipboard!");
         break;
     }
   };

@@ -16,6 +16,7 @@ import {
   FormInput,
 } from "lucide-react";
 import TiptapEditor from "@/components/TiptapEditor";
+import { useAlert } from "@/contexts/AlertContext";
 
 interface User {
   id: string;
@@ -24,6 +25,7 @@ interface User {
   role: {
     id: string;
     name: string;
+    permissions?: any[];
   } | null;
 }
 
@@ -59,6 +61,7 @@ export default function EditJobPage({
   const resolvedParams = React.use(params);
   const [user, setUser] = useState<User | null>(null);
   const [job, setJob] = useState<Job | null>(null);
+  const { showWarning } = useAlert();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [showJobsDropdown, setShowJobsDropdown] = useState(false);
@@ -252,7 +255,7 @@ export default function EditJobPage({
         "image/svg+xml",
       ];
       if (!allowedTypes.includes(file.type)) {
-        alert(
+        showWarning(
           "Invalid file type. Only PNG, JPG, JPEG, and SVG images are allowed.",
         );
         e.target.value = "";
@@ -279,7 +282,7 @@ export default function EditJobPage({
         "image/svg+xml",
       ];
       if (!allowedTypes.includes(file.type)) {
-        alert(
+        showWarning(
           "Invalid file type. Only PNG, JPG, JPEG, and SVG images are allowed.",
         );
         e.target.value = "";

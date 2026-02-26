@@ -1101,7 +1101,7 @@ export default function AdminCareersSettings() {
             className="inline-flex items-center text-sm text-gray-600 hover:text-gray-900 transition-colors"
           >
             <ArrowLeft className="w-4 h-4 mr-2" />
-            Back to Admin Dashboard
+            &larr; Back to Admin Dashboard
           </Link>
         </div>
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
