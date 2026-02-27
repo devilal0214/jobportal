@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { writeFile, mkdir } from 'fs/promises'
 import path from 'path'
 import { verifyToken } from '@/lib/auth'
+import { getUploadDir } from '@/lib/upload'
 
 export async function POST(request: NextRequest) {
   try {
@@ -34,7 +35,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Create uploads directory if it doesn't exist
-    const uploadsDir = path.join('/home/jobs.jaiveeru.site/uploads', 'jobs')
+    const uploadsDir = getUploadDir('jobs')
     try {
       await mkdir(uploadsDir, { recursive: true })
     } catch (error) {

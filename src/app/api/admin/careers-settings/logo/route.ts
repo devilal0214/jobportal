@@ -4,6 +4,7 @@ import { prisma } from '@/lib/prisma'
 import { writeFile, mkdir, chmod } from 'fs/promises'
 import { join } from 'path'
 import { existsSync } from 'fs'
+import { getUploadDir } from '@/lib/upload'
 
 export const maxDuration = 60
 export const dynamic = 'force-dynamic'
@@ -30,9 +31,10 @@ export async function POST(request: NextRequest) {
     // Parse FormData
     const formData = await request.formData()
     
-    // Always use public folder for uploads (VPS uses parent htdocs but app uses public subfolder)
-    const uploadsDir = join('/home/jobs.jaiveeru.site/uploads', 'careers')
+    // Set up upload directory
+    const uploadsDir = getUploadDir('careers')
     
+    // Create directory if it doesn't exist
     if (!existsSync(uploadsDir)) {
       await mkdir(uploadsDir, { recursive: true })
     }

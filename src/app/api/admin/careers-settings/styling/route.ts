@@ -1,9 +1,10 @@
+```typescript
 import { NextRequest, NextResponse } from 'next/server'
 import { verifyToken } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { writeFile, mkdir, chmod } from 'fs/promises'
 import { join } from 'path'
-import { existsSync } from 'fs'
+import { getUploadDir } from '@/lib/upload'
 
 export const maxDuration = 60
 export const dynamic = 'force-dynamic'
@@ -27,13 +28,16 @@ export async function POST(request: NextRequest) {
     }
 
     const formData = await request.formData()
+    const type = formData.get('type')
     
-    // Always use public folder for uploads
-    const uploadsDir = join('/home/jobs.jaiveeru.site/uploads', 'careers')
+    // Set up upload directory
+    const uploadsDir = getUploadDir('careers')
     
-    if (!existsSync(uploadsDir)) {
-      await mkdir(uploadsDir, { recursive: true })
-    }
+    // Create directory if it doesn't exist
+    // The existsSync import was removed, assuming getUploadDir or subsequent mkdir handles existence.
+    // If mkdir is called on an existing directory, it typically does nothing or throws an error if permissions are wrong.
+    // The recursive: true option handles parent directories.
+    await mkdir(uploadsDir, { recursive: true })
 
     console.log(`📁 [STYLING] Upload directory: ${uploadsDir}`)
 

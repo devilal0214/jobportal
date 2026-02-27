@@ -3,6 +3,7 @@ import { verifyToken } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { writeFile, mkdir, chmod } from 'fs/promises'
 import { join } from 'path'
+import { getUploadDir } from '@/lib/upload'
 import { existsSync } from 'fs'
 
 export const maxDuration = 60
@@ -28,12 +29,8 @@ export async function POST(request: NextRequest) {
 
     const formData = await request.formData()
     
-    // Setup upload directory - always use public folder
-    const uploadsDir = join('/home/jobs.jaiveeru.site/uploads', 'careers')
-    
-    if (!existsSync(uploadsDir)) {
-      await mkdir(uploadsDir, { recursive: true })
-    }
+    // Set up upload directory for any images inside widgets (though handled elsewhere, keeping for consistency)
+    const uploadsDir = getUploadDir('careers')
     
     console.log(`📁 [FOOTER] Upload directory: ${uploadsDir}`)
     

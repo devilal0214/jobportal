@@ -4,6 +4,7 @@ import { prisma } from '@/lib/prisma'
 import { writeFile, mkdir, chmod } from 'fs/promises'
 import { join } from 'path'
 import { existsSync } from 'fs'
+import { getUploadDir } from '@/lib/upload'
 
 // Increase timeout for file uploads and database operations
 export const maxDuration = 120 // 120 seconds for VPS
@@ -783,7 +784,7 @@ export async function POST(request: NextRequest) {
     // Detect correct public folder path (public for local, htdocs for VPS)
     const fileOpsStartTime = Date.now()
     const publicFolderName = existsSync(join(process.cwd(), 'htdocs')) ? 'htdocs' : 'public'
-    const uploadsDir = join('/home/jobs.jaiveeru.site/uploads', 'careers')
+    const uploadsDir = getUploadDir('careers')
     console.log('📁 Current working directory:', process.cwd())
     console.log('📁 Public folder name:', publicFolderName)
     console.log('📁 Uploads directory path:', uploadsDir)
