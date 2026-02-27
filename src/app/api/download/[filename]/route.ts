@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { readFile } from 'fs/promises'
 import { join } from 'path'
+import { getUploadDir } from '@/lib/upload'
 
 export async function GET(request: NextRequest, { params }: { params: Promise<{ filename: string }> }) {
   try {
@@ -11,7 +12,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       return NextResponse.json({ error: 'Invalid filename' }, { status: 400 })
     }
 
-    const filePath = join(process.cwd(), 'uploads', filename)
+    const filePath = join(getUploadDir(), filename)
     
     try {
       const fileBuffer = await readFile(filePath)

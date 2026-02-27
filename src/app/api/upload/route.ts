@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { writeFile, mkdir } from 'fs/promises'
 import { join } from 'path'
 import { existsSync } from 'fs'
+import { getUploadDir } from '@/lib/upload'
 
 export async function POST(request: NextRequest) {
   try {
@@ -34,7 +35,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Create uploads directory if it doesn't exist
-    const uploadDir = join(process.cwd(), 'uploads')
+    const uploadDir = getUploadDir()
     if (!existsSync(uploadDir)) {
       await mkdir(uploadDir, { recursive: true })
     }

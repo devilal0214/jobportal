@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma'
 import { emailService } from '@/lib/email'
 import { writeFile } from 'fs/promises'
 import path from 'path'
+import { getUploadDir } from '@/lib/upload'
 
 export async function POST(request: NextRequest) {
   try {
@@ -36,7 +37,7 @@ export async function POST(request: NextRequest) {
         // Generate unique filename
         const timestamp = Date.now()
         const filename = `${timestamp}_${file.name}`
-        const uploadPath = path.join(process.cwd(), 'uploads', filename)
+        const uploadPath = path.join(getUploadDir(), filename)
         
         // Save file
         const buffer = Buffer.from(await file.arrayBuffer())

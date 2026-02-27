@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { readFile, stat } from 'fs/promises'
 import path from 'path'
+import { getUploadDir } from '@/lib/upload'
 
 export async function GET(
   request: NextRequest,
@@ -18,7 +19,7 @@ export async function GET(
     }
 
     // Construct the file path
-    const filePath = path.join(process.cwd(), 'uploads', filename)
+    const filePath = path.join(getUploadDir(), filename)
     
     // Check if file exists
     try {
