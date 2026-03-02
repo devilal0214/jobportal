@@ -57,15 +57,28 @@ interface UserLocation {
   ip: string;
 }
 
-function toArrayOptions(options?: string[] | string | null) {
+function toArrayOptions(options?: string[] | string | null): string[] {
   if (!options) return [];
   if (Array.isArray(options)) return options;
-  try {
-    const maybe = JSON.parse(options);
-    return Array.isArray(maybe) ? maybe : [options];
-  } catch {
-    return [options];
+
+  let parsed: any = options;
+  // keep parsing in case it's double or equivalently stringified
+  while (typeof parsed === "string") {
+    try {
+      // try to parse it as JSON
+      const attempt = JSON.parse(parsed);
+      // if it parse back exactly into a string without quotes, break out
+      if (typeof attempt === "string" && attempt === parsed) {
+        break;
+      }
+      parsed = attempt;
+    } catch {
+      // Not JSON, just break
+      break;
+    }
   }
+
+  return Array.isArray(parsed) ? parsed : [String(parsed)];
 }
 
 function groupByPageBreak(fields: FormField[]) {

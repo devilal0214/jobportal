@@ -545,7 +545,15 @@ function FormBuilderContent() {
           label: f.label,
           fieldType: f.fieldType,
           placeholder: f.placeholder || "",
-          options: Array.isArray(f.options) ? f.options : [],
+          options:
+            typeof f.options === "string"
+              ? f.options
+                  .split("\n")
+                  .map((x) => x.trim())
+                  .filter(Boolean)
+              : Array.isArray(f.options)
+                ? f.options
+                : [],
           cssClass: f.cssClass || "",
           fieldId: f.fieldId || "",
           fieldWidth: f.fieldWidth || "100%",
@@ -656,6 +664,27 @@ function FormBuilderContent() {
       field.cssClass || ""
     }`;
 
+    const toArrayOptions = (options?: string[] | string | null): string[] => {
+      if (!options) return [];
+      if (Array.isArray(options)) return options;
+
+      let parsed: any = options;
+      while (typeof parsed === "string") {
+        try {
+          const attempt = JSON.parse(parsed);
+          if (typeof attempt === "string" && attempt === parsed) {
+            break;
+          }
+          parsed = attempt;
+        } catch {
+          break;
+        }
+      }
+      return Array.isArray(parsed) ? parsed : [String(parsed)];
+    };
+
+    const options = toArrayOptions(field.options);
+
     switch (field.fieldType) {
       case "TEXT":
         return (
@@ -693,8 +722,7 @@ function FormBuilderContent() {
             <option value="">
               {field.placeholder || "Select country code"}
             </option>
-            {Array.isArray(field.options) &&
-              field.options.map((opt, i) => (
+            {options.map((opt, i) => (
                 <option key={i} value={String(opt)}>
                   {String(opt)}
                 </option>
@@ -717,8 +745,7 @@ function FormBuilderContent() {
             id={field.fieldId || `field-${field.id}`}
           >
             <option value="">{field.placeholder || "Select an option"}</option>
-            {Array.isArray(field.options) &&
-              field.options.map((opt, i) => (
+            {options.map((opt, i) => (
                 <option key={i} value={String(opt)}>
                   {String(opt)}
                 </option>
@@ -731,8 +758,7 @@ function FormBuilderContent() {
             className={`space-y-2 ${field.cssClass || ""}`}
             id={field.fieldId || `field-${field.id}`}
           >
-            {Array.isArray(field.options) &&
-              field.options.map((opt, i) => (
+            {options.map((opt, i) => (
                 <label key={i} className="flex items-center cursor-pointer">
                   <input
                     type="radio"
@@ -751,8 +777,7 @@ function FormBuilderContent() {
             className={`space-y-2 ${field.cssClass || ""}`}
             id={field.fieldId || `field-${field.id}`}
           >
-            {Array.isArray(field.options) &&
-              field.options.map((opt, i) => (
+            {options.map((opt, i) => (
                 <label key={i} className="flex items-center cursor-pointer">
                   <input
                     type="checkbox"
@@ -769,9 +794,7 @@ function FormBuilderContent() {
           <TagsInput
             value={[]}
             onChange={() => {}}
-            options={
-              Array.isArray(field.options) ? (field.options as string[]) : []
-            }
+            options={options}
             placeholder={field.placeholder || "Type to add tags..."}
             className={field.cssClass || ""}
             id={field.fieldId || `field-${field.id}`}
@@ -1561,30 +1584,31 @@ function FormBuilderContent() {
                                         Options (one per line)
                                       </label>
                                       <textarea
+                                        onKeyDown={(e) => {
+                                          e.stopPropagation();
+                                        }}
+                                        onDragStart={(e) => {
+                                          e.stopPropagation();
+                                          e.preventDefault();
+                                        }}
                                         value={
-                                          Array.isArray(field.options)
-                                            ? (field.options as string[]).join(
-                                                "\n",
-                                              )
-                                            : ""
+                                          typeof field.options === "string"
+                                            ? field.options
+                                            : Array.isArray(field.options)
+                                              ? field.options.join("\n")
+                                              : ""
                                         }
                                         onChange={(e) =>
                                           updateField(field.id, {
-                                            options: e.target.value
-                                              .split("\n")
-                                              .map((x) => x.trim())
-                                              .filter(Boolean),
+                                            options: e.target.value,
                                           })
                                         }
                                         className="w-full text-sm border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-1 focus:ring-indigo-500 text-gray-800 placeholder-gray-500"
-                                        rows={4}
-                                        placeholder={`Option 1
-Option 2
-Option 3`}
+                                        rows={5}
+                                        placeholder={`Option 1\nOption 2\nOption 3`}
                                         style={{
-                                          resize: "vertical",
-                                          lineHeight: "1.5",
-                                        }}
+                     resize: "vertical",
+                   }}
                                       />
                                       <p className="text-xs text-gray-500 mt-1">
                                         {field.fieldType === "TAGS"

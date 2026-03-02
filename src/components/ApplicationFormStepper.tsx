@@ -52,15 +52,25 @@ function groupByPageBreak(fields: FormFieldDB[]) {
   return steps.filter(step => step.length > 0)
 }
 
-/** DB stores options as JSON string */
+/** DB stores options as JSON string (or nested JSON string) */
 function parseOptions(opt?: string | null): string[] {
-  if (!opt) return []
-  try {
-    const parsed = JSON.parse(opt)
-    return Array.isArray(parsed) ? parsed.map(String) : []
-  } catch {
-    return []
+  if (!opt) return [];
+  if (Array.isArray(opt)) return opt;
+
+  let parsed: any = opt;
+  while (typeof parsed === "string") {
+    try {
+      const attempt = JSON.parse(parsed);
+      if (typeof attempt === "string" && attempt === parsed) {
+        break;
+      }
+      parsed = attempt;
+    } catch {
+      break;
+    }
   }
+
+  return Array.isArray(parsed) ? parsed.map(String) : [String(parsed)];
 }
 
 /** Map 25%/50% etc. to Tailwind grid columns (12-col grid) */
