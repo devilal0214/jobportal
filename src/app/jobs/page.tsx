@@ -25,7 +25,6 @@ import {
   FormInput,
   ChevronDown,
   Calendar,
-  Building,
   SortAsc,
   FilterX,
 } from "lucide-react";
@@ -38,7 +37,7 @@ interface Job {
   location: string;
   status: string;
   description?: string;
-  experienceLevel?: string;
+  position?: string;
   applicationsCount: number;
   createdAt: string;
   formId?: string;
@@ -59,8 +58,6 @@ export default function JobsPage() {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
-  const [departmentFilter, setDepartmentFilter] = useState("");
-  const [locationFilter, setLocationFilter] = useState("");
   const [datePostedFilter, setDatePostedFilter] = useState("");
   const [sortBy, setSortBy] = useState("");
   const [showEmbedModal, setShowEmbedModal] = useState(false);
@@ -380,20 +377,10 @@ export default function JobsPage() {
     }
   };
 
-  // Get unique departments and locations for filter options
-  const uniqueDepartments = [
-    ...new Set(jobs.map((job) => job.department).filter(Boolean)),
-  ].sort();
-  const uniqueLocations = [
-    ...new Set(jobs.map((job) => job.location).filter(Boolean)),
-  ].sort();
-
   // Clear all filters function
   const clearAllFilters = () => {
     setSearchTerm("");
     setStatusFilter("");
-    setDepartmentFilter("");
-    setLocationFilter("");
     setDatePostedFilter("");
     setSortBy("");
   };
@@ -402,8 +389,6 @@ export default function JobsPage() {
   const hasActiveFilters =
     searchTerm ||
     statusFilter ||
-    departmentFilter ||
-    locationFilter ||
     datePostedFilter ||
     sortBy;
 
@@ -418,14 +403,6 @@ export default function JobsPage() {
       const matchesStatus =
         !statusFilter ||
         job.status?.toLowerCase() === statusFilter.toLowerCase();
-
-      const matchesDepartment =
-        !departmentFilter ||
-        job.department?.toLowerCase() === departmentFilter.toLowerCase();
-
-      const matchesLocation =
-        !locationFilter ||
-        job.location?.toLowerCase() === locationFilter.toLowerCase();
 
       const matchesDatePosted =
         !datePostedFilter ||
@@ -452,8 +429,6 @@ export default function JobsPage() {
       return (
         matchesSearch &&
         matchesStatus &&
-        matchesDepartment &&
-        matchesLocation &&
         matchesDatePosted
       );
     })
@@ -692,49 +667,6 @@ export default function JobsPage() {
               </div>
             </div>
 
-            {/* Department Filter */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Filter by Department
-              </label>
-              <div className="relative">
-                <Building className="h-5 w-5 absolute left-3 top-3 text-gray-400" />
-                <select
-                  value={departmentFilter}
-                  onChange={(e) => setDepartmentFilter(e.target.value)}
-                  className="pl-10 w-full border border-gray-300 text-gray-600 rounded-md px-3 py-2 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-                >
-                  <option value="">All Departments</option>
-                  {uniqueDepartments.map((department) => (
-                    <option key={department} value={department}>
-                      {department}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            </div>
-
-            {/* Location Filter */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Filter by Location
-              </label>
-              <div className="relative">
-                <MapPin className="h-5 w-5 absolute left-3 top-3 text-gray-400" />
-                <select
-                  value={locationFilter}
-                  onChange={(e) => setLocationFilter(e.target.value)}
-                  className="pl-10 w-full border border-gray-300 text-gray-600 rounded-md px-3 py-2 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-                >
-                  <option value="">All Locations</option>
-                  {uniqueLocations.map((location) => (
-                    <option key={location} value={location}>
-                      {location}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            </div>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -819,32 +751,10 @@ export default function JobsPage() {
                 </div>
 
                 <div className="space-y-2 mb-4">
-                  <div className="flex items-center text-sm text-gray-600">
+                  <div className="flex items-center text-sm text-gray-500 mb-2">
                     <Briefcase className="h-4 w-4 mr-2" />
-                    {job.department || "Not specified"}
+                    {job.position || "Not specified"}
                   </div>
-                  <div className="flex items-center text-sm text-gray-600">
-                    <MapPin className="h-4 w-4 mr-2" />
-                    {job.location || "Not specified"}
-                  </div>
-                  {job.experienceLevel && (
-                    <div className="flex items-center text-sm text-gray-600">
-                      <svg
-                        className="h-4 w-4 mr-2"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"
-                        />
-                      </svg>
-                      {job.experienceLevel}
-                    </div>
-                  )}
                   <div className="flex items-center text-sm text-gray-600">
                     <Users className="h-4 w-4 mr-2" />
                     {job.applicationsCount || 0} applications
