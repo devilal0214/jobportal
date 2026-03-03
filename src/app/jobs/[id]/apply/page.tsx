@@ -4,6 +4,13 @@ import React, { useEffect, useMemo, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, Upload } from "lucide-react";
+import TagsInput from "@/components/TagsInput";
+import SkillsWithRatings from "@/components/SkillsWithRatings";
+
+export interface SkillRating {
+  skill: string;
+  rating: number;
+}
 
 type FieldType =
   | "TEXT"
@@ -208,6 +215,17 @@ export default function ApplyPage() {
         v === null ||
         (typeof v === "string" && v.trim() === "") ||
         (Array.isArray(v) && v.length === 0);
+
+      if (f.fieldType === "SKILLS") {
+        const skills = v as SkillRating[] | undefined;
+        if (!skills || skills.length === 0) {
+          errs.push(`${f.label} is required`);
+        } else if (skills.some((s) => !s.rating || s.rating === 0)) {
+          errs.push(`Please rate all skills in ${f.label}`);
+        }
+        continue;
+      }
+
       if (isEmpty) errs.push(`${f.label} is required`);
     }
     return errs;
@@ -236,13 +254,46 @@ export default function ApplyPage() {
     }
     setError("");
     setSubmitting(true);
+    
     try {
+      // 1. Upload files first
+      const fieldsToProcess = job?.form?.fields || [];
+      const processedValues = { ...values };
+
+      for (const f of fieldsToProcess) {
+        if (f.fieldType === "FILE") {
+          const key = f.fieldId || f.id;
+          const file = values[key];
+          if (file && typeof file === 'object' && 'name' in file) {
+            const formData = new FormData();
+            formData.append("file", file as Blob);
+            
+            const uploadRes = await fetch("/api/upload", {
+              method: "POST",
+              body: formData,
+            });
+            
+            if (!uploadRes.ok) {
+              const err = await uploadRes.json();
+              throw new Error(err.error || `Failed to upload ${f.label}`);
+            }
+            
+            const uploadData = await uploadRes.json();
+            processedValues[key] = JSON.stringify({
+              fileName: uploadData.originalName || file.name,
+              path: uploadData.path,
+            });
+          }
+        }
+      }
+
+      // 2. Submit application
       const res = await fetch("/api/applications", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           jobId: job?.id,
-          formData: values,
+          formData: processedValues,
           // ✅ send location to backend
           location: userLocation,
         }),
@@ -271,14 +322,11 @@ export default function ApplyPage() {
       case "TEXT":
       case "PASSWORD":
       case "EMAIL":
-      case "PHONE":
       case "URL":
       case "NUMBER": {
         const type =
           f.fieldType === "EMAIL"
             ? "email"
-            : f.fieldType === "PHONE"
-            ? "tel"
             : f.fieldType === "URL"
             ? "url"
             : f.fieldType === "NUMBER"
@@ -296,6 +344,18 @@ export default function ApplyPage() {
           />
         );
       }
+      case "PHONE":
+        return (
+          <input
+            type="text"
+            inputMode="numeric"
+            maxLength={10}
+            placeholder={f.placeholder}
+            className={base}
+            value={getVal(f)}
+            onChange={(e) => setVal(f, e.target.value.replace(/\D/g, "").slice(0, 10))}
+          />
+        );
       case "DATE":
         return (
           <input
@@ -371,6 +431,28 @@ export default function ApplyPage() {
           </div>
         );
       }
+      case "TAGS":
+        return (
+          <TagsInput
+            value={(getVal(f) as string[]) || []}
+            onChange={(tags) => setVal(f, tags)}
+            options={options}
+            placeholder={f.placeholder || "Type to add tags..."}
+            className="w-full"
+            id={f.fieldId || f.id}
+          />
+        );
+      case "SKILLS":
+        return (
+          <SkillsWithRatings
+            value={(getVal(f) as SkillRating[]) || []}
+            onChange={(skills) => setVal(f, skills)}
+            options={options}
+            placeholder={f.placeholder || "Type to add skills..."}
+            className="w-full"
+            id={f.fieldId || f.id}
+          />
+        );
       case "FILE":
         return (
           <div

@@ -130,7 +130,16 @@ export async function GET(
               fieldType = "URL";
             }
           } else if (Array.isArray(value)) {
-            fieldType = "TAGS";
+            if (
+              value.length > 0 &&
+              typeof value[0] === "object" &&
+              value[0] !== null &&
+              "rating" in value[0]
+            ) {
+              fieldType = "SKILLS";
+            } else {
+              fieldType = "TAGS";
+            }
           }
 
           return {
@@ -144,11 +153,11 @@ export async function GET(
 
     // Extract portfolio links separately - handle both old format (strings) and new format (objects)
     let portfolioLinks: (string | { name: string; url: string })[] = [];
-    if (
-      formData["Portfolio Links"] &&
-      Array.isArray(formData["Portfolio Links"])
-    ) {
-      portfolioLinks = formData["Portfolio Links"]
+    if (formData["Portfolio Links"]) {
+      const linksData = formData["Portfolio Links"] as string | (string | { name: string; url: string })[];
+      const linksArray = Array.isArray(linksData) ? linksData : [linksData];
+      
+      portfolioLinks = linksArray
         .filter((link: string | { name: string; url: string }) => {
           if (typeof link === "string") {
             return link && link.trim() !== "";

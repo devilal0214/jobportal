@@ -1,6 +1,13 @@
 'use client'
 
-import * as React from 'react'
+import React, { useState, useMemo } from 'react'
+import TagsInput from './TagsInput'
+import SkillsWithRatings from './SkillsWithRatings'
+
+export interface SkillRating {
+  skill: string;
+  rating: number;
+}
 import { useAlert } from '@/contexts/AlertContext'
 
 /** Match your Prisma shape coming from /api (string enum, options as JSON string) */
@@ -134,8 +141,51 @@ export default function ApplicationFormStepper({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+
     if (!validateStep()) return
-    await onSubmit(values)
+
+    try {
+      // 1. Upload files first
+      const fieldsToProcess = form?.fields || []; // Use 'form' prop instead of 'job?.form'
+      const processedValues = { ...values };
+
+      for (const f of fieldsToProcess) {
+        if (f.fieldType === "FILE") {
+          const key = f.fieldName;
+          const file = values[key];
+          if (file && typeof file === 'object' && 'name' in file) {
+            const formData = new FormData();
+            formData.append("file", file as Blob);
+            
+            const uploadRes = await fetch("/api/upload", {
+              method: "POST",
+              body: formData,
+            });
+            
+            if (!uploadRes.ok) {
+              const errData = await uploadRes.json();
+              throw new Error(errData.error || `Failed to upload ${f.label}`);
+            }
+            
+            const uploadData = await uploadRes.json();
+            processedValues[key] = JSON.stringify({
+              fileName: uploadData.originalName || file.name,
+              path: uploadData.path,
+            });
+          }
+        }
+      }
+
+      // 2. Submit application using the onSubmit prop
+      // The original instruction provided a fetch call here, but to maintain the component's
+      // contract (onSubmit prop), we'll call onSubmit with the processed values.
+      // If the intent was to replace the onSubmit prop entirely with a direct fetch,
+      // the component's API would need to change.
+      await onSubmit(processedValues);
+
+    } catch (error: any) {
+      showError(error.message || "An unexpected error occurred during submission.");
+    }
   }
 
   if (!form || steps.length === 0) {
@@ -197,11 +247,13 @@ export default function ApplicationFormStepper({
                 <input
                   id={id}
                   name={field.fieldName}
-                  type="tel"
+                  type="text"
+                  inputMode="numeric"
+                  maxLength={10}
                   className={`${commonInputClass} ${field.cssClass || ''}`}
                   placeholder={field.placeholder || ''}
                   value={currentValue}
-                  onChange={(e) => updateValue(field.fieldName, e.target.value)}
+                  onChange={(e) => updateValue(field.fieldName, e.target.value.replace(/\D/g, '').slice(0, 10))}
                 />
               )
               break
@@ -319,6 +371,34 @@ export default function ApplicationFormStepper({
                     )
                   })}
                 </div>
+              )
+              break
+            }
+            case 'TAGS': {
+              const opts = parseOptions(field.options)
+              control = (
+                <TagsInput
+                  value={(currentValue as string[]) || []}
+                  onChange={(tags) => updateValue(field.fieldName, tags)}
+                  options={opts}
+                  placeholder={field.placeholder || "Type to add tags..."}
+                  className="w-full"
+                  id={id}
+                />
+              )
+              break
+            }
+            case 'SKILLS': {
+              const opts = parseOptions(field.options)
+              control = (
+                <SkillsWithRatings
+                  value={(currentValue as SkillRating[]) || []}
+                  onChange={(skills) => updateValue(field.fieldName, skills)}
+                  options={opts}
+                  placeholder={field.placeholder || "Type to add skills..."}
+                  className="w-full"
+                  id={id}
+                />
               )
               break
             }

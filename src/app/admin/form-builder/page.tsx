@@ -707,10 +707,15 @@ function FormBuilderContent() {
       case "PHONE":
         return (
           <input
-            type="tel"
+            type="text"
+            inputMode="numeric"
+            maxLength={10}
             placeholder={field.placeholder}
             className={fieldClass}
             id={field.fieldId || `field-${field.id}`}
+            onInput={(e: React.ChangeEvent<HTMLInputElement>) => {
+              e.target.value = e.target.value.replace(/\D/g, "").slice(0, 10);
+            }}
           />
         );
       case "COUNTRY_CODE":

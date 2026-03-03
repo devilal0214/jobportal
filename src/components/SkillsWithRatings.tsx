@@ -1,7 +1,6 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Star } from 'lucide-react'
 import TagsInput from './TagsInput'
 
 interface SkillRating {
@@ -61,32 +60,32 @@ export default function SkillsWithRatings({
     onChange(updatedRatings)
   }
 
-  const renderStarRating = (skill: string, currentRating: number) => {
+  const renderNumberInput = (skill: string, currentRating: number) => {
     const hasNoRating = currentRating === 0
     
     return (
-      <div className="flex items-center space-x-1">
-        {[1, 2, 3, 4, 5].map((star) => (
-          <button
-            key={star}
-            type="button"
-            onClick={() => handleRatingChange(skill, star)}
-            className="focus:outline-none"
-            disabled={disabled}
-          >
-            <Star
-              className={`h-4 w-4 ${
-                star <= currentRating 
-                  ? 'text-yellow-400 fill-current' 
-                  : hasNoRating 
-                    ? 'text-red-300 hover:text-red-400' 
-                    : 'text-gray-300'
-              } ${disabled ? 'opacity-50' : 'hover:text-yellow-300'}`}
-            />
-          </button>
-        ))}
-        <span className={`text-xs ml-2 ${hasNoRating ? 'text-red-500 font-medium' : 'text-gray-500'}`}>
-          {hasNoRating ? 'Required' : `${currentRating}/5`}
+      <div className="flex items-center space-x-2">
+        <input
+          type="number"
+          min="0.5"
+          max="10"
+          step="0.5"
+          disabled={disabled}
+          value={hasNoRating ? '' : currentRating}
+          onChange={(e) => {
+            let val = parseFloat(e.target.value)
+            if (isNaN(val)) val = 0
+            if (val > 10) val = 10
+            if (val < 0) val = 0
+            handleRatingChange(skill, val)
+          }}
+          className={`w-20 px-2 py-1 text-sm border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+            hasNoRating ? 'border-red-300 bg-red-50' : 'border-gray-300 bg-white'
+          } ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
+          placeholder="e.g. 7.5"
+        />
+        <span className={`text-sm ${hasNoRating ? 'text-red-500 font-medium' : 'text-gray-500'}`}>
+          {hasNoRating ? 'Required' : '/ 10'}
         </span>
       </div>
     )
@@ -118,13 +117,13 @@ export default function SkillsWithRatings({
                 <span className="text-sm font-medium text-gray-900">
                   {skillRating.skill}
                 </span>
-                {renderStarRating(skillRating.skill, skillRating.rating)}
+                {renderNumberInput(skillRating.skill, skillRating.rating)}
               </div>
             )
           })}
           {value.some(s => s.rating === 0) && (
             <p className="text-xs text-red-600 mt-2">
-              Please rate all skills before submitting the application.
+              Please rate all skills out of 10 before submitting the application.
             </p>
           )}
         </div>

@@ -282,10 +282,12 @@ export default function EmbedJobPage() {
       case "PHONE":
         return (
           <input
-            type="tel"
+            type="text"
+            inputMode="numeric"
+            maxLength={10}
             id={field.fieldId || field.id}
             value={value as string}
-            onChange={(e) => updateFormData(field.id, e.target.value)}
+            onChange={(e) => updateFormData(field.id, e.target.value.replace(/\D/g, "").slice(0, 10))}
             placeholder={field.placeholder}
             className={base}
             required={field.isRequired}

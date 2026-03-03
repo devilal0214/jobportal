@@ -683,17 +683,18 @@ export default function ApplicationDetailPage({
       if (field.value.startsWith("{")) {
         try {
           const fileData = JSON.parse(field.value);
-          if (fileData.fileName && fileData.originalName) {
+          if (fileData.fileName && fileData.path) {
+            const downloadTarget = fileData.path.split("/").pop() || fileData.fileName;
             return (
               <div className="flex items-center justify-between py-2">
                 <span className="text-gray-700 text-sm">{field.label}</span>
                 <a
-                  href={`/api/download/${encodeURIComponent(fileData.fileName)}`}
+                  href={`/api/download/${encodeURIComponent(downloadTarget)}`}
                   className="text-blue-600 hover:text-blue-800 text-sm flex items-center space-x-1"
                   download
                 >
                   <Download className="h-4 w-4" />
-                  <span>{fileData.originalName}</span>
+                  <span>{fileData.fileName}</span>
                 </a>
               </div>
             );
@@ -753,16 +754,8 @@ export default function ApplicationDetailPage({
           <span className="text-sm font-medium text-gray-900 min-w-0 flex-1">
             {skillData.skill}
           </span>
-          <div className="flex">
-            {[1, 2, 3, 4, 5].map((star) => (
-              <Star
-                key={star}
-                className={`h-4 w-4 ${star <= skillData.rating ? "text-yellow-400 fill-current" : "text-gray-300"}`}
-              />
-            ))}
-          </div>
-          <span className="text-xs text-gray-500 whitespace-nowrap">
-            ({skillData.rating}/5)
+          <span className="text-xs font-semibold text-gray-500 whitespace-nowrap bg-gray-100 px-2 py-1 rounded-full">
+            {skillData.rating}/10
           </span>
         </div>
       );
@@ -811,19 +804,9 @@ export default function ApplicationDetailPage({
           {skillName}
         </span>
         {rating > 0 ? (
-          <>
-            <div className="flex">
-              {[1, 2, 3, 4, 5].map((star) => (
-                <Star
-                  key={star}
-                  className={`h-4 w-4 ${star <= rating ? "text-yellow-400 fill-current" : "text-gray-300"}`}
-                />
-              ))}
-            </div>
-            <span className="text-xs text-gray-500 whitespace-nowrap">
-              ({rating}/5)
-            </span>
-          </>
+          <span className="text-xs font-semibold text-gray-500 whitespace-nowrap bg-gray-100 px-2 py-1 rounded-full">
+            {rating}/10
+          </span>
         ) : (
           <span className="text-xs text-gray-400">No rating provided</span>
         )}
@@ -1241,9 +1224,20 @@ export default function ApplicationDetailPage({
                         {qa.question}
                       </h4>
                       <div className="bg-gray-50 rounded-lg p-4">
-                        <p className="text-gray-700 leading-relaxed whitespace-pre-wrap">
-                          {qa.answer}
-                        </p>
+                        {typeof qa.answer === "string" && qa.answer.startsWith("http") ? (
+                          <a
+                            href={qa.answer}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-blue-600 hover:text-blue-800 break-all leading-relaxed whitespace-pre-wrap"
+                          >
+                            {qa.answer}
+                          </a>
+                        ) : (
+                          <p className="text-gray-700 leading-relaxed whitespace-pre-wrap">
+                            {qa.answer}
+                          </p>
+                        )}
                       </div>
                     </div>
                   ))
