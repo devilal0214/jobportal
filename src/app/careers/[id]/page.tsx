@@ -7,7 +7,6 @@ import Image from "next/image";
 import {
   MapPin,
   Briefcase,
-  DollarSign,
   Clock,
   Calendar,
   ArrowLeft,
@@ -50,6 +49,7 @@ interface Job {
   department?: string | null;
   location?: string | null;
   salary?: string | null;
+  showSalary?: boolean;
   experienceLevel?: string | null;
   status: string;
   createdAt: string;
@@ -511,17 +511,12 @@ export default function CareerDetailPage() {
                   Apply Now
                 </BrandButton>
               ) : (
-                <>
-                  <BrandButton
-                    disabled
-                    className="w-full mb-2"
-                  >
-                    Apply Now
-                  </BrandButton>
-                  <p className="text-xs text-red-500">
-                    Application form is not configured for this job.
-                  </p>
-                </>
+                <BrandButton
+                  disabled
+                  className="w-full mb-3"
+                >
+                  Apply Now
+                </BrandButton>
               )}
 
               {/* Share - Use details settings if enabled, otherwise use default */}

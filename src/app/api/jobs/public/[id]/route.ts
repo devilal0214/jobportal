@@ -42,6 +42,7 @@ export async function GET(
       department: job.department,
       location: job.location,
       salary: job.salary,
+      showSalary: job.showSalary,
       experienceLevel: job.experienceLevel,
       status: job.status,
       createdAt: job.createdAt.toISOString(),

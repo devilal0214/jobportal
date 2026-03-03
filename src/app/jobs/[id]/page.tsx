@@ -25,6 +25,8 @@ interface Job {
   description: string;
   location?: string;
   position?: string;
+  salary?: string;
+  showSalary?: boolean;
   status: string;
   createdAt: string;
   applicationsCount?: number;
@@ -421,6 +423,12 @@ export default function JobDetailPage({
                       Posted {new Date(job.createdAt).toLocaleDateString()}
                     </span>
                   </div>
+                  {job.salary && job.showSalary && (
+                    <div className="flex items-center">
+                      <span className="mr-2 text-lg font-semibold">₹</span>
+                      <span>{job.salary}</span>
+                    </div>
+                  )}
                 </div>
                 <div className="flex items-center space-x-3">
                   <span

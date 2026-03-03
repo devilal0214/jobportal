@@ -79,7 +79,7 @@ export default function SkillsWithRatings({
             if (val < 0) val = 0
             handleRatingChange(skill, val)
           }}
-          className={`w-20 px-2 py-1 text-sm border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+          className={`w-20 px-2 py-1 text-sm text-gray-900 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
             hasNoRating ? 'border-red-300 bg-red-50' : 'border-gray-300 bg-white'
           } ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
           placeholder="e.g. 7.5"
