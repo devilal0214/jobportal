@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
-import { Briefcase, MapPin, Clock, Send } from "lucide-react";
+import { Briefcase, MapPin, Clock, Send, Upload } from "lucide-react";
 import TagsInput from "@/components/TagsInput";
 import SkillsWithRatings from "@/components/SkillsWithRatings";
 
@@ -401,12 +401,21 @@ export default function EmbedJobPage() {
             required={field.isRequired}
           />
         );
-      case "FILE":
+      case "FILE": {
+        const fileName = value as string;
         return (
-          <div className="space-y-2">
+          <label className="border-2 border-dashed border-gray-300 rounded-md p-6 flex flex-col items-center justify-center cursor-pointer hover:border-blue-500 hover:bg-gray-50 transition-all min-h-[120px]">
+            <Upload className="h-8 w-8 text-gray-400 mb-3" />
+            <p className="text-sm font-medium text-gray-900">
+              {fileName || field.placeholder || 'Choose file…'}
+            </p>
+            <p className="text-xs text-gray-500 mt-1">
+              PDF, DOC, DOCX (Max 2MB)
+            </p>
             <input
               type="file"
               id={field.fieldId || field.id}
+              className="hidden"
               onChange={(e) => {
                 const file = e.target.files?.[0];
                 if (file) {
@@ -415,16 +424,11 @@ export default function EmbedJobPage() {
                 }
               }}
               accept=".pdf,.doc,.docx"
-              className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
               required={field.isRequired}
             />
-            {value && (
-              <p className="text-sm text-gray-600">
-                Selected: {value as string}
-              </p>
-            )}
-          </div>
+          </label>
         );
+      }
       case "SKILLS":
         return (
           <SkillsWithRatings

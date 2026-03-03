@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useState, useMemo } from 'react'
+import { Upload } from 'lucide-react'
 import TagsInput from './TagsInput'
 import SkillsWithRatings from './SkillsWithRatings'
 
@@ -402,28 +403,27 @@ export default function ApplicationFormStepper({
               )
               break
             }
-            case 'FILE':
+            case 'FILE': {
+              const file = values[field.fieldName] as File | null;
               control = (
-                <div className={`border-2 border-dashed border-gray-300 rounded-md p-6 text-center ${field.cssClass || ''}`}>
+                <label className={`border-2 border-dashed border-gray-300 rounded-md p-6 flex flex-col items-center justify-center cursor-pointer hover:border-blue-500 hover:bg-gray-50 transition-all min-h-[120px] ${field.cssClass || ''}`}>
+                  <Upload className="h-8 w-8 text-gray-400 mb-3" />
+                  <p className="text-sm font-medium text-gray-900">
+                    {file ? file.name : field.placeholder || 'Choose file…'}
+                  </p>
+                  <p className="text-xs text-gray-500 mt-1">PDF, DOC, DOCX (Max 2MB)</p>
                   <input
                     id={id}
                     name={field.fieldName}
                     type="file"
                     className="hidden"
                     onChange={(e) => updateValue(field.fieldName, e.target.files?.[0] || null)}
+                    accept=".pdf,.doc,.docx"
                   />
-                  <label htmlFor={id} className="cursor-pointer text-sm text-gray-700">
-                    Choose file…
-                  </label>
-                  <div className="text-xs text-gray-500 mt-1">PDF, DOC, DOCX (Max 2MB)</div>
-                  {values[field.fieldName] && (
-                    <div className="text-xs mt-2 text-gray-700">
-                      {(values[field.fieldName] as File).name}
-                    </div>
-                  )}
-                </div>
+                </label>
               )
               break
+            }
             // PAGE_BREAK does not render here (we already split on it)
             default:
               control = (

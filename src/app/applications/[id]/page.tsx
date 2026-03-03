@@ -999,7 +999,7 @@ export default function ApplicationDetailPage({
             </div>
 
             {/* Basic Info */}
-            <div className="bg-white rounded-lg p-6 shadow-sm border">
+            <div className="bg-white rounded-lg p-6 shadow-sm border hidden">
               <h3 className="text-lg font-semibold text-gray-900 mb-4">
                 Basic Info
               </h3>
@@ -1253,7 +1253,7 @@ export default function ApplicationDetailPage({
 
             {/* File Uploads */}
             {fileFields.length > 0 && (
-              <div className="bg-white rounded-lg p-6 shadow-sm border">
+              <div className="bg-white rounded-lg p-6 shadow-sm border hidden">
                 <h3 className="text-lg font-semibold text-gray-900 mb-4">
                   Uploaded Files
                 </h3>

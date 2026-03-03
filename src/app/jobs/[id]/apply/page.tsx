@@ -453,34 +453,30 @@ export default function ApplyPage() {
             id={f.fieldId || f.id}
           />
         );
-      case "FILE":
+      case "FILE": {
+        const file = getVal(f) as File | null;
         return (
-          <div
-            className={`border-2 border-dashed border-gray-300 rounded-md p-6 text-center ${
+          <label
+            className={`border-2 border-dashed border-gray-300 rounded-md p-6 flex flex-col items-center justify-center cursor-pointer hover:border-blue-500 hover:bg-gray-50 transition-all min-h-[120px] ${
               f.cssClass || ""
             }`}
           >
-            <Upload className="mx-auto h-8 w-8 text-gray-400" />
-            <div className="mt-2">
-              <label className="text-sm font-medium text-gray-900 cursor-pointer inline-flex items-center gap-2">
-                <input
-                  type="file"
-                  className="hidden"
-                  onChange={(e) => setVal(f, e.target.files?.[0] || null)}
-                />
-                Choose file…
-              </label>
-              <p className="text-xs text-gray-500 mt-1">
-                PDF, DOC, DOCX (Max 2MB)
-              </p>
-              {getVal(f) && (
-                <p className="text-xs text-gray-600 mt-2">
-                  Selected: {(getVal(f) as File).name}
-                </p>
-              )}
-            </div>
-          </div>
+            <Upload className="h-8 w-8 text-gray-400 mb-3" />
+            <p className="text-sm font-medium text-gray-900">
+              {file ? file.name : "Choose file…"}
+            </p>
+            <p className="text-xs text-gray-500 mt-1">
+              PDF, DOC, DOCX (Max 2MB)
+            </p>
+            <input
+              type="file"
+              className="hidden"
+              onChange={(e) => setVal(f, e.target.files?.[0] || null)}
+              accept=".pdf,.doc,.docx"
+            />
+          </label>
         );
+      }
       default:
         return null;
     }
