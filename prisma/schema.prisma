@@ -90,6 +90,7 @@ model Job {
   department   String?
   location     String?
   salary       String?
+  showSalary   Boolean   @default(true) // Toggle to show/hide salary on details page
   requirements String?
   experienceLevel String?
   status       JobStatus @default(ACTIVE)

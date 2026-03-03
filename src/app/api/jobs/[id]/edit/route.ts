@@ -46,7 +46,7 @@ export async function PUT(
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
 
-    const { title, description, position, location, status, formId, imageUrl, bannerImageUrl, salary } = await request.json()
+    const { title, description, position, location, status, formId, imageUrl, bannerImageUrl, salary, showSalary } = await request.json()
 
     if (!title || !description) {
       return NextResponse.json(
@@ -76,6 +76,9 @@ export async function PUT(
     }
     if (salary !== undefined) {
       updateData.salary = salary || null
+    }
+    if (showSalary !== undefined) {
+      updateData.showSalary = showSalary
     }
 
     const job = await prisma.job.update({

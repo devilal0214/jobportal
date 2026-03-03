@@ -487,7 +487,7 @@ export default function CareerDetailPage() {
                 Interested?
               </h3>
 
-              {job.salary && (
+              {job.salary && job.showSalary && (
                 <div className="mb-4 pb-4 border-b border-gray-200">
                   <div className="flex items-center text-gray-600 mb-2">
                     {/* <DollarSign className="h-5 w-5 mr-2 text-indigo-600" /> */}

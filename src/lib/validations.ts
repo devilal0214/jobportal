@@ -24,6 +24,7 @@ export const jobSchema = z.object({
   assigneeId: z.string().optional(),
   formId: z.string().optional(),
   salary: z.string().optional(),
+  showSalary: z.boolean().optional(),
   imageUrl: z.string().optional(),
   bannerImageUrl: z.string().optional(),
 })

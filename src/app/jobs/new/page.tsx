@@ -28,6 +28,7 @@ export default function NewJobPage() {
     imageUrl: "",
     bannerImageUrl: "",
     salary: "",
+    showSalary: true,
   });
   const { showWarning } = useAlert();
   const [imageFile, setImageFile] = useState<File | null>(null);
@@ -355,6 +356,24 @@ export default function NewJobPage() {
                   Enter the salary range with currency symbol (e.g., ₹50,000 -
                   ₹80,000). Leave blank if not applicable.
                 </p>
+                <div className="mt-3">
+                  <label className="flex items-center">
+                    <input
+                      type="checkbox"
+                      checked={formData.showSalary}
+                      onChange={(e) =>
+                        setFormData((prev) => ({
+                          ...prev,
+                          showSalary: e.target.checked,
+                        }))
+                      }
+                      className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
+                    />
+                    <span className="ml-2 text-sm text-gray-700">
+                      Show salary on job details page
+                    </span>
+                  </label>
+                </div>
               </div>
 
               <div>
