@@ -1,6 +1,28 @@
 # Quick Production Migration - Add showSalary Field
 
-## SSH Commands (Copy & Paste)
+## Method 1: Using Prisma (Recommended - No SQLite3 needed)
+
+```bash
+# 1. Navigate to project
+cd /path/to/your/jobportal
+
+# 2. Backup database (IMPORTANT!)
+cp prisma/dev.db prisma/dev.db.backup-$(date +%Y%m%d-%H%M%S)
+
+# 3. Pull latest code with updated schema
+git pull origin main
+
+# 4. Sync database with schema (safe - adds column only)
+npx prisma db push
+
+# 5. Restart PM2
+pm2 restart jobs-site
+
+# 6. Check logs
+pm2 logs jobs-site --lines 20
+```
+
+## Method 2: Using SQLite3 CLI (If installed)
 
 ```bash
 # 1. Backup database
@@ -20,11 +42,24 @@ pm2 restart jobs-site
 pm2 logs jobs-site --lines 20
 ```
 
-## That's it!
-- **No need to run `npx prisma generate`** - Your deployed code already has the regenerated Prisma client
-- **No need to stop the app** before running SQL (SQLite handles it)
+## Method 3: Install SQLite3 (If you have sudo access)
+
+```bash
+# CentOS/RHEL
+sudo yum install sqlite
+
+# Ubuntu/Debian
+sudo apt-get install sqlite3
+
+# Then use Method 2 above
+```
+
+## Important Notes
+- **Method 1 is recommended** - `npx prisma db push` is safe for adding columns with defaults
+- **No data loss** - This is an additive change (adds column with default value)
+- `npx prisma db push` does NOT reset data, it syncs schema changes only
 - Default value is `1` (TRUE) so all existing jobs will show salary
-- Just run SQL + restart = done!
+- Your code already has the updated schema.prisma from git pull
 
 ## Rollback (if needed)
 ```bash
