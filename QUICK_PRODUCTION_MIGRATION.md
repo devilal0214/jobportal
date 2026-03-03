@@ -21,9 +21,10 @@ pm2 logs jobs-site --lines 20
 ```
 
 ## That's it!
-- No need to run `npx prisma generate` (your code already has it)
-- No need to stop the app before running SQL (SQLite handles it)
+- **No need to run `npx prisma generate`** - Your deployed code already has the regenerated Prisma client
+- **No need to stop the app** before running SQL (SQLite handles it)
 - Default value is `1` (TRUE) so all existing jobs will show salary
+- Just run SQL + restart = done!
 
 ## Rollback (if needed)
 ```bash

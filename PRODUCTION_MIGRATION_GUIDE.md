@@ -84,9 +84,7 @@ pm2 restart jobs-site
 
 ## Verification Checklist
 - [ ] Database backup created
-- [ ] Application stopped
 - [ ] Migration executed successfully
-- [ ] Prisma client regenerated
 - [ ] Application restarted
 - [ ] Logs show no errors
 - [ ] Job details page loads correctly
