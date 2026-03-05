@@ -6,6 +6,13 @@ import Underline from "@tiptap/extension-underline";
 import TextAlign from "@tiptap/extension-text-align";
 import { Extension } from "@tiptap/core";
 import { useEffect, useState } from "react";
+import { 
+  Bold, Italic, Strikethrough, Underline as UnderlineIcon, 
+  Heading1, Heading2, Heading3, Type, List, ListOrdered, 
+  AlignLeft, AlignCenter, AlignRight, AlignJustify,
+  IndentDecrease, IndentIncrease, Code, Quote, Minus, CornerDownLeft,
+  Undo, Redo
+} from 'lucide-react';
 
 // Custom Indent Extension
 const IndentExtension = Extension.create({
@@ -218,56 +225,56 @@ const TiptapEditor = ({
                 type="button"
                 onClick={() => editor.chain().focus().toggleBold().run()}
                 disabled={!editor.can().chain().focus().toggleBold().run()}
-                className={`px-3 py-2 text-xs font-medium border border-gray-400 rounded focus:outline-none focus:ring-2 focus:ring-indigo-500 shadow-sm ${
+                className={`px-2.5 py-2 text-xs font-medium border border-gray-400 rounded focus:outline-none focus:ring-2 focus:ring-indigo-500 shadow-sm flex items-center justify-center ${
                   editor.isActive("bold")
                     ? "bg-indigo-100 text-indigo-700 border-indigo-300"
                     : "bg-white text-gray-700 hover:bg-gray-50"
                 }`}
                 title="Bold (Ctrl+B)"
               >
-                <strong>B</strong>
+                <Bold className="h-4 w-4" />
               </button>
 
               <button
                 type="button"
                 onClick={() => editor.chain().focus().toggleItalic().run()}
                 disabled={!editor.can().chain().focus().toggleItalic().run()}
-                className={`px-3 py-2 text-xs font-medium border border-gray-400 rounded focus:outline-none focus:ring-2 focus:ring-indigo-500 shadow-sm ${
+                className={`px-2.5 py-2 text-xs font-medium border border-gray-400 rounded focus:outline-none focus:ring-2 focus:ring-indigo-500 shadow-sm flex items-center justify-center ${
                   editor.isActive("italic")
                     ? "bg-indigo-100 text-indigo-700 border-indigo-300"
                     : "bg-white text-gray-700 hover:bg-gray-50"
                 }`}
                 title="Italic (Ctrl+I)"
               >
-                <em>I</em>
+                <Italic className="h-4 w-4" />
               </button>
 
               <button
                 type="button"
                 onClick={() => editor.chain().focus().toggleStrike().run()}
                 disabled={!editor.can().chain().focus().toggleStrike().run()}
-                className={`px-3 py-2 text-xs font-medium border border-gray-400 rounded focus:outline-none focus:ring-2 focus:ring-indigo-500 shadow-sm ${
+                className={`px-2.5 py-2 text-xs font-medium border border-gray-400 rounded focus:outline-none focus:ring-2 focus:ring-indigo-500 shadow-sm flex items-center justify-center ${
                   editor.isActive("strike")
                     ? "bg-indigo-100 text-indigo-700 border-indigo-300"
                     : "bg-white text-gray-700 hover:bg-gray-50"
                 }`}
                 title="Strikethrough"
               >
-                <s>S</s>
+                <Strikethrough className="h-4 w-4" />
               </button>
 
               <button
                 type="button"
                 onClick={() => editor.chain().focus().toggleUnderline().run()}
                 disabled={!editor.can().chain().focus().toggleUnderline().run()}
-                className={`px-3 py-2 text-xs font-medium border border-gray-400 rounded focus:outline-none focus:ring-2 focus:ring-indigo-500 shadow-sm ${
+                className={`px-2.5 py-2 text-xs font-medium border border-gray-400 rounded focus:outline-none focus:ring-2 focus:ring-indigo-500 shadow-sm flex items-center justify-center ${
                   editor.isActive("underline")
                     ? "bg-indigo-100 text-indigo-700 border-indigo-300"
                     : "bg-white text-gray-700 hover:bg-gray-50"
                 }`}
                 title="Underline (Ctrl+U)"
               >
-                <u>U</u>
+                <UnderlineIcon className="h-4 w-4" />
               </button>
 
               <div className="w-px h-6 bg-gray-400 mx-1"></div>
@@ -277,14 +284,14 @@ const TiptapEditor = ({
                 onClick={() =>
                   editor.chain().focus().toggleHeading({ level: 1 }).run()
                 }
-                className={`px-3 py-2 text-xs font-medium border border-gray-400 rounded focus:outline-none focus:ring-2 focus:ring-indigo-500 shadow-sm ${
+                className={`px-2.5 py-2 text-xs font-medium border border-gray-400 rounded focus:outline-none focus:ring-2 focus:ring-indigo-500 shadow-sm flex items-center justify-center ${
                   editor.isActive("heading", { level: 1 })
                     ? "bg-indigo-100 text-indigo-700 border-indigo-300"
                     : "bg-white text-gray-700 hover:bg-gray-50"
                 }`}
                 title="Heading 1"
               >
-                H1
+                <Heading1 className="h-4 w-4" />
               </button>
 
               <button
@@ -292,14 +299,14 @@ const TiptapEditor = ({
                 onClick={() =>
                   editor.chain().focus().toggleHeading({ level: 2 }).run()
                 }
-                className={`px-3 py-2 text-xs font-medium border border-gray-400 rounded focus:outline-none focus:ring-2 focus:ring-indigo-500 shadow-sm ${
+                className={`px-2.5 py-2 text-xs font-medium border border-gray-400 rounded focus:outline-none focus:ring-2 focus:ring-indigo-500 shadow-sm flex items-center justify-center ${
                   editor.isActive("heading", { level: 2 })
                     ? "bg-indigo-100 text-indigo-700 border-indigo-300"
                     : "bg-white text-gray-700 hover:bg-gray-50"
                 }`}
                 title="Heading 2"
               >
-                H2
+                <Heading2 className="h-4 w-4" />
               </button>
 
               <button
@@ -307,27 +314,27 @@ const TiptapEditor = ({
                 onClick={() =>
                   editor.chain().focus().toggleHeading({ level: 3 }).run()
                 }
-                className={`px-3 py-2 text-xs font-medium border border-gray-400 rounded focus:outline-none focus:ring-2 focus:ring-indigo-500 shadow-sm ${
+                className={`px-2.5 py-2 text-xs font-medium border border-gray-400 rounded focus:outline-none focus:ring-2 focus:ring-indigo-500 shadow-sm flex items-center justify-center ${
                   editor.isActive("heading", { level: 3 })
                     ? "bg-indigo-100 text-indigo-700 border-indigo-300"
                     : "bg-white text-gray-700 hover:bg-gray-50"
                 }`}
                 title="Heading 3"
               >
-                H3
+                <Heading3 className="h-4 w-4" />
               </button>
 
               <button
                 type="button"
                 onClick={() => editor.chain().focus().setParagraph().run()}
-                className={`px-3 py-2 text-xs font-medium border border-gray-400 rounded focus:outline-none focus:ring-2 focus:ring-indigo-500 shadow-sm ${
+                className={`px-2.5 py-2 text-xs font-medium border border-gray-400 rounded focus:outline-none focus:ring-2 focus:ring-indigo-500 shadow-sm flex items-center justify-center ${
                   editor.isActive("paragraph")
                     ? "bg-indigo-100 text-indigo-700 border-indigo-300"
                     : "bg-white text-gray-700 hover:bg-gray-50"
                 }`}
                 title="Paragraph"
               >
-                P
+                <Type className="h-4 w-4" />
               </button>
 
               <div className="w-px h-6 bg-gray-400 mx-1"></div>
@@ -335,14 +342,14 @@ const TiptapEditor = ({
               <button
                 type="button"
                 onClick={() => editor.chain().focus().toggleBulletList().run()}
-                className={`px-3 py-2 text-xs font-medium border border-gray-400 rounded focus:outline-none focus:ring-2 focus:ring-indigo-500 shadow-sm ${
+                className={`px-2.5 py-2 text-xs font-medium border border-gray-400 rounded focus:outline-none focus:ring-2 focus:ring-indigo-500 shadow-sm flex items-center justify-center ${
                   editor.isActive("bulletList")
                     ? "bg-indigo-100 text-indigo-700 border-indigo-300"
                     : "bg-white text-gray-700 hover:bg-gray-50"
                 }`}
                 title="Bullet List"
               >
-                •
+                <List className="h-4 w-4" />
               </button>
 
               <div className="w-px h-6 bg-gray-400 mx-1"></div>
@@ -351,19 +358,19 @@ const TiptapEditor = ({
               <button
                 type="button"
                 onClick={() => editor.chain().focus().outdent().run()}
-                className="px-3 py-2 text-xs font-medium bg-white text-gray-700 border border-gray-400 rounded hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 shadow-sm"
+                className="px-2.5 py-2 text-xs font-medium bg-white text-gray-700 border border-gray-400 rounded hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 shadow-sm flex items-center justify-center"
                 title="Decrease Indent (Shift+Tab)"
               >
-                ←
+                <IndentDecrease className="h-4 w-4" />
               </button>
 
               <button
                 type="button"
                 onClick={() => editor.chain().focus().indent().run()}
-                className="px-3 py-2 text-xs font-medium bg-white text-gray-700 border border-gray-400 rounded hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 shadow-sm"
+                className="px-2.5 py-2 text-xs font-medium bg-white text-gray-700 border border-gray-400 rounded hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 shadow-sm flex items-center justify-center"
                 title="Increase Indent (Tab)"
               >
-                →
+                <IndentIncrease className="h-4 w-4" />
               </button>
 
               <div className="w-px h-6 bg-gray-400 mx-1"></div>
@@ -373,96 +380,96 @@ const TiptapEditor = ({
                   onClick={() =>
                     editor.chain().focus().setTextAlign("left").run()
                   }
-                  className={`px-2 py-2 text-xs font-medium border border-gray-400 rounded focus:outline-none focus:ring-2 focus:ring-indigo-500 shadow-sm ${
+                  className={`px-2 py-2 text-xs font-medium border border-gray-400 rounded focus:outline-none focus:ring-2 focus:ring-indigo-500 shadow-sm flex items-center justify-center ${
                     editor.isActive({ textAlign: "left" })
                       ? "bg-indigo-100 text-indigo-700 border-indigo-300"
                       : "bg-white text-gray-700 hover:bg-gray-50"
                   }`}
                   title="Align left"
                 >
-                  L
+                  <AlignLeft className="h-4 w-4" />
                 </button>
                 <button
                   type="button"
                   onClick={() =>
                     editor.chain().focus().setTextAlign("center").run()
                   }
-                  className={`px-2 py-2 text-xs font-medium border border-gray-400 rounded focus:outline-none focus:ring-2 focus:ring-indigo-500 shadow-sm ${
+                  className={`px-2 py-2 text-xs font-medium border border-gray-400 rounded focus:outline-none focus:ring-2 focus:ring-indigo-500 shadow-sm flex items-center justify-center ${
                     editor.isActive({ textAlign: "center" })
                       ? "bg-indigo-100 text-indigo-700 border-indigo-300"
                       : "bg-white text-gray-700 hover:bg-gray-50"
                   }`}
                   title="Align center"
                 >
-                  C
+                  <AlignCenter className="h-4 w-4" />
                 </button>
                 <button
                   type="button"
                   onClick={() =>
                     editor.chain().focus().setTextAlign("right").run()
                   }
-                  className={`px-2 py-2 text-xs font-medium border border-gray-400 rounded focus:outline-none focus:ring-2 focus:ring-indigo-500 shadow-sm ${
+                  className={`px-2 py-2 text-xs font-medium border border-gray-400 rounded focus:outline-none focus:ring-2 focus:ring-indigo-500 shadow-sm flex items-center justify-center ${
                     editor.isActive({ textAlign: "right" })
                       ? "bg-indigo-100 text-indigo-700 border-indigo-300"
                       : "bg-white text-gray-700 hover:bg-gray-50"
                   }`}
                   title="Align right"
                 >
-                  R
+                  <AlignRight className="h-4 w-4" />
                 </button>
                 <button
                   type="button"
                   onClick={() =>
                     editor.chain().focus().setTextAlign("justify").run()
                   }
-                  className={`px-2 py-2 text-xs font-medium border border-gray-400 rounded focus:outline-none focus:ring-2 focus:ring-indigo-500 shadow-sm ${
+                  className={`px-2 py-2 text-xs font-medium border border-gray-400 rounded focus:outline-none focus:ring-2 focus:ring-indigo-500 shadow-sm flex items-center justify-center ${
                     editor.isActive({ textAlign: "justify" })
                       ? "bg-indigo-100 text-indigo-700 border-indigo-300"
                       : "bg-white text-gray-700 hover:bg-gray-50"
                   }`}
                   title="Justify"
                 >
-                  J
+                  <AlignJustify className="h-4 w-4" />
                 </button>
               </div>
 
               <button
                 type="button"
                 onClick={() => editor.chain().focus().toggleOrderedList().run()}
-                className={`px-3 py-2 text-xs font-medium border border-gray-400 rounded focus:outline-none focus:ring-2 focus:ring-indigo-500 shadow-sm ${
+                className={`px-2.5 py-2 text-xs font-medium border border-gray-400 rounded focus:outline-none focus:ring-2 focus:ring-indigo-500 shadow-sm flex items-center justify-center ${
                   editor.isActive("orderedList")
                     ? "bg-indigo-100 text-indigo-700 border-indigo-300"
                     : "bg-white text-gray-700 hover:bg-gray-50"
                 }`}
                 title="Numbered List"
               >
-                1.
+                <ListOrdered className="h-4 w-4" />
               </button>
 
               <button
                 type="button"
                 onClick={() => editor.chain().focus().toggleCodeBlock().run()}
-                className={`px-3 py-2 text-xs font-medium border border-gray-400 rounded focus:outline-none focus:ring-2 focus:ring-indigo-500 shadow-sm ${
+                className={`px-2.5 py-2 text-xs font-medium border border-gray-400 rounded focus:outline-none focus:ring-2 focus:ring-indigo-500 shadow-sm flex items-center justify-center ${
                   editor.isActive("codeBlock")
                     ? "bg-indigo-100 text-indigo-700 border-indigo-300"
                     : "bg-white text-gray-700 hover:bg-gray-50"
                 }`}
                 title="Code Block"
               >
-                {"</>"}
+                <Code className="h-4 w-4" />
               </button>
 
               <button
                 type="button"
                 onClick={() => editor.chain().focus().toggleBlockquote().run()}
-                className={`px-3 py-2 text-xs font-medium border border-gray-400 rounded focus:outline-none focus:ring-2 focus:ring-indigo-500 shadow-sm ${
+                className={`px-2.5 py-2 text-xs font-medium border border-gray-400 rounded focus:outline-none focus:ring-2 focus:ring-indigo-500 shadow-sm flex items-center justify-center ${
                   editor.isActive("blockquote")
                     ? "bg-indigo-100 text-indigo-700 border-indigo-300"
                     : "bg-white text-gray-700 hover:bg-gray-50"
                 }`}
                 title="Quote"
               >
-                &quot;
+                <Quote className="h-4 w-4" />
               </button>
 
               <div className="w-px h-6 bg-gray-400 mx-1"></div>
@@ -470,19 +477,19 @@ const TiptapEditor = ({
               <button
                 type="button"
                 onClick={() => editor.chain().focus().setHorizontalRule().run()}
-                className="px-3 py-2 text-xs font-medium bg-white text-gray-700 border border-gray-400 rounded hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 shadow-sm"
+                className="px-2.5 py-2 text-xs font-medium bg-white text-gray-700 border border-gray-400 rounded hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 shadow-sm flex items-center justify-center"
                 title="Horizontal Line"
               >
-                ―
+                <Minus className="h-4 w-4" />
               </button>
 
               <button
                 type="button"
                 onClick={() => editor.chain().focus().setHardBreak().run()}
-                className="px-3 py-2 text-xs font-medium bg-white text-gray-700 border border-gray-400 rounded hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 shadow-sm"
+                className="px-2.5 py-2 text-xs font-medium bg-white text-gray-700 border border-gray-400 rounded hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 shadow-sm flex items-center justify-center"
                 title="Line Break"
               >
-                ↵
+                <CornerDownLeft className="h-4 w-4" />
               </button>
 
               <div className="w-px h-6 bg-gray-400 mx-1"></div>
@@ -491,20 +498,20 @@ const TiptapEditor = ({
                 type="button"
                 onClick={() => editor.chain().focus().undo().run()}
                 disabled={!editor.can().chain().focus().undo().run()}
-                className="px-3 py-2 text-xs font-medium bg-white text-gray-700 border border-gray-400 rounded hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                className="px-2.5 py-2 text-xs font-medium bg-white text-gray-700 border border-gray-400 rounded hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 shadow-sm disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
                 title="Undo (Ctrl+Z)"
               >
-                ↶
+                <Undo className="h-4 w-4" />
               </button>
 
               <button
                 type="button"
                 onClick={() => editor.chain().focus().redo().run()}
                 disabled={!editor.can().chain().focus().redo().run()}
-                className="px-3 py-2 text-xs font-medium bg-white text-gray-700 border border-gray-400 rounded hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                className="px-2.5 py-2 text-xs font-medium bg-white text-gray-700 border border-gray-400 rounded hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 shadow-sm disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
                 title="Redo (Ctrl+Y)"
               >
-                ↷
+                <Redo className="h-4 w-4" />
               </button>
             </>
           )}

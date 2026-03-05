@@ -643,6 +643,7 @@ export default function EditJobPage({
                     alt="Job preview"
                     fill
                     className="object-cover"
+                    unoptimized
                   />
                   <button
                     type="button"
@@ -706,6 +707,7 @@ export default function EditJobPage({
                     alt="Banner preview"
                     fill
                     className="object-cover"
+                    unoptimized
                   />
                   <button
                     type="button"
