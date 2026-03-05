@@ -352,7 +352,7 @@ export default function CareerApplyPage() {
 
       for (const f of fieldsToProcess) {
         if (f.fieldType === "FILE") {
-          const key = f.fieldId || f.id;
+          const key = keyFor(f);  // Use the same keyFor helper for consistency
           const file = formValues[key];
           console.log(`[Apply] Processing file field: ${f.label}, key: ${key}, file:`, file);
           
