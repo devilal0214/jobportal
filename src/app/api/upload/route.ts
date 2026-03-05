@@ -34,9 +34,11 @@ export async function POST(request: NextRequest) {
       }, { status: 400 })
     }
 
-    // Create uploads directory if it doesn't exist
-    const uploadDir = getUploadDir()
+    // Create uploads/applications directory if it doesn't exist
+    const uploadDir = getUploadDir('applications')
+    console.log('[Upload API] Target directory:', uploadDir)
     if (!existsSync(uploadDir)) {
+      console.log('[Upload API] Directory does not exist, creating:', uploadDir)
       await mkdir(uploadDir, { recursive: true })
     }
 
@@ -47,10 +49,14 @@ export async function POST(request: NextRequest) {
     const fileName = `${timestamp}_${sanitizedName}`
     const filePath = join(uploadDir, fileName)
 
+    console.log('[Upload API] Saving file to:', filePath)
+
     // Convert file to buffer and save
     const bytes = await file.arrayBuffer()
     const buffer = Buffer.from(bytes)
     await writeFile(filePath, buffer)
+
+    console.log('[Upload API] File saved successfully:', fileName)
 
     return NextResponse.json({
       success: true,
@@ -58,7 +64,7 @@ export async function POST(request: NextRequest) {
       originalName: file.name,
       size: file.size,
       type: file.type,
-      path: `/uploads/${fileName}`
+      path: `applications/${fileName}`  // Include subdirectory in path for download route
     })
 
   } catch (error) {

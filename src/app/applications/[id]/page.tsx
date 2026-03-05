@@ -694,7 +694,8 @@ export default function ApplicationDetailPage({
         try {
           const fileData = JSON.parse(field.value);
           if (fileData.fileName && fileData.path) {
-            const downloadTarget = fileData.path.split("/").pop() || fileData.fileName;
+            // Keep the full path for download route to handle subdirectories
+            const downloadTarget = fileData.path;
             return (
               <div className="flex items-center justify-between py-2">
                 <span className="text-gray-700 text-sm">{field.label}</span>
