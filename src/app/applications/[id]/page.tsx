@@ -626,8 +626,13 @@ export default function ApplicationDetailPage({
 
         // Include all meaningful responses (reduced minimum length)
         if (field.value.trim().length > 0) {
+          // Format question: replace underscores with spaces and capitalize first letter
+          const formattedQuestion = field.label
+            .replace(/_/g, ' ')
+            .replace(/^\w/, (c) => c.toUpperCase());
+          
           qaFields.push({
-            question: field.label,
+            question: formattedQuestion,
             answer: field.value,
           });
         }
@@ -638,8 +643,13 @@ export default function ApplicationDetailPage({
           field.fieldType !== "SKILLS" &&
           !label.includes("skill")
         ) {
+          // Format question: replace underscores with spaces and capitalize first letter
+          const formattedQuestion = field.label
+            .replace(/_/g, ' ')
+            .replace(/^\w/, (c) => c.toUpperCase());
+          
           qaFields.push({
-            question: field.label,
+            question: formattedQuestion,
             answer: field.value.join(", "),
           });
         }
@@ -1220,7 +1230,7 @@ export default function ApplicationDetailPage({
                       key={index}
                       className="border-b border-gray-100 pb-6 last:border-b-0 last:pb-0"
                     >
-                      <h4 className="font-semibold text-gray-900 mb-3 text-base">
+                      <h4 className="font-semibold text-gray-900 mb-3 text-base break-words">
                         {qa.question}
                       </h4>
                       <div className="bg-gray-50 rounded-lg p-4">

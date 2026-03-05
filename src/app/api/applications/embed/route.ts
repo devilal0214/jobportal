@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { emailService } from '@/lib/email'
-import { writeFile } from 'fs/promises'
+import { writeFile, mkdir } from 'fs/promises'
 import path from 'path'
 import { getUploadDir } from '@/lib/upload'
 
@@ -27,6 +27,14 @@ export async function POST(request: NextRequest) {
     const fieldLabels = fieldLabelsJson ? JSON.parse(fieldLabelsJson) : {}
     const portfolioLinks = portfolioLinksJson ? JSON.parse(portfolioLinksJson) : []
 
+    // Ensure applications upload directory exists
+    const applicationsDir = getUploadDir('applications')
+    try {
+      await mkdir(applicationsDir, { recursive: true })
+    } catch (error) {
+      console.log('Applications directory creation info:', error)
+    }
+
     // Handle file uploads
     const uploadedFiles: Record<string, string> = {}
     for (const [key, value] of formData.entries()) {
@@ -38,8 +46,8 @@ export async function POST(request: NextRequest) {
         const timestamp = Date.now()
         const filename = `${timestamp}_${file.name}`
         
-        // Save to uploads directory (no subfolder for application files)
-        const uploadPath = path.join(getUploadDir(), filename)
+        // Save to uploads/applications directory for better organization
+        const uploadPath = path.join(getUploadDir('applications'), filename)
         
         // Save file
         const buffer = Buffer.from(await file.arrayBuffer())
@@ -141,11 +149,11 @@ export async function POST(request: NextRequest) {
     Object.entries(uploadedFiles).forEach(([fieldId, filename]) => {
       const label = fieldLabels[fieldId] || fieldIdToLabel[fieldId] || fieldId
       
-      // Get original filename f- path should be relative to UPLOAD_DIR
+      // Store path with subdirectory so download route can find the file
       const fileInfo = {
         fileName: filename,
         originalName: originalName,
-        path: filename  // Just the filename, will be resolved by getUploadDir()
+        path: `applications/${filename}`  // Include subdirectory in path
       }
       
       // Store without the " - File" suffix since we're not storing the original field

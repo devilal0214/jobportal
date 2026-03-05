@@ -1,24 +1,31 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { readFile } from 'fs/promises'
 import { join } from 'path'
+import path from 'path'
 import { getUploadDir } from '@/lib/upload'
 
 export async function GET(request: NextRequest, { params }: { params: Promise<{ filename: string }> }) {
   try {
     const { filename } = await params
     
-    // Security check - only allow files from uploads directory
-    if (!filename || filename.includes('..') || filename.includes('/') || filename.includes('\\')) {
+    // Security check - prevent directory traversal attacks
+    if (!filename || filename.includes('..')) {
       return NextResponse.json({ error: 'Invalid filename' }, { status: 400 })
     }
 
-    const filePath = join(getUploadDir(), filename)
+    // Handle paths with subdirectories (e.g., "applications/file.pdf")
+    // Replace forward slashes with path separators for the current OS
+    const sanitizedPath = filename.replace(/\//g, path.sep)
+    const filePath = join(getUploadDir(), sanitizedPath)
     
     try {
       const fileBuffer = await readFile(filePath)
       
+      // Extract actual filename for Content-Disposition header
+      const actualFilename = filename.split('/').pop() || filename
+      
       // Determine content type based on file extension
-      const ext = filename.toLowerCase().split('.').pop()
+      const ext = actualFilename.toLowerCase().split('.').pop()
       let contentType = 'application/octet-stream'
       
       if (ext === 'pdf') {
@@ -32,7 +39,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       return new NextResponse(fileBuffer, {
         headers: {
           'Content-Type': contentType,
-          'Content-Disposition': `attachment; filename="${filename}"`,
+          'Content-Disposition': `attachment; filename="${actualFilename}"`,
           'Content-Length': fileBuffer.length.toString(),
         },
       })
