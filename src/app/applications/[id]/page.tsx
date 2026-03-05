@@ -991,7 +991,7 @@ export default function ApplicationDetailPage({
               <div className="flex space-x-3">
                 {application.resumePath && (
                   <a
-                    href={`/api/download/${encodeURIComponent(application.resumePath.split("/").pop() || "")}`}
+                    href={`/api/download/${encodeURIComponent(application.resumePath)}`}
                     className="bg-black text-white px-4 py-2 rounded text-sm font-medium hover:bg-gray-800 flex items-center space-x-2"
                     download
                   >
