@@ -1,6 +1,11 @@
 'use client'
 
 import { useRef, useState, useEffect } from 'react'
+import { 
+  Bold, Italic, Link as LinkIcon, List, ListOrdered, 
+  AlignLeft, AlignCenter, AlignRight, AlignJustify,
+  IndentDecrease, IndentIncrease, Heading1, Heading2, Heading3, Type
+} from 'lucide-react'
 
 interface HTMLEditorProps {
   value: string
@@ -13,6 +18,8 @@ const HTMLEditor = ({ value, onChange, placeholder, height = 200 }: HTMLEditorPr
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const editableRef = useRef<HTMLDivElement>(null)
   const [isPreview, setIsPreview] = useState(true) // Default to Preview mode
+  const [textColor, setTextColor] = useState('#000000')
+  const [fontFamily, setFontFamily] = useState('inherit')
 
   // Function to set cursor at the end of content
   const setCursorAtEnd = () => {
@@ -249,40 +256,144 @@ const HTMLEditor = ({ value, onChange, placeholder, height = 200 }: HTMLEditorPr
     }
   }
 
+  const applyTextColor = () => {
+    if (isPreview && editableRef.current) {
+      editableRef.current.focus()
+      const selection = window.getSelection()
+      if (selection && selection.rangeCount > 0) {
+        const range = selection.getRangeAt(0)
+        const selectedText = range.toString()
+        if (selectedText) {
+          insertTag(`<span style="color: ${textColor}">`, '</span>')
+        }
+      }
+    }
+  }
+
+  const applyFontFamily = () => {
+    if (isPreview && editableRef.current && fontFamily !== 'inherit') {
+      editableRef.current.focus()
+      const selection = window.getSelection()
+      if (selection && selection.rangeCount > 0) {
+        const range = selection.getRangeAt(0)
+        const selectedText = range.toString()
+        if (selectedText) {
+          insertTag(`<span style="font-family: ${fontFamily}">`, '</span>')
+        }
+      }
+    }
+  }
+
+  const applyAlignment = (align: string) => {
+    insertTag(`<div style="text-align: ${align}">`, '</div>')
+  }
+
+  const applyIndent = (direction: 'more' | 'less') => {
+    if (direction === 'more') {
+      insertTag('<div style="margin-left: 2em;">', '</div>')
+    } else {
+      insertTag('<div style="margin-left: 0;">', '</div>')
+    }
+  }
+
   const formatButtons = [
-    { label: 'Bold', action: () => insertTag('<strong>', '</strong>'), icon: 'B' },
-    { label: 'Italic', action: () => insertTag('<em>', '</em>'), icon: 'I' },
-    { label: 'H1', action: () => insertTag('<h1>', '</h1>'), icon: 'H1' },
-    { label: 'H2', action: () => insertTag('<h2>', '</h2>'), icon: 'H2' },
-    { label: 'H3', action: () => insertTag('<h3>', '</h3>'), icon: 'H3' },
-    { label: 'Paragraph', action: () => insertTag('<p>', '</p>'), icon: 'P' },
+    { label: 'Bold', action: () => insertTag('<strong>', '</strong>'), icon: <Bold className="h-4 w-4" /> },
+    { label: 'Italic', action: () => insertTag('<em>', '</em>'), icon: <Italic className="h-4 w-4" /> },
+    { label: 'H1', action: () => insertTag('<h1>', '</h1>'), icon: <Heading1 className="h-4 w-4" /> },
+    { label: 'H2', action: () => insertTag('<h2>', '</h2>'), icon: <Heading2 className="h-4 w-4" /> },
+    { label: 'H3', action: () => insertTag('<h3>', '</h3>'), icon: <Heading3 className="h-4 w-4" /> },
+    { label: 'Paragraph', action: () => insertTag('<p>', '</p>'), icon: <Type className="h-4 w-4" /> },
     { label: 'Line Break', action: () => insertTag('<br>'), icon: 'BR' },
-    { label: 'Link', action: () => insertTag('<a href="">', '</a>'), icon: 'Link' },
-    { label: 'List Item', action: () => insertTag('<li>', '</li>'), icon: 'Li' },
-    { label: 'Unordered List', action: () => insertTag('<ul>\n', '\n</ul>'), icon: 'UL' },
-    { label: 'Ordered List', action: () => insertTag('<ol>\n', '\n</ol>'), icon: 'OL' },
+    { label: 'Link', action: () => insertTag('<a href="">', '</a>'), icon: <LinkIcon className="h-4 w-4" /> },
+    { label: 'Unordered List', action: () => insertTag('<ul>\n<li>', '</li>\n</ul>'), icon: <List className="h-4 w-4" /> },
+    { label: 'Ordered List', action: () => insertTag('<ol>\n<li>', '</li>\n</ol>'), icon: <ListOrdered className="h-4 w-4" /> },
+    { label: 'Align Left', action: () => applyAlignment('left'), icon: <AlignLeft className="h-4 w-4" /> },
+    { label: 'Align Center', action: () => applyAlignment('center'), icon: <AlignCenter className="h-4 w-4" /> },
+    { label: 'Align Right', action: () => applyAlignment('right'), icon: <AlignRight className="h-4 w-4" /> },
+    { label: 'Align Justify', action: () => applyAlignment('justify'), icon: <AlignJustify className="h-4 w-4" /> },
+    { label: 'Indent More', action: () => applyIndent('more'), icon: <IndentIncrease className="h-4 w-4" /> },
+    { label: 'Indent Less', action: () => applyIndent('less'), icon: <IndentDecrease className="h-4 w-4" /> },
+  ]
+
+  const fontFamilies = [
+    { value: 'inherit', label: 'Default' },
+    { value: 'Arial, sans-serif', label: 'Arial' },
+    { value: 'Georgia, serif', label: 'Georgia' },
+    { value: 'Times New Roman, serif', label: 'Times New Roman' },
+    { value: 'Courier New, monospace', label: 'Courier New' },
+    { value: 'Verdana, sans-serif', label: 'Verdana' },
+    { value: 'Tahoma, sans-serif', label: 'Tahoma' },
   ]
 
   return (
     <div className="border border-gray-300 rounded-lg overflow-hidden bg-white">
       {/* Toolbar */}
       <div className="border-b border-gray-300 p-3 bg-gray-100">
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap gap-2 items-center">
+          {/* Font Family Dropdown */}
+          <select
+            value={fontFamily}
+            onChange={(e) => {
+              setFontFamily(e.target.value)
+              setTimeout(() => applyFontFamily(), 0)
+            }}
+            className="px-2 py-1.5 text-xs border border-gray-400 rounded bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            title="Font Family"
+          >
+            {fontFamilies.map((font) => (
+              <option key={font.value} value={font.value}>
+                {font.label}
+              </option>
+            ))}
+          </select>
+
+          {/* Text Color Picker */}
+          <div className="flex items-center gap-1">
+            <input
+              type="color"
+              value={textColor}
+              onChange={(e) => setTextColor(e.target.value)}
+              className="w-8 h-8 border border-gray-400 rounded cursor-pointer"
+              title="Text Color"
+            />
+            <button
+              type="button"
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={(e) => {
+                e.preventDefault()
+                applyTextColor()
+              }}
+              className="px-2 py-1.5 text-xs font-medium text-gray-700 bg-white border border-gray-400 rounded hover:bg-indigo-50 hover:text-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              title="Apply Color"
+            >
+              Apply
+            </button>
+          </div>
+
+          {/* Separator */}
+          <div className="h-6 w-px bg-gray-300"></div>
+
+          {/* Format Buttons */}
           {formatButtons.map((button, index) => (
             <button
               key={index}
               type="button"
-              onMouseDown={(e) => e.preventDefault()} // Prevent losing focus
+              onMouseDown={(e) => e.preventDefault()}
               onClick={(e) => {
                 e.preventDefault()
                 button.action()
               }}
-              className="px-3 py-2 text-xs font-medium text-gray-700 bg-white border border-gray-400 rounded hover:bg-indigo-50 hover:text-indigo-700 hover:border-indigo-300 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 shadow-sm"
+              className="px-2.5 py-2 text-xs font-medium text-gray-700 bg-white border border-gray-400 rounded hover:bg-indigo-50 hover:text-indigo-700 hover:border-indigo-300 focus:outline-none focus:ring-2 focus:ring-indigo-500 shadow-sm flex items-center justify-center"
               title={button.label}
             >
-              {button.icon}
+              {typeof button.icon === 'string' ? button.icon : button.icon}
             </button>
           ))}
+
+          {/* Separator */}
+          <div className="h-6 w-px bg-gray-300"></div>
+
+          {/* Mode Toggle Buttons */}
           <div className="ml-auto flex gap-2">
             <button
               type="button"

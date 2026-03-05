@@ -475,7 +475,21 @@ export default function JobDetailPage({
               Job Description
             </h2>
             <div
-              className="prose max-w-none text-gray-700 leading-relaxed"
+              className="prose max-w-none text-gray-700 leading-relaxed
+                [&_h1]:text-4xl [&_h1]:font-bold [&_h1]:mb-6 [&_h1]:mt-8 [&_h1]:text-gray-900
+                [&_h2]:text-3xl [&_h2]:font-bold [&_h2]:mb-4 [&_h2]:mt-6 [&_h2]:text-gray-900
+                [&_h3]:text-2xl [&_h3]:font-semibold [&_h3]:mb-3 [&_h3]:mt-4 [&_h3]:text-gray-900
+                [&_p]:text-gray-700 [&_p]:mb-4 [&_p]:leading-relaxed
+                [&_ul]:list-disc [&_ul]:ml-6 [&_ul]:mb-4 [&_ul]:text-gray-700
+                [&_ol]:list-decimal [&_ol]:ml-6 [&_ol]:mb-4 [&_ol]:text-gray-700
+                [&_li]:mb-2
+                [&_strong]:font-semibold [&_strong]:text-gray-900
+                [&_em]:italic
+                [&_a]:text-indigo-600 [&_a]:underline [&_a]:hover:text-indigo-800
+                [&_[style*='text-align:center']]:text-center
+                [&_[style*='text-align:right']]:text-right
+                [&_[style*='text-align:left']]:text-left
+                [&_[style*='text-align:justify']]:text-justify"
               dangerouslySetInnerHTML={{ __html: job.description }}
             />
           </div>

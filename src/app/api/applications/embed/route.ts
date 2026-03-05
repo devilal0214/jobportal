@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { emailService } from '@/lib/email'
-import { writeFile, mkdir } from 'fs/promises'
-import { existsSync } from 'fs'
+import { writeFile } from 'fs/promises'
 import path from 'path'
 import { getUploadDir } from '@/lib/upload'
 
@@ -28,12 +27,6 @@ export async function POST(request: NextRequest) {
     const fieldLabels = fieldLabelsJson ? JSON.parse(fieldLabelsJson) : {}
     const portfolioLinks = portfolioLinksJson ? JSON.parse(portfolioLinksJson) : []
 
-    // Create uploads directory if it doesn't exist
-    const uploadDir = getUploadDir()
-    if (!existsSync(uploadDir)) {
-      await mkdir(uploadDir, { recursive: true })
-    }
-
     // Handle file uploads
     const uploadedFiles: Record<string, string> = {}
     for (const [key, value] of formData.entries()) {
@@ -44,12 +37,15 @@ export async function POST(request: NextRequest) {
         // Generate unique filename
         const timestamp = Date.now()
         const filename = `${timestamp}_${file.name}`
-        const uploadPath = path.join(uploadDir, filename)
+        
+        // Save to uploads directory (no subfolder for application files)
+        const uploadPath = path.join(getUploadDir(), filename)
         
         // Save file
         const buffer = Buffer.from(await file.arrayBuffer())
         await writeFile(uploadPath, buffer)
         
+        // Store relative path from public directory root
         uploadedFiles[fieldId] = filename
       }
     }
@@ -145,11 +141,11 @@ export async function POST(request: NextRequest) {
     Object.entries(uploadedFiles).forEach(([fieldId, filename]) => {
       const label = fieldLabels[fieldId] || fieldIdToLabel[fieldId] || fieldId
       
-      // Get original filename from parsedFormData (the display name)
-      const originalName = parsedFormData[fieldId] || 'uploaded-file'
-      
-      // Store file information in the same format as regular applications
+      // Get original filename f- path should be relative to UPLOAD_DIR
       const fileInfo = {
+        fileName: filename,
+        originalName: originalName,
+        path: filename  // Just the filename, will be resolved by getUploadDir()
         fileName: filename,
         originalName: originalName,
         path: `uploads/${filename}`
