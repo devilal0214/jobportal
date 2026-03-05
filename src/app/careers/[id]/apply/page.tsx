@@ -354,25 +354,40 @@ export default function CareerApplyPage() {
         if (f.fieldType === "FILE") {
           const key = f.fieldId || f.id;
           const file = formValues[key];
+          console.log(`[Apply] Processing file field: ${f.label}, key: ${key}, file:`, file);
+          
           if (file && typeof file === 'object' && 'name' in file) {
+            console.log(`[Apply] Uploading file: ${file.name}, size: ${file.size} bytes`);
             const formData = new FormData();
             formData.append("file", file as Blob);
             
-            const uploadRes = await fetch("/api/upload", {
-              method: "POST",
-              body: formData,
-            });
-            
-            if (!uploadRes.ok) {
-              const errData = await uploadRes.json();
-              throw new Error(errData.error || `Failed to upload ${f.label}`);
+            try {
+              const uploadRes = await fetch("/api/upload", {
+                method: "POST",
+                body: formData,
+              });
+              
+              console.log(`[Apply] Upload response status: ${uploadRes.status}`);
+              
+              if (!uploadRes.ok) {
+                const errData = await uploadRes.json();
+                console.error(`[Apply] Upload failed:`, errData);
+                throw new Error(errData.error || `Failed to upload ${f.label}`);
+              }
+              
+              const uploadData = await uploadRes.json();
+              console.log(`[Apply] Upload successful:`, uploadData);
+              
+              processedValues[key] = JSON.stringify({
+                fileName: uploadData.originalName || file.name,
+                path: uploadData.path,
+              });
+            } catch (uploadError) {
+              console.error(`[Apply] Upload error for ${f.label}:`, uploadError);
+              throw uploadError;
             }
-            
-            const uploadData = await uploadRes.json();
-            processedValues[key] = JSON.stringify({
-              fileName: uploadData.originalName || file.name,
-              path: uploadData.path,
-            });
+          } else {
+            console.log(`[Apply] No file selected for field: ${f.label}`);
           }
         }
       }

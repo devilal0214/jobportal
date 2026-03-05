@@ -6,10 +6,14 @@ import { getUploadDir } from '@/lib/upload'
 
 export async function POST(request: NextRequest) {
   try {
+    console.log('[Upload API] === FILE UPLOAD REQUEST STARTED ===')
     const formData = await request.formData()
     const file = formData.get('file') as File
     
+    console.log('[Upload API] File received:', file ? `${file.name} (${file.size} bytes, ${file.type})` : 'NO FILE')
+    
     if (!file) {
+      console.error('[Upload API] ERROR: No file provided')
       return NextResponse.json({ error: 'No file provided' }, { status: 400 })
     }
 
@@ -22,13 +26,17 @@ export async function POST(request: NextRequest) {
     
     const maxSize = 5 * 1024 * 1024 // 5MB
     
+    console.log('[Upload API] File validation - Type:', file.type, 'Size:', file.size, 'bytes')
+    
     if (!allowedTypes.includes(file.type)) {
+      console.error('[Upload API] ERROR: Invalid file type:', file.type)
       return NextResponse.json({ 
         error: 'Invalid file type. Only PDF, DOC, and DOCX files are allowed.' 
       }, { status: 400 })
     }
     
     if (file.size > maxSize) {
+      console.error('[Upload API] ERROR: File too large:', file.size, 'bytes (max:', maxSize, 'bytes)')
       return NextResponse.json({ 
         error: 'File too large. Maximum size is 5MB.' 
       }, { status: 400 })
@@ -57,6 +65,7 @@ export async function POST(request: NextRequest) {
     await writeFile(filePath, buffer)
 
     console.log('[Upload API] File saved successfully:', fileName)
+    console.log('[Upload API] === FILE UPLOAD COMPLETED SUCCESSFULLY ===')
 
     return NextResponse.json({
       success: true,
@@ -68,9 +77,12 @@ export async function POST(request: NextRequest) {
     })
 
   } catch (error) {
-    console.error('File upload error:', error)
+    console.error('[Upload API] === FILE UPLOAD FAILED ===')
+    console.error('[Upload API] Error details:', error)
+    console.error('[Upload API] Error stack:', error instanceof Error ? error.stack : 'No stack trace')
     return NextResponse.json({ 
-      error: 'Failed to upload file' 
+      error: 'Failed to upload file',
+      details: error instanceof Error ? error.message : String(error)
     }, { status: 500 })
   }
 }
