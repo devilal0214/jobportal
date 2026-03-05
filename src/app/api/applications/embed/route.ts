@@ -146,9 +146,6 @@ export async function POST(request: NextRequest) {
         fileName: filename,
         originalName: originalName,
         path: filename  // Just the filename, will be resolved by getUploadDir()
-        fileName: filename,
-        originalName: originalName,
-        path: `uploads/${filename}`
       }
       
       // Store without the " - File" suffix since we're not storing the original field
