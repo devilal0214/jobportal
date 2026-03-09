@@ -459,7 +459,7 @@ export default function CareerDetailPage() {
       </div>
 
       {/* Content */}
-      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Main Content */}
           <div className="lg:col-span-2">
@@ -513,7 +513,7 @@ export default function CareerDetailPage() {
               {hasForm ? (
                 <BrandButton
                   onClick={() => router.push(`/careers/${job.id}/apply`)}
-                  className={`w-full mb-3 ${settings.applyButtonClass || ''}`}
+                  className={`w-full mb-3 !bg-[#00994D] !border-[#00994D] !text-white hover:!bg-[#008040] hover:!border-[#008040] ${settings.applyButtonClass || ''}`}
                   style={{
                     fontFamily: settings.applyButtonFontFamily && settings.applyButtonFontFamily !== 'System Default' ? settings.applyButtonFontFamily : 'inherit',
                     fontSize: settings.applyButtonFontSize || '15px',
@@ -524,7 +524,7 @@ export default function CareerDetailPage() {
               ) : (
                 <BrandButton
                   disabled
-                  className="w-full mb-3"
+                  className="w-full mb-3 !bg-[#00994D] !border-[#00994D] !text-white"
                 >
                   Apply Now
                 </BrandButton>
