@@ -298,9 +298,8 @@ export default function CareerApplyPage() {
           }
         }
         if (f.fieldType === "URL") {
-          try {
-            new URL(v.startsWith("http") ? v : `https://${v}`);
-          } catch {
+          const urlRegex = /^(https?:\/\/)?([\w\-]+\.)+[\w\-]+(\/[\w\-./?%&\=;]*)?$/i;
+          if (!urlRegex.test(String(v))) {
             return `Please enter a valid URL for ${f.label}`;
           }
         }

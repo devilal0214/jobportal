@@ -129,11 +129,20 @@ export default function ApplicationFormStepper({
   const validateStep = (): boolean => {
     const current = steps[step] || []
     for (const f of current) {
-      if (!f.isRequired) continue
       const v = values[f.fieldName]
-      if (v === undefined || v === null || String(v).trim?.() === '') {
+      const isEmpty = v === undefined || v === null || String(v).trim?.() === '' || (Array.isArray(v) && v.length === 0)
+      
+      if (f.isRequired && isEmpty) {
         showError(`Please fill required field: ${f.label}`)
         return false
+      }
+      
+      if (!isEmpty && f.fieldType === 'URL') {
+        const urlRegex = /^(https?:\/\/)?([\w\-]+\.)+[\w\-]+(\/[\w\-./?%&\=;]*)?$/i;
+        if (!urlRegex.test(String(v))) {
+          showError(`Please enter a valid URL for ${f.label}`)
+          return false
+        }
       }
     }
     return true

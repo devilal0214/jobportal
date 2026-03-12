@@ -215,7 +215,6 @@ export default function ApplyPage() {
   const validateStep = (): string[] => {
     const errs: string[] = [];
     for (const f of currentFields) {
-      if (!f.isRequired) continue;
       const key = f.fieldId || f.id;
       const v = values[key];
       const isEmpty =
@@ -226,15 +225,25 @@ export default function ApplyPage() {
 
       if (f.fieldType === "SKILLS") {
         const skills = v as SkillRating[] | undefined;
-        if (!skills || skills.length === 0) {
+        if (f.isRequired && (!skills || skills.length === 0)) {
           errs.push(`${f.label} is required`);
-        } else if (skills.some((s) => !s.rating || s.rating === 0)) {
+        } else if (skills && skills.length > 0 && skills.some((s) => !s.rating || s.rating === 0)) {
           errs.push(`Please rate all skills in ${f.label}`);
         }
         continue;
       }
 
-      if (isEmpty) errs.push(`${f.label} is required`);
+      if (f.isRequired && isEmpty) {
+        errs.push(`${f.label} is required`);
+        continue;
+      }
+
+      if (!isEmpty && f.fieldType === "URL") {
+        const urlRegex = /^(https?:\/\/)?([\w\-]+\.)+[\w\-]+(\/[\w\-./?%&\=;]*)?$/i;
+        if (!urlRegex.test(String(v))) {
+          errs.push(`Please enter a valid URL for ${f.label}`);
+        }
+      }
     }
     return errs;
   };
