@@ -114,6 +114,18 @@ export default function ApplicationFormStepper({
   const updateValue = (name: string, value: any) =>
     setValues(prev => ({ ...prev, [name]: value }))
 
+  const isOtherSelected = (val: any) => {
+    console.log("isOtherSelected called with:", val);
+    if (Array.isArray(val)) {
+      const res = val.some(v => String(v).toLowerCase().includes('other'));
+      console.log("Array result:", res);
+      return res;
+    }
+    const res = String(val).toLowerCase().includes('other');
+    console.log("String result:", res);
+    return res;
+  }
+
   const validateStep = (): boolean => {
     const current = steps[step] || []
     for (const f of current) {
@@ -312,23 +324,34 @@ export default function ApplicationFormStepper({
             case 'SELECT': {
               const opts = parseOptions(field.options)
               control = (
-                <select
-                  id={id}
-                  name={field.fieldName}
-                  className={`${commonInputClass} ${field.cssClass || ''}`}
-                  value={currentValue}
-                  onChange={(e) => updateValue(field.fieldName, e.target.value)}
-                >
-                  <option value="">{field.placeholder || 'Select an option'}</option>
-                  {opts.map((o, i) => <option key={i} value={o}>{o}</option>)}
-                </select>
+                <div className="space-y-2">
+                  <select
+                    id={id}
+                    name={field.fieldName}
+                    className={`${commonInputClass} ${field.cssClass || ''}`}
+                    value={currentValue}
+                    onChange={(e) => updateValue(field.fieldName, e.target.value)}
+                  >
+                    <option value="">{field.placeholder || 'Select an option'}</option>
+                    {opts.map((o, i) => <option key={i} value={o}>{o}</option>)}
+                  </select>
+                  {isOtherSelected(currentValue) && (
+                    <input
+                      type="text"
+                      className={commonInputClass}
+                      placeholder="Please specify..."
+                      value={values[`${field.fieldName}_other`] || ''}
+                      onChange={(e) => updateValue(`${field.fieldName}_other`, e.target.value)}
+                    />
+                  )}
+                </div>
               )
               break
             }
             case 'RADIO': {
               const opts = parseOptions(field.options)
               control = (
-                <div id={id} className={field.cssClass || ''}>
+                <div id={id} className={`space-y-2 ${field.cssClass || ''}`}>
                   {opts.map((o, i) => (
                     <label key={i} className="flex items-center space-x-2 mb-2">
                       <input
@@ -342,6 +365,15 @@ export default function ApplicationFormStepper({
                       <span className="text-sm text-gray-800">{o}</span>
                     </label>
                   ))}
+                  {isOtherSelected(currentValue) && (
+                    <input
+                      type="text"
+                      className={commonInputClass}
+                      placeholder="Please specify..."
+                      value={values[`${field.fieldName}_other`] || ''}
+                      onChange={(e) => updateValue(`${field.fieldName}_other`, e.target.value)}
+                    />
+                  )}
                 </div>
               )
               break
@@ -350,7 +382,7 @@ export default function ApplicationFormStepper({
               const opts = parseOptions(field.options)
               const current: string[] = Array.isArray(values[field.fieldName]) ? values[field.fieldName] : []
               control = (
-                <div id={id} className={field.cssClass || ''}>
+                <div id={id} className={`space-y-2 ${field.cssClass || ''}`}>
                   {opts.map((o, i) => {
                     const checked = current.includes(o)
                     return (
@@ -371,6 +403,15 @@ export default function ApplicationFormStepper({
                       </label>
                     )
                   })}
+                  {isOtherSelected(current) && (
+                    <input
+                      type="text"
+                      className={commonInputClass}
+                      placeholder="Please specify..."
+                      value={values[`${field.fieldName}_other`] || ''}
+                      onChange={(e) => updateValue(`${field.fieldName}_other`, e.target.value)}
+                    />
+                  )}
                 </div>
               )
               break

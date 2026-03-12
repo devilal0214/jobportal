@@ -103,6 +103,14 @@ function groupByPageBreak(fields: FormField[]) {
   return steps.filter((step) => step.length > 0);
 }
 
+function isOtherSelected(val: any): boolean {
+  if (Array.isArray(val)) {
+    return val.some((v) => String(v).toLowerCase().includes("other"));
+  }
+  if (!val) return false;
+  return String(val).toLowerCase().includes("other");
+}
+
 function gridSpan(width?: string) {
   switch (width) {
     case "25%":
@@ -377,34 +385,56 @@ export default function ApplyPage() {
         );
       case "SELECT":
         return (
-          <select
-            className={base}
-            value={getVal(f)}
-            onChange={(e) => setVal(f, e.target.value)}
-          >
-            <option value="">{f.placeholder || "Select an option"}</option>
-            {options.map((opt, i) => (
-              <option key={i} value={String(opt)}>
-                {String(opt)}
-              </option>
-            ))}
-          </select>
+          <div className="space-y-2">
+            <select
+              className={base}
+              value={getVal(f)}
+              onChange={(e) => setVal(f, e.target.value)}
+            >
+              <option value="">{f.placeholder || "Select an option"}</option>
+              {options.map((opt, i) => (
+                <option key={i} value={String(opt)}>
+                  {String(opt)}
+                </option>
+              ))}
+            </select>
+            {isOtherSelected(getVal(f)) && (
+              <input
+                type="text"
+                className={base}
+                placeholder="Please specify..."
+                value={values[`${f.fieldId || f.id}_other`] || ""}
+                onChange={(e) => setValues(prev => ({ ...prev, [`${f.fieldId || f.id}_other`]: e.target.value }))}
+              />
+            )}
+          </div>
         );
       case "RADIO":
         return (
           <div className="space-y-2">
-            {options.map((opt, i) => (
-              <label key={i} className="flex items-center">
-                <input
-                  type="radio"
-                  name={f.fieldId || f.id}
-                  className="mr-2"
-                  checked={getVal(f) === String(opt)}
-                  onChange={() => setVal(f, String(opt))}
-                />
-                <span>{String(opt)}</span>
-              </label>
-            ))}
+            <div className="space-y-2">
+              {options.map((opt, i) => (
+                <label key={i} className="flex items-center">
+                  <input
+                    type="radio"
+                    name={f.fieldId || f.id}
+                    className="mr-2"
+                    checked={getVal(f) === String(opt)}
+                    onChange={() => setVal(f, String(opt))}
+                  />
+                  <span>{String(opt)}</span>
+                </label>
+              ))}
+            </div>
+            {isOtherSelected(getVal(f)) && (
+              <input
+                type="text"
+                className={base}
+                placeholder="Please specify..."
+                value={values[`${f.fieldId || f.id}_other`] || ""}
+                onChange={(e) => setValues(prev => ({ ...prev, [`${f.fieldId || f.id}_other`]: e.target.value }))}
+              />
+            )}
           </div>
         );
       case "CHECKBOX": {
@@ -417,17 +447,28 @@ export default function ApplyPage() {
         };
         return (
           <div className="space-y-2">
-            {options.map((opt, i) => (
-              <label key={i} className="flex items-center">
-                <input
-                  type="checkbox"
-                  className="mr-2"
-                  checked={selected.includes(String(opt))}
-                  onChange={() => toggle(String(opt))}
-                />
-                <span>{String(opt)}</span>
-              </label>
-            ))}
+            <div className="space-y-2">
+              {options.map((opt, i) => (
+                <label key={i} className="flex items-center">
+                  <input
+                    type="checkbox"
+                    className="mr-2"
+                    checked={selected.includes(String(opt))}
+                    onChange={() => toggle(String(opt))}
+                  />
+                  <span>{String(opt)}</span>
+                </label>
+              ))}
+            </div>
+            {isOtherSelected(selected) && (
+              <input
+                type="text"
+                className={base}
+                placeholder="Please specify..."
+                value={values[`${f.fieldId || f.id}_other`] || ""}
+                onChange={(e) => setValues(prev => ({ ...prev, [`${f.fieldId || f.id}_other`]: e.target.value }))}
+              />
+            )}
           </div>
         );
       }

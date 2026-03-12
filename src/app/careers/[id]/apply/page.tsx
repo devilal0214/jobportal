@@ -146,6 +146,14 @@ function widthToCols(width?: string | null): string {
   }
 }
 
+function isOtherSelected(val: any): boolean {
+  if (Array.isArray(val)) {
+    return val.some((v) => String(v).toLowerCase().includes("other"));
+  }
+  if (!val) return false;
+  return String(val).toLowerCase().includes("other");
+}
+
 const inputBase =
   "w-full px-3 py-2 border border-gray-300 rounded-md text-sm text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent";
 
@@ -488,38 +496,60 @@ export default function CareerApplyPage() {
 
       case "SELECT":
         return (
-          <select
-            className={inputBase}
-            value={getVal(f)}
-            onChange={(e) => setVal(f, e.target.value)}
-          >
-            <option value="">{f.placeholder || "Select an option"}</option>
-            {options.map((o, i) => (
-              <option key={i} value={o}>
-                {o}
-              </option>
-            ))}
-          </select>
+          <div className="space-y-2">
+            <select
+              className={inputBase}
+              value={getVal(f)}
+              onChange={(e) => setVal(f, e.target.value)}
+            >
+              <option value="">{f.placeholder || "Select an option"}</option>
+              {options.map((o, i) => (
+                <option key={i} value={o}>
+                  {o}
+                </option>
+              ))}
+            </select>
+            {isOtherSelected(getVal(f)) && (
+              <input
+                type="text"
+                className={inputBase}
+                placeholder="Please specify..."
+                value={formValues[`${keyFor(f)}_other`] || ""}
+                onChange={(e) => setFormValues(prev => ({ ...prev, [`${keyFor(f)}_other`]: e.target.value }))}
+              />
+            )}
+          </div>
         );
 
       case "RADIO":
         return (
-          <div className="space-y-1">
-            {options.map((o, i) => (
-              <label
-                key={i}
-                className="flex items-center gap-2 text-sm text-gray-700"
-              >
-                <input
-                  type="radio"
-                  name={keyFor(f)}
-                  className="text-indigo-600"
-                  checked={getVal(f) === o}
-                  onChange={() => setVal(f, o)}
-                />
-                <span>{o}</span>
-              </label>
-            ))}
+          <div className="space-y-2">
+            <div className="space-y-1">
+              {options.map((o, i) => (
+                <label
+                  key={i}
+                  className="flex items-center gap-2 text-sm text-gray-700"
+                >
+                  <input
+                    type="radio"
+                    name={keyFor(f)}
+                    className="text-indigo-600"
+                    checked={getVal(f) === o}
+                    onChange={() => setVal(f, o)}
+                  />
+                  <span>{o}</span>
+                </label>
+              ))}
+            </div>
+            {isOtherSelected(getVal(f)) && (
+              <input
+                type="text"
+                className={inputBase}
+                placeholder="Please specify..."
+                value={formValues[`${keyFor(f)}_other`] || ""}
+                onChange={(e) => setFormValues(prev => ({ ...prev, [`${keyFor(f)}_other`]: e.target.value }))}
+              />
+            )}
           </div>
         );
 
@@ -532,21 +562,32 @@ export default function CareerApplyPage() {
           setVal(f, next);
         };
         return (
-          <div className="space-y-1">
-            {options.map((o, i) => (
-              <label
-                key={i}
-                className="flex items-center gap-2 text-sm text-gray-700"
-              >
-                <input
-                  type="checkbox"
-                  className="text-indigo-600"
-                  checked={selected.includes(o)}
-                  onChange={() => toggle(o)}
-                />
-                <span>{o}</span>
-              </label>
-            ))}
+          <div className="space-y-2">
+            <div className="space-y-1">
+              {options.map((o, i) => (
+                <label
+                  key={i}
+                  className="flex items-center gap-2 text-sm text-gray-700"
+                >
+                  <input
+                    type="checkbox"
+                    className="text-indigo-600"
+                    checked={selected.includes(o)}
+                    onChange={() => toggle(o)}
+                  />
+                  <span>{o}</span>
+                </label>
+              ))}
+            </div>
+            {isOtherSelected(selected) && (
+              <input
+                type="text"
+                className={inputBase}
+                placeholder="Please specify..."
+                value={formValues[`${keyFor(f)}_other`] || ""}
+                onChange={(e) => setFormValues(prev => ({ ...prev, [`${keyFor(f)}_other`]: e.target.value }))}
+              />
+            )}
           </div>
         );
       }
