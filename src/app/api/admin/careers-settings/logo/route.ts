@@ -108,7 +108,7 @@ export async function POST(request: NextRequest) {
 
     // Add text settings from formData
     const textSettings = [
-      'logoHeight', 'logoWidth', 'companyName',
+      'logoHeight', 'logoWidth', 'companyName', 'mainLogoLink',
       'navFontFamily', 'navFontSize', 'globalFontFamily'
     ]
 

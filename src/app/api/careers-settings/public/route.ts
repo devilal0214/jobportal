@@ -28,6 +28,7 @@ export async function GET() {
             'careers_logo_height',
             'careers_logo_width',
             'careers_company_name',
+            'careers_main_logo_link',
             'careers_menu_items',
             'careers_nav_font_family',
             'careers_nav_font_size',
@@ -223,6 +224,9 @@ export async function GET() {
           break
         case 'careers_company_name':
           careersSettings.companyName = setting.value
+          break
+        case 'careers_main_logo_link':
+          careersSettings.mainLogoLink = setting.value
           break
         case 'careers_menu_items':
           try {

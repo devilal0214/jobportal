@@ -71,6 +71,7 @@ interface CareersSettings {
   logoHeight: string;
   logoWidth: string;
   companyName: string;
+  mainLogoLink?: string;
   menuItems?: Array<{
     id: string;
     label: string;
@@ -152,6 +153,7 @@ interface CareersSettings {
     logoImage?: string;
     logoWidth?: string;
     logoHeight?: string;
+    logoLink?: string;
     twoColumns?: boolean;
     customClass?: string;
     order: number;
@@ -323,21 +325,33 @@ export default function CareerDetailPage() {
           <div className="flex items-center justify-between h-16">
             <div className="flex items-center space-x-3">
               {settings.logoImage && (
-                <div
-                  className="relative"
-                  style={{
-                    width: settings.logoWidth,
-                    height: settings.logoHeight,
-                  }}
-                >
-                  <Image
-                    src={settings.logoImage}
-                    alt={settings.companyName}
-                    fill
-                    className="object-contain"
-                    unoptimized
-                  />
-                </div>
+                settings.mainLogoLink ? (
+                  <Link href={settings.mainLogoLink} target="_blank" className="relative block" style={{ width: settings.logoWidth || '40px', height: settings.logoHeight || '40px' }}>
+                    <Image
+                      src={settings.logoImage}
+                      alt={settings.companyName}
+                      fill
+                      className="object-contain"
+                      unoptimized
+                    />
+                  </Link>
+                ) : (
+                  <div
+                    className="relative block"
+                    style={{
+                      width: settings.logoWidth,
+                      height: settings.logoHeight,
+                    }}
+                  >
+                    <Image
+                      src={settings.logoImage}
+                      alt={settings.companyName}
+                      fill
+                      className="object-contain"
+                      unoptimized
+                    />
+                  </div>
+                )
               )}
               <Link
                 href="/careers"
@@ -771,15 +785,29 @@ export default function CareerDetailPage() {
                           <div key={widget.id} className={widget.customClass || ''}>
                             {widget.type === "logo" && widget.logoImage && (
                               <div>
-                                <img
-                                  src={widget.logoImage}
-                                  alt="Logo"
-                                  style={{
-                                    width: widget.logoWidth || "auto",
-                                    height: widget.logoHeight || "auto",
-                                    maxWidth: "100%",
-                                  }}
-                                />
+                                {widget.logoLink ? (
+                                  <a href={widget.logoLink} target="_blank" rel="noopener noreferrer" className="inline-block">
+                                    <img
+                                      src={widget.logoImage}
+                                      alt="Logo"
+                                      style={{
+                                        width: widget.logoWidth || "auto",
+                                        height: widget.logoHeight || "auto",
+                                        maxWidth: "100%",
+                                      }}
+                                    />
+                                  </a>
+                                ) : (
+                                  <img
+                                    src={widget.logoImage}
+                                    alt="Logo"
+                                    style={{
+                                      width: widget.logoWidth || "auto",
+                                      height: widget.logoHeight || "auto",
+                                      maxWidth: "100%",
+                                    }}
+                                  />
+                                )}
                               </div>
                             )}
 

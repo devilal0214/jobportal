@@ -90,6 +90,7 @@ interface CareersSettings {
   logoHeight: string;
   logoWidth: string;
   companyName: string;
+  mainLogoLink?: string;
 }
 
 /* ---------- Helpers ---------- */

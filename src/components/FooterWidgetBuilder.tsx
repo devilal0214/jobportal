@@ -12,6 +12,7 @@ interface FooterWidget {
   logoImage?: string
   logoWidth?: string
   logoHeight?: string
+  logoLink?: string
   twoColumns?: boolean
   customClass?: string
   order: number
@@ -44,6 +45,7 @@ export default function FooterWidgetBuilder({ columns, widgets, onChange, onLogo
       menuItems: type === 'menu' ? [{ label: 'Home', url: '/' }] : undefined,
       logoWidth: type === 'logo' ? '150px' : undefined,
       logoHeight: type === 'logo' ? '50px' : undefined,
+      logoLink: type === 'logo' ? '' : undefined,
       twoColumns: false,
       order: widgets.filter(w => w.columnIndex === columnIndex).length,
       columnIndex
@@ -190,6 +192,16 @@ export default function FooterWidgetBuilder({ columns, widgets, onChange, onLogo
                       className="text-xs w-full px-2 py-1 border rounded text-gray-900"
                     />
                   </div>
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-700 mb-1">Link URL</label>
+                  <input
+                    type="url"
+                    value={widget.logoLink || ''}
+                    onChange={(e) => updateWidget(widget.id, { logoLink: e.target.value })}
+                    placeholder="https://example.com"
+                    className="text-xs w-full px-2 py-1 border rounded text-gray-900 mb-2"
+                  />
                 </div>
                 <div>
                   <label className="block text-xs font-medium text-gray-700 mb-1">Custom CSS Class</label>

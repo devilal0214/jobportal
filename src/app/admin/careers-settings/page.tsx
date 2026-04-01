@@ -61,6 +61,7 @@ interface CareersSettings {
   logoHeight: string;
   logoWidth: string;
   companyName: string;
+  mainLogoLink?: string;
   menuItems: MenuItem[];
   navFontFamily?: string;
   navFontSize?: string;
@@ -628,6 +629,7 @@ export default function AdminCareersSettings() {
       formData.append('logoHeight', settings.logoHeight);
       formData.append('logoWidth', settings.logoWidth);
       formData.append('companyName', settings.companyName);
+      formData.append('mainLogoLink', settings.mainLogoLink || '');
       formData.append('navFontFamily', settings.navFontFamily || '');
       formData.append('navFontSize', settings.navFontSize || '');
       formData.append('globalFontFamily', settings.globalFontFamily || '');
@@ -1244,8 +1246,8 @@ export default function AdminCareersSettings() {
                 </div>
               </div>
 
-              {/* Company name & sizes */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+              {/* Company name, link & sizes */}
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Company Name
@@ -1260,6 +1262,23 @@ export default function AdminCareersSettings() {
                       }))
                     }
                     className="w-full px-3 py-2 border rounded-md text-gray-900"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Logo Link (Optional)
+                  </label>
+                  <input
+                    type="url"
+                    value={settings.mainLogoLink || ""}
+                    onChange={(e) =>
+                      setSettings((s) => ({
+                        ...s,
+                        mainLogoLink: e.target.value,
+                      }))
+                    }
+                    className="w-full px-3 py-2 border rounded-md text-gray-900"
+                    placeholder="https://example.com"
                   />
                 </div>
                 <div>

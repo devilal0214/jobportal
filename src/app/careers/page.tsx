@@ -65,6 +65,7 @@ interface CareersSettings {
   logoHeight: string
   logoWidth: string
   companyName: string
+  mainLogoLink?: string
   menuItems: Array<{
     id: string
     label: string
@@ -173,6 +174,7 @@ interface CareersSettings {
     logoImage?: string
     logoWidth?: string
     logoHeight?: string
+    logoLink?: string
     twoColumns?: boolean
     customClass?: string
     order: number
@@ -388,29 +390,48 @@ export default function CareersPage() {
             {/* Logo and Company Name */}
             <div className="flex items-center space-x-3">
               {settings.logoImage && (
-                <div
-                  className="relative"
-                  style={{
-                    width: settings.logoWidth || '40px',
-                    height: settings.logoHeight || '40px',
-                  }}
-                >
-                  
-                  <Image
-                    src={settings.logoImage}
-                    alt={settings.companyName || 'Logo'}
-                    fill
-                    className="object-contain"
-                    unoptimized
-                    onError={(e) => {
-                      console.error('❌ Logo failed to load:', settings.logoImage);
-                      console.error('Error details:', e);
+                settings.mainLogoLink ? (
+                  <Link href={settings.mainLogoLink} target="_blank" className="relative block" style={{ width: settings.logoWidth || '40px', height: settings.logoHeight || '40px' }}>
+                    <Image
+                      src={settings.logoImage}
+                      alt={settings.companyName || 'Logo'}
+                      fill
+                      className="object-contain"
+                      unoptimized
+                      onError={(e) => {
+                        console.error('❌ Logo failed to load:', settings.logoImage);
+                        console.error('Error details:', e);
+                      }}
+                      onLoad={() => {
+                        console.log('✅ Logo loaded successfully:', settings.logoImage);
+                      }}
+                    />
+                  </Link>
+                ) : (
+                  <div
+                    className="relative block"
+                    style={{
+                      width: settings.logoWidth || '40px',
+                      height: settings.logoHeight || '40px',
                     }}
-                    onLoad={() => {
-                      console.log('✅ Logo loaded successfully:', settings.logoImage);
-                    }}
-                  />
-                </div>
+                  >
+                    
+                    <Image
+                      src={settings.logoImage}
+                      alt={settings.companyName || 'Logo'}
+                      fill
+                      className="object-contain"
+                      unoptimized
+                      onError={(e) => {
+                        console.error('❌ Logo failed to load:', settings.logoImage);
+                        console.error('Error details:', e);
+                      }}
+                      onLoad={() => {
+                        console.log('✅ Logo loaded successfully:', settings.logoImage);
+                      }}
+                    />
+                  </div>
+                )
               )}
               <Link
                 href="/"
@@ -845,15 +866,29 @@ export default function CareersPage() {
                           {/* Logo Widget */}
                           {widget.type === 'logo' && widget.logoImage && (
                             <div>
-                              <img
-                                src={widget.logoImage}
-                                alt="Logo"
-                                style={{
-                                  width: widget.logoWidth || '150px',
-                                  height: widget.logoHeight || '50px',
-                                  objectFit: 'contain',
-                                }}
-                              />
+                              {widget.logoLink ? (
+                                <a href={widget.logoLink} target="_blank" rel="noopener noreferrer" className="inline-block">
+                                  <img
+                                    src={widget.logoImage}
+                                    alt="Logo"
+                                    style={{
+                                      width: widget.logoWidth || '150px',
+                                      height: widget.logoHeight || '50px',
+                                      objectFit: 'contain',
+                                    }}
+                                  />
+                                </a>
+                              ) : (
+                                <img
+                                  src={widget.logoImage}
+                                  alt="Logo"
+                                  style={{
+                                    width: widget.logoWidth || '150px',
+                                    height: widget.logoHeight || '50px',
+                                    objectFit: 'contain',
+                                  }}
+                                />
+                              )}
                             </div>
                           )}
 
