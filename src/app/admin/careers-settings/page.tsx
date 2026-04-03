@@ -10,6 +10,8 @@ import {
   Upload,
   X,
   ArrowLeft,
+  ArrowUp,
+  ArrowDown,
   Plus,
   Trash2,
   Image as ImageIcon,
@@ -255,6 +257,9 @@ const shadowMap: Record<ShadowKey, string> = {
 };
 
 const fileSizeToMB = (bytes: number) => (bytes / (1024 * 1024)).toFixed(2);
+
+const generateMenuItemId = () => Math.random().toString(36).substring(2, 9);
+const generateSocialLinkId = () => Math.random().toString(36).substring(2, 9);
 
 /* ========== Component ========== */
 
@@ -1398,11 +1403,43 @@ export default function AdminCareersSettings() {
                     No menu items added yet
                   </p>
                 ) : (
-                  settings.menuItems.map((item) => (
+                  settings.menuItems.map((item, index) => (
                     <div
                       key={item.id}
-                      className="flex items-center gap-3 p-3 border rounded"
+                      className="flex items-center gap-3 p-3 border rounded bg-white shadow-sm"
                     >
+                      <div className="flex flex-col gap-1">
+                        <button
+                          title="Move Up"
+                          disabled={index === 0}
+                          onClick={() => {
+                            const newItems = [...settings.menuItems];
+                            const temp = newItems[index - 1];
+                            newItems[index - 1] = newItems[index];
+                            newItems[index] = temp;
+                            newItems.forEach((it, i) => { it.order = i; });
+                            setSettings((s) => ({ ...s, menuItems: newItems }));
+                          }}
+                          className="p-1 text-gray-500 hover:bg-gray-100 rounded disabled:opacity-30 disabled:cursor-not-allowed"
+                        >
+                          <ArrowUp className="h-4 w-4" />
+                        </button>
+                        <button
+                          title="Move Down"
+                          disabled={index === settings.menuItems.length - 1}
+                          onClick={() => {
+                            const newItems = [...settings.menuItems];
+                            const temp = newItems[index + 1];
+                            newItems[index + 1] = newItems[index];
+                            newItems[index] = temp;
+                            newItems.forEach((it, i) => { it.order = i; });
+                            setSettings((s) => ({ ...s, menuItems: newItems }));
+                          }}
+                          className="p-1 text-gray-500 hover:bg-gray-100 rounded disabled:opacity-30 disabled:cursor-not-allowed"
+                        >
+                          <ArrowDown className="h-4 w-4" />
+                        </button>
+                      </div>
                       <div className="flex-1">
                         <input
                           type="text"
