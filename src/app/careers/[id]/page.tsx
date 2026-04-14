@@ -326,7 +326,7 @@ export default function CareerDetailPage() {
             <div className="flex items-center space-x-3">
               {settings.logoImage && (
                 settings.mainLogoLink ? (
-                  <Link href={settings.mainLogoLink} target="_blank" className="relative block" style={{ width: settings.logoWidth || '40px', height: settings.logoHeight || '40px' }}>
+                  <Link href={settings.mainLogoLink} className="relative block" style={{ width: settings.logoWidth || '40px', height: settings.logoHeight || '40px' }}>
                     <Image
                       src={settings.logoImage}
                       alt={settings.companyName}
@@ -786,7 +786,7 @@ export default function CareerDetailPage() {
                             {widget.type === "logo" && widget.logoImage && (
                               <div>
                                 {widget.logoLink ? (
-                                  <a href={widget.logoLink} target="_blank" rel="noopener noreferrer" className="inline-block">
+                                  <a href={widget.logoLink} rel="noopener noreferrer" className="inline-block">
                                     <img
                                       src={widget.logoImage}
                                       alt="Logo"
